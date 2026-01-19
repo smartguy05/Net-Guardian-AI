@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(podman:*)",
+      "Bash(podman compose:*)",
+      "Bash(podman-compose down:*)",
+      "Bash(podman-compose:*)",
+      "Bash(timeout 30 bash -c:*)",
+      "Bash(curl:*)",
+      "Bash(npm install:*)",
+      "Bash(printf:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python -c:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

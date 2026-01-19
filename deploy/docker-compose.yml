@@ -1,0 +1,145 @@
+version: '3.9'
+
+services:
+  # =============================================================================
+  # FastAPI Backend
+  # =============================================================================
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: netguardian-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DEBUG=${DEBUG:-false}
+      - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:5173"]}
+      - LOG_INGESTION_API_ENABLED=${LOG_INGESTION_API_ENABLED:-true}
+      - LOG_INGESTION_RATE_LIMIT=${LOG_INGESTION_RATE_LIMIT:-1000}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-claude-sonnet-4-20250514}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - netguardian-network
+    volumes:
+      - backend-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # =============================================================================
+  # TimescaleDB Database
+  # =============================================================================
+  db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: netguardian-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=netguardian
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=netguardian
+    ports:
+      - "5432:5432"
+    volumes:
+      - timescale-data:/var/lib/postgresql/data
+    networks:
+      - netguardian-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netguardian -d netguardian"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =============================================================================
+  # Redis for Event Bus and Caching
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: netguardian-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - netguardian-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # =============================================================================
+  # React Frontend
+  # =============================================================================
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: netguardian-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - netguardian-network
+
+  # =============================================================================
+  # Data Collector Worker
+  # =============================================================================
+  collector:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: netguardian-collector
+    restart: unless-stopped
+    command: python -m app.collectors.worker
+    environment:
+      - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_SOURCES_DIR=/logs
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - netguardian-network
+    volumes:
+      # Mount log directories here
+      - ./log-sources:/logs:ro
+      # Uncomment and modify these for your specific log sources:
+      # - /var/log/pfsense:/logs/pfsense:ro
+      # - /var/log/unifi:/logs/unifi:ro
+      # - /var/log/nginx:/logs/nginx:ro
+
+networks:
+  netguardian-network:
+    driver: bridge
+
+volumes:
+  timescale-data:
+    name: netguardian-timescale-data
+  redis-data:
+    name: netguardian-redis-data
+  backend-logs:
+    name: netguardian-backend-logs

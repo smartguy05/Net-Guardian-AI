@@ -1,0 +1,116 @@
+"""Application configuration using Pydantic Settings."""
+
+import json
+from functools import lru_cache
+from typing import List
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    # Application
+    app_name: str = "NetGuardian AI"
+    debug: bool = False
+    log_level: str = "INFO"
+
+    # Database
+    database_url: str = "postgresql+asyncpg://netguardian:password@localhost:5432/netguardian"
+    db_pool_size: int = 20  # Number of persistent connections in the pool
+    db_max_overflow: int = 30  # Extra connections allowed beyond pool_size
+    db_pool_timeout: int = 30  # Seconds to wait for available connection
+    db_pool_recycle: int = 1800  # Recycle connections after 30 minutes
+
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
+    redis_max_connections: int = 50  # Max connections in Redis pool
+
+    # HTTP Client Settings
+    http_timeout_seconds: int = 30
+    http_max_connections: int = 100  # Max connections per host
+    http_keepalive_expiry: int = 30  # Seconds to keep idle connections
+
+    # Authentication
+    secret_key: str = "change-this-to-a-secure-secret-key"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 30
+    jwt_refresh_token_expire_days: int = 7
+
+    # CORS
+    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [origin.strip() for origin in v.split(",")]
+        return v
+
+    # Log Ingestion
+    log_sources_dir: str = "/logs"
+    log_ingestion_api_enabled: bool = True
+    log_ingestion_rate_limit: int = 1000  # events per minute per source
+
+    # AdGuard Home Integration (Phase 4)
+    adguard_enabled: bool = False
+    adguard_url: str = ""
+    adguard_username: str = ""
+    adguard_password: str = ""
+    adguard_verify_ssl: bool = True
+
+    # Router Integration (Phase 4)
+    router_integration_type: str = ""  # unifi, pfsense, opnsense, ssh
+    router_url: str = ""
+    router_username: str = ""
+    router_password: str = ""
+    router_site: str = "default"  # For UniFi
+    router_verify_ssl: bool = True
+
+    # LLM Configuration (Phase 3)
+    anthropic_api_key: str = ""
+    llm_model_default: str = "claude-sonnet-4-20250514"  # For general analysis
+    llm_model_fast: str = "claude-haiku-4-20250514"  # For quick triage
+    llm_model_deep: str = "claude-sonnet-4-20250514"  # For detailed analysis
+    llm_enabled: bool = True
+    llm_max_tokens: int = 4096
+    llm_temperature: float = 0.3
+    llm_cache_enabled: bool = True  # Enable Anthropic prompt caching
+
+    # Ollama Monitoring (Phase 5 - LLM Security)
+    ollama_enabled: bool = False
+    ollama_url: str = "http://localhost:11434"
+    ollama_poll_interval_seconds: int = 30
+    ollama_verify_ssl: bool = False
+    ollama_detection_enabled: bool = True  # Enable malware/injection detection
+    ollama_prompt_analysis_enabled: bool = True  # Use Claude to analyze prompts
+    ollama_alert_on_injection: bool = True  # Create alerts for detected attacks
+    ollama_injection_severity: str = "high"  # Alert severity for injections
+
+    @property
+    def async_database_url(self) -> str:
+        """Ensure database URL uses asyncpg driver."""
+        url = self.database_url
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
+
+@lru_cache
+def get_settings() -> Settings:
+    """Get cached settings instance."""
+    return Settings()
+
+
+settings = get_settings()

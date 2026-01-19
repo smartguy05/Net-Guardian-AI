@@ -1,0 +1,49 @@
+# NetGuardian Endpoint Agent Configuration
+# Copy this file to agent_config.yaml and update with your settings
+
+# NetGuardian server URL
+server_url: https://netguardian.local:8000
+
+# API key for push source authentication
+# Get this from NetGuardian: Sources -> Add Source -> API Push
+api_key: your-api-key-here
+
+# Optional: Override auto-generated agent ID
+# agent_id: my-custom-agent-id
+
+# Optional: Override auto-detected hostname
+# hostname: workstation-01
+
+# Collection interval in seconds
+poll_interval: 30
+
+# Maximum events to send per request
+batch_size: 50
+
+# SSL certificate verification (set false for self-signed certs)
+verify_ssl: true
+
+# Monitoring options
+monitor_processes: true
+monitor_network: true
+monitor_files: false
+
+# Paths to monitor for file access (requires monitor_files: true)
+watched_paths:
+  - /etc/passwd
+  - /etc/shadow
+  - /etc/sudoers
+  - ~/.ssh/
+  # Windows paths:
+  # - C:\Windows\System32\config\SAM
+  # - C:\Windows\System32\config\SYSTEM
+
+# Processes to ignore (lowercase names)
+process_whitelist:
+  - system
+  - idle
+  - kernel_task
+  - systemd
+  - init
+  - kthreadd
+  - netguardian_agent

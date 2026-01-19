@@ -1,0 +1,407 @@
+# NetGuardian AI - Development Notes
+
+Issues, gotchas, and lessons learned during development.
+
+---
+
+## Build & Deployment Issues
+
+### Hatchling Build System
+
+**Problem:** Build failed with "Readme file does not exist: README.md"
+
+**Cause:** Hatchling (the build backend in pyproject.toml) requires a README.md file by default.
+
+**Solution:** Created `backend/README.md` with basic project description.
+
+**Also needed:** Added explicit package configuration to pyproject.toml:
+```toml
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+```
+
+---
+
+### NPM CI vs NPM Install
+
+**Problem:** Frontend Docker build failed - `npm ci` requires package-lock.json
+
+**Cause:** The Dockerfile used `npm ci` but no package-lock.json was committed.
+
+**Solution:** Changed Dockerfile to use `npm install` instead:
+```dockerfile
+RUN npm install
+```
+
+**Alternative:** Could commit package-lock.json, but npm install is more flexible for development.
+
+---
+
+### Tailwind CSS Color Scales
+
+**Problem:** Build error "The `text-success-700` class does not exist"
+
+**Cause:** Tailwind's custom color configuration only had partial scales (e.g., just 500, 600).
+
+**Solution:** Extended all custom colors with full 50-900 scales in tailwind.config.js:
+```javascript
+success: {
+  50: '#f0fdf4',
+  100: '#dcfce7',
+  // ... full scale
+  900: '#14532d',
+},
+```
+
+---
+
+## Python/Backend Issues
+
+### Structlog with PrintLoggerFactory
+
+**Problem:** `AttributeError: 'PrintLogger' object has no attribute 'name'`
+
+**Cause:** Using stdlib-specific processors (`add_logger_name`, `PositionalArgumentsFormatter`) with `PrintLoggerFactory`.
+
+**Solution:** Removed stdlib-specific processors, used structlog's native processors:
+```python
+shared_processors = [
+    structlog.contextvars.merge_contextvars,
+    structlog.processors.add_log_level,  # Not stdlib.add_log_level
+    structlog.processors.TimeStamper(fmt="iso"),
+    structlog.processors.StackInfoRenderer(),
+    structlog.processors.UnicodeDecoder(),
+]
+```
+
+---
+
+### SQLAlchemy 2.0 Raw SQL
+
+**Problem:** `Not an executable object: 'SELECT 1'`
+
+**Cause:** SQLAlchemy 2.0 requires raw SQL to be wrapped in `text()`.
+
+**Solution:**
+```python
+from sqlalchemy import text
+
+async with engine.begin() as conn:
+    await conn.execute(text("SELECT 1"))
+```
+
+---
+
+### Passlib BCrypt Issue
+
+**Problem:** `ValueError: password cannot be longer than 72 bytes` during bcrypt detection test
+
+**Cause:** Passlib's bcrypt wrapper runs a self-test on import that was failing in the container environment.
+
+**Solution:** Replaced passlib with direct bcrypt usage:
+```python
+import bcrypt
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+```
+
+---
+
+### SQLAlchemy Enum Values vs Names
+
+**Problem:** `invalid input value for enum userrole: "ADMIN"`
+
+**Cause:** SQLAlchemy's `Enum` type uses Python enum member names (ADMIN) by default, but PostgreSQL enum was created with values (admin).
+
+**Solution:** Added `values_callable` to use enum values:
+```python
+role: Mapped[UserRole] = mapped_column(
+    SQLEnum(UserRole, name="userrole", values_callable=lambda x: [e.value for e in x]),
+    default=UserRole.VIEWER,
+    nullable=False,
+)
+```
+
+---
+
+### Settings Attribute Case
+
+**Problem:** `Settings object has no attribute 'REDIS_URL'`
+
+**Cause:** Pydantic settings uses lowercase attribute names by default.
+
+**Solution:** Use lowercase: `settings.redis_url` not `settings.REDIS_URL`
+
+---
+
+## Frontend Issues
+
+### Login Not Returning User
+
+**Problem:** User logged in but role check failed - always showed "non-admin" UI
+
+**Cause:** Backend login endpoint only returned tokens, not user object. Frontend expected `data.user` in response.
+
+**Solution:** Updated backend to return `LoginResponse` that includes user:
+```python
+class LoginResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+```
+
+---
+
+### Zustand Persistence and Stale Data
+
+**Problem:** After fixing login response, old cached data persisted
+
+**Cause:** Zustand with `persist` middleware stores state in localStorage
+
+**Solution:** User needs to clear localStorage or the auth store when schema changes. Consider adding a version to the persisted state.
+
+---
+
+## Podman-Specific Issues
+
+### Container Dependencies
+
+**Problem:** Could not remove/restart containers due to dependencies
+
+**Cause:** Podman manages container dependencies differently than Docker
+
+**Solution:** Stop and remove dependent containers first, or use `--force`:
+```bash
+podman stop netguardian-collector netguardian-frontend netguardian-backend
+podman rm -f netguardian-collector netguardian-frontend netguardian-backend
+podman-compose up -d backend frontend collector
+```
+
+---
+
+### Esbuild Permission Issue in Podman/WSL2
+
+**Problem:** `spawn /app/node_modules/@esbuild/linux-x64/bin/esbuild EACCES` during frontend build
+
+**Cause:** Podman with WSL2 backend strips execute permissions from node_modules binaries during the Docker build process.
+
+**Solution:** Install a matching version of esbuild globally and use the `ESBUILD_BINARY_PATH` environment variable:
+```dockerfile
+# Install matching esbuild version globally to work around permission issues
+RUN npm install -g esbuild@0.21.5
+
+# Build the application (use global esbuild)
+ENV ESBUILD_BINARY_PATH=/usr/local/bin/esbuild
+RUN npm run build
+```
+
+**Note:** The esbuild version must match what vite expects (check in node_modules/esbuild/package.json).
+
+---
+
+### Nginx DNS Caching
+
+**Problem:** 502 Bad Gateway after backend restart
+
+**Cause:** Nginx caches DNS resolution. After backend container recreation, IP changed but nginx had old IP cached.
+
+**Solution:** Restart nginx (frontend) container after backend changes:
+```bash
+podman restart netguardian-frontend
+```
+
+**Better solution:** Configure nginx with `resolver` directive for dynamic resolution.
+
+---
+
+### Database Volume Persistence
+
+**Problem:** Database password mismatch after recreation
+
+**Cause:** PostgreSQL stores credentials in the data volume. Changing `DB_PASSWORD` in .env doesn't update existing database.
+
+**Solution:** Either:
+1. Use same password as when volume was created
+2. Remove volume and recreate: `podman volume rm netguardian-timescale-data`
+
+---
+
+### Shell Escaping in SQL Updates
+
+**Problem:** Password hash got corrupted when updating via psql
+
+**Cause:** `$` characters in bcrypt hash were interpreted by shell
+
+**Solution:** Run password updates from within Python:
+```python
+podman exec netguardian-backend python -c "
+from app.core.security import hash_password
+# ... update via SQLAlchemy
+"
+```
+
+---
+
+## General Gotchas
+
+### Multiple Uvicorn Workers
+
+**Problem:** Init code (admin user creation) ran multiple times, causing unique constraint errors
+
+**Cause:** Docker Compose starts uvicorn with `--workers 2`, each worker runs startup code
+
+**Solution:** The init code checks for existing users before creating. Errors from race condition are caught and logged but don't prevent startup.
+
+**Better solution:** Use a separate init container or database migration for one-time setup.
+
+---
+
+### TimescaleDB Hypertable Requirements
+
+**Note:** Hypertables require a composite primary key that includes the partition column (timestamp).
+
+```sql
+sa.PrimaryKeyConstraint("id", "timestamp")  -- Both columns in PK
+```
+
+---
+
+### Form Data vs JSON for Login
+
+**Note:** OAuth2PasswordRequestForm expects form-urlencoded data, not JSON:
+
+```javascript
+// Correct
+const formData = new FormData();
+formData.append('username', credentials.username);
+formData.append('password', credentials.password);
+await apiClient.post('/auth/login', formData);
+
+// Incorrect
+await apiClient.post('/auth/login', { username, password });
+```
+
+---
+
+## Performance Notes
+
+- TimescaleDB hypertable uses 7-day chunks - good for home use
+- Redis maxmemory set to 256mb with allkeys-lru policy
+- SQLAlchemy pool_size=20, max_overflow=30 (configurable via env vars)
+- HTTP client pooling via shared `HttpClientPool` for connection reuse
+- Redis caching layer available via `CacheService` for list endpoints
+
+### Connection Pool Configuration (Phase 5)
+
+Database and HTTP client pools are now configurable:
+```bash
+# Database
+DB_POOL_SIZE=20           # Persistent connections
+DB_MAX_OVERFLOW=30        # Extra connections
+DB_POOL_TIMEOUT=30        # Wait time (seconds)
+DB_POOL_RECYCLE=1800      # Recycle after 30 min
+
+# HTTP Client
+HTTP_TIMEOUT_SECONDS=30
+HTTP_MAX_CONNECTIONS=100
+HTTP_KEEPALIVE_EXPIRY=30
+```
+
+---
+
+## Security Notes
+
+- JWT secret key should be 64+ character hex string in production
+- Never log passwords or full JWT tokens
+- Admin password only shown once in logs on first startup
+- API keys for push sources should be treated as secrets
+
+### Security Hardening (Phase 5)
+
+**Login Rate Limiting:**
+- 5 login attempts per minute
+- 5-minute block after exceeding limit
+- Rate limit reset on successful login
+
+**Password Requirements:**
+- Minimum 12 characters
+- Mixed case (upper + lower)
+- At least one digit
+- At least one special character
+- Not a common password
+- No 3+ consecutive identical characters
+
+**Startup Security Checks:**
+The application warns at startup about:
+- Default/weak SECRET_KEY
+- DEBUG mode enabled
+- Wildcard CORS origins
+- Weak database passwords
+- Long JWT expiration times
+- Missing API keys
+
+**New Security Modules:**
+- `app/core/rate_limit.py` - Rate limiting utilities
+- `app/core/validation.py` - Input validation and sanitization
+
+---
+
+## Collector Worker Notes
+
+### Auto-Registration Pattern
+
+**Problem:** Collectors and parsers weren't being registered despite decorator usage
+
+**Cause:** Python modules with decorators need to be imported for the decorators to execute
+
+**Solution:** Updated `__init__.py` files to import all collector/parser modules:
+```python
+# app/collectors/__init__.py
+from app.collectors import api_pull_collector  # noqa: F401
+from app.collectors import file_collector  # noqa: F401
+
+# app/parsers/__init__.py
+from app.parsers import json_parser  # noqa: F401
+from app.parsers import syslog_parser  # noqa: F401
+from app.parsers import adguard_parser  # noqa: F401
+from app.parsers import custom_parser  # noqa: F401
+```
+
+---
+
+### ParseResult Types
+
+**Note:** The `ParseResult` dataclass uses enum types directly from `raw_event.py`:
+- `event_type: EventType` (not string)
+- `severity: EventSeverity` (not string)
+
+Parsers should return enum values, not strings:
+```python
+return ParseResult(
+    event_type=EventType.DNS,  # Not "dns"
+    severity=EventSeverity.INFO,  # Not "info"
+    ...
+)
+```
+
+---
+
+### Database Volume After Changes
+
+**Problem:** After `podman-compose down && up`, database authentication fails
+
+**Cause:** The database volume persists even when containers are recreated. If the password in `.env` is different from when the volume was created, authentication fails.
+
+**Solution:** Remove the volume to reset the database:
+```bash
+podman stop -a && podman rm -a
+podman volume rm netguardian-timescale-data
+podman-compose up -d
+# Don't forget to run migrations!
+podman exec netguardian-backend alembic upgrade head
+```

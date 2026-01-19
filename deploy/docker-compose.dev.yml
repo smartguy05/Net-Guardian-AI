@@ -1,0 +1,33 @@
+# Development overrides for docker-compose
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+version: '3.9'
+
+services:
+  backend:
+    build:
+      target: development
+    volumes:
+      - ../backend/app:/app/app:ro
+    environment:
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      target: development
+    volumes:
+      - ../frontend/src:/app/src:ro
+    ports:
+      - "3000:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+
+  collector:
+    build:
+      target: development
+    volumes:
+      - ../backend/app:/app/app:ro
+    environment:
+      - LOG_LEVEL=DEBUG

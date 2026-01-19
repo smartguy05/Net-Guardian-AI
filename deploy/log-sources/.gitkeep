@@ -1,0 +1,2 @@
+# This directory is for mounting external log files
+# Example: mount pfSense logs here as /logs/pfsense
