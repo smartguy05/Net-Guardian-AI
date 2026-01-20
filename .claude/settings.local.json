@@ -13,7 +13,10 @@
       "Bash(python -m pytest:*)",
       "Bash(python -c:*)",
       "Bash(npm run build:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)"
     ]
   }
 }

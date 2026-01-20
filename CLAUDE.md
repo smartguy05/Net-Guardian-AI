@@ -124,7 +124,7 @@ The backend uses a layered architecture:
 2. **Services** (`app/services/`): Business logic (LLM, anomaly detection, playbooks, quarantine)
 3. **Models** (`app/models/`): SQLAlchemy models with TimescaleDB hypertables for events
 4. **Collectors** (`app/collectors/`): Data collection from various sources (API pull, file watch, UDP listener)
-5. **Parsers** (`app/parsers/`): Log format parsers (AdGuard, syslog, JSON, NetFlow, sFlow, endpoint)
+5. **Parsers** (`app/parsers/`): Log format parsers (AdGuard, syslog, JSON, Custom, NetFlow, sFlow, endpoint, Ollama)
 6. **Events** (`app/events/`): Redis Streams event bus for async communication
 7. **Core** (`app/core/`): Security, caching, rate limiting, validation, middleware utilities
 
