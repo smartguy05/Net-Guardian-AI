@@ -1,11 +1,11 @@
 """User model for authentication and authorization."""
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.security import UserRole
@@ -25,6 +25,9 @@ class User(Base, TimestampMixin):
         must_change_password: Whether user must change password on next login.
         last_login: Timestamp of last successful login.
         created_by: UUID of admin who created this account.
+        totp_enabled: Whether 2FA is enabled.
+        totp_secret: Encrypted TOTP secret (base32).
+        backup_codes: List of remaining backup codes for 2FA recovery.
     """
 
     __tablename__ = "users"
@@ -72,6 +75,21 @@ class User(Base, TimestampMixin):
     created_by: Mapped[Optional[UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    # Two-Factor Authentication fields
+    totp_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+    totp_secret: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+    )
+    backup_codes: Mapped[Optional[List[str]]] = mapped_column(
+        ARRAY(String(16)),
         nullable=True,
     )
 

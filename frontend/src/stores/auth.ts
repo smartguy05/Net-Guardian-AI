@@ -7,10 +7,17 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  // 2FA state
+  pending2FA: boolean;
+  pending2FAToken: string | null;
+  pending2FAUser: User | null;
   setUser: (user: User) => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   login: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
+  // 2FA methods
+  setPending2FA: (pending: boolean, token: string | null, user: User | null) => void;
+  clearPending2FA: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -20,6 +27,9 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
+      pending2FA: false,
+      pending2FAToken: null,
+      pending2FAUser: null,
 
       setUser: (user) => set({ user }),
 
@@ -32,6 +42,9 @@ export const useAuthStore = create<AuthState>()(
           accessToken,
           refreshToken,
           isAuthenticated: true,
+          pending2FA: false,
+          pending2FAToken: null,
+          pending2FAUser: null,
         }),
 
       logout: () =>
@@ -40,6 +53,23 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
+          pending2FA: false,
+          pending2FAToken: null,
+          pending2FAUser: null,
+        }),
+
+      setPending2FA: (pending, token, user) =>
+        set({
+          pending2FA: pending,
+          pending2FAToken: token,
+          pending2FAUser: user,
+        }),
+
+      clearPending2FA: () =>
+        set({
+          pending2FA: false,
+          pending2FAToken: null,
+          pending2FAUser: null,
         }),
     }),
     {
@@ -49,6 +79,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        // Don't persist 2FA state
       }),
     }
   )

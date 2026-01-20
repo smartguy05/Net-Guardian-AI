@@ -67,7 +67,7 @@ export default function Pagination({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-3">
       {/* Items info and page size selector */}
-      <div className="flex items-center gap-4 text-sm text-gray-600">
+      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
         <span>
           Showing {startItem}-{endItem} of {totalItems}
         </span>
@@ -77,7 +77,7 @@ export default function Pagination({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="border border-gray-300 dark:border-zinc-600 rounded px-2 py-1 text-sm bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
@@ -98,8 +98,8 @@ export default function Pagination({
           className={clsx(
             'p-2 rounded-lg transition-colors',
             currentPage === 1
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
           )}
           title="First page"
         >
@@ -113,8 +113,8 @@ export default function Pagination({
           className={clsx(
             'p-2 rounded-lg transition-colors',
             currentPage === 1
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
           )}
           title="Previous page"
         >
@@ -125,7 +125,7 @@ export default function Pagination({
         <div className="flex items-center gap-1 mx-2">
           {getVisiblePages().map((page, index) =>
             page === 'ellipsis' ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+              <span key={`ellipsis-${index}`} className="px-2 text-gray-400 dark:text-gray-500">
                 ...
               </span>
             ) : (
@@ -136,7 +136,7 @@ export default function Pagination({
                   'min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors',
                   currentPage === page
                     ? 'bg-primary-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
                 )}
               >
                 {page}
@@ -152,8 +152,8 @@ export default function Pagination({
           className={clsx(
             'p-2 rounded-lg transition-colors',
             currentPage === totalPages
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
           )}
           title="Next page"
         >
@@ -167,8 +167,8 @@ export default function Pagination({
           className={clsx(
             'p-2 rounded-lg transition-colors',
             currentPage === totalPages
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
           )}
           title="Last page"
         >

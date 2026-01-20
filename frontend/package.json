@@ -10,7 +10,6 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
-    "@rollup/rollup-win32-x64-msvc": "file:rollup-rollup-win32-x64-msvc-4.55.2.tgz",
     "@tanstack/react-query": "^5.17.0",
     "axios": "^1.6.5",
     "clsx": "^2.1.0",

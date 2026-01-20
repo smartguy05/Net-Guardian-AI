@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Activity, Search, RefreshCw } from 'lucide-react';
-import { useEvents } from '../api/hooks';
+import { useEvents, exportEventsCSV, exportEventsPDF } from '../api/hooks';
 import { formatDistanceToNow, format } from 'date-fns';
 import clsx from 'clsx';
 import type { RawEvent, EventSeverity } from '../types';
 import Pagination from '../components/Pagination';
+import ExportButton from '../components/ExportButton';
 
 const severityColors: Record<EventSeverity, string> = {
-  debug: 'bg-gray-100 text-gray-700',
+  debug: 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300',
   info: 'badge-info',
   warning: 'badge-warning',
   error: 'badge-danger',
@@ -29,34 +30,38 @@ function EventRow({ event }: { event: RawEvent }) {
   return (
     <>
       <tr
-        className="hover:bg-gray-50 cursor-pointer"
+        className="hover:bg-gray-50 dark:hover:bg-zinc-700/50 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
       >
-        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
           <div className="flex flex-col">
             <span>{format(new Date(event.timestamp), 'HH:mm:ss')}</span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-gray-500">
               {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
             </span>
           </div>
         </td>
         <td className="px-4 py-3 whitespace-nowrap">
-          <span className="badge bg-primary-50 text-primary-700">
+          <span className="badge bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 text-xs">
             {eventTypeLabels[event.event_type] || event.event_type}
           </span>
+          {/* Show severity badge on mobile inline with type */}
+          <span className={clsx(severityColors[event.severity], 'sm:hidden ml-1 text-xs')}>
+            {event.severity}
+          </span>
         </td>
-        <td className="px-4 py-3 whitespace-nowrap">
+        <td className="hidden sm:table-cell px-4 py-3 whitespace-nowrap">
           <span className={severityColors[event.severity]}>
             {event.severity}
           </span>
         </td>
-        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+        <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
           {event.client_ip || '-'}
         </td>
-        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[150px] sm:max-w-none truncate">
           {event.domain || '-'}
         </td>
-        <td className="px-4 py-3 whitespace-nowrap">
+        <td className="hidden lg:table-cell px-4 py-3 whitespace-nowrap">
           {event.action && (
             <span
               className={clsx(
@@ -65,31 +70,31 @@ function EventRow({ event }: { event: RawEvent }) {
                   ? 'badge-danger'
                   : event.action === 'allowed' || event.action === 'allow'
                   ? 'badge-success'
-                  : 'bg-gray-100 text-gray-700'
+                  : 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300'
               )}
             >
               {event.action}
             </span>
           )}
         </td>
-        <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+        <td className="hidden xl:table-cell px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
           {event.raw_message}
         </td>
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={7} className="px-4 py-3 bg-gray-50">
+          <td colSpan={7} className="px-4 py-3 bg-gray-50 dark:bg-zinc-800">
             <div className="text-sm">
-              <div className="font-medium text-gray-900 mb-2">Raw Message</div>
+              <div className="font-medium text-gray-900 dark:text-white mb-2">Raw Message</div>
               <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-xs">
                 {event.raw_message}
               </pre>
               {Object.keys(event.parsed_fields).length > 0 && (
                 <>
-                  <div className="font-medium text-gray-900 mt-4 mb-2">
+                  <div className="font-medium text-gray-900 dark:text-white mt-4 mb-2">
                     Parsed Fields
                   </div>
-                  <pre className="p-3 bg-gray-100 rounded-lg overflow-x-auto text-xs">
+                  <pre className="p-3 bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-gray-100 rounded-lg overflow-x-auto text-xs">
                     {JSON.stringify(event.parsed_fields, null, 2)}
                   </pre>
                 </>
@@ -134,21 +139,33 @@ export default function EventsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Events</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Events</h1>
+          <p className="text-gray-500 dark:text-gray-400">
             {data?.total || 0} events recorded
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="btn-secondary"
-        >
-          <RefreshCw
-            className={clsx('w-4 h-4 mr-2', isFetching && 'animate-spin')}
+        <div className="flex items-center gap-3">
+          <ExportButton
+            onExportCSV={() => exportEventsCSV({
+              event_type: eventType || undefined,
+              severity: severity || undefined,
+            })}
+            onExportPDF={() => exportEventsPDF({
+              event_type: eventType || undefined,
+              severity: severity || undefined,
+            })}
           />
-          Refresh
-        </button>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="btn-secondary"
+          >
+            <RefreshCw
+              className={clsx('w-4 h-4 mr-2', isFetching && 'animate-spin')}
+            />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -203,38 +220,38 @@ export default function EventsPage() {
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+            <thead className="bg-gray-50 dark:bg-zinc-800/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Time
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Severity
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Client IP
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Domain
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Action
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Message
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
               {isLoading ? (
                 [...Array(10)].map((_, i) => (
                   <tr key={i}>
                     <td colSpan={7} className="px-4 py-3">
-                      <div className="animate-pulse h-8 bg-gray-100 rounded" />
+                      <div className="animate-pulse h-8 bg-gray-100 dark:bg-zinc-700 rounded" />
                     </td>
                   </tr>
                 ))
@@ -246,9 +263,9 @@ export default function EventsPage() {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-4 py-12 text-center text-gray-500"
+                    className="px-4 py-12 text-center text-gray-500 dark:text-gray-400"
                   >
-                    <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
                     No events found
                   </td>
                 </tr>
@@ -259,7 +276,7 @@ export default function EventsPage() {
 
         {/* Pagination */}
         {data && data.total > 0 && (
-          <div className="border-t border-gray-200">
+          <div className="border-t border-gray-200 dark:border-zinc-700">
             <Pagination
               currentPage={page}
               totalPages={totalPages}

@@ -4,6 +4,436 @@ Tasks completed during implementation.
 
 ---
 
+## Phase 7: Technical Debt & DevOps - COMPLETE (January 2026)
+
+### Prometheus Metrics - COMPLETE
+- [x] Added `prometheus-client>=0.19.0` to dependencies
+- [x] Created `backend/app/services/metrics_service.py`
+  - HTTP request counters and histograms
+  - WebSocket connection gauges
+  - Event processing counters
+  - Alert and anomaly metrics
+  - Device and collector metrics
+  - Threat intelligence metrics
+  - Database connection metrics
+  - LLM usage metrics
+  - Playbook execution metrics
+- [x] Created `backend/app/api/v1/metrics.py` endpoint
+- [x] Created `backend/app/core/middleware.py`
+  - MetricsMiddleware for request tracking
+  - RequestLoggingMiddleware for debug logging
+- [x] Updated `backend/app/main.py` to add middleware
+- [x] Registered metrics router
+
+### Network Topology Visualization - COMPLETE
+- [x] Created `backend/app/api/v1/topology.py`
+  - GET /topology - Network topology data with nodes and links
+  - GET /topology/device/{id}/connections - Device connection details
+  - Device event counts and connection analysis
+- [x] Registered topology router
+- [x] Added TopologyNode, TopologyLink, TopologyData types to frontend
+- [x] Created `frontend/src/pages/TopologyPage.tsx`
+  - Canvas-based force-directed graph visualization
+  - Interactive drag, pan, zoom
+  - Node selection with detail panel
+  - Legend for node types
+  - Configurable time window
+- [x] Added useTopology hook to frontend
+- [x] Added /topology route and nav item
+
+### Collector Error Handling - COMPLETE
+- [x] Created `backend/app/collectors/error_handler.py`
+  - ErrorCategory enum for error classification
+  - CollectorError structured error class
+  - categorize_error() function for automatic classification
+  - RetryConfig and RetryHandler with exponential backoff
+  - CircuitBreaker class (closed/half_open/open states)
+  - ErrorTracker for error rate monitoring
+  - @with_retry decorator for easy retry logic
+- [x] Added collector error metrics (COLLECTOR_ERRORS_TOTAL, COLLECTOR_RETRIES_TOTAL, COLLECTOR_CIRCUIT_STATE)
+- [x] Updated `api_pull_collector.py` to use error handling
+  - Configurable retry settings in source config
+  - Circuit breaker integration
+  - Error tracking and metrics reporting
+
+### API Rate Limiting - COMPLETE
+- [x] Created `backend/app/core/rate_limiter.py`
+  - TokenBucket class for in-memory rate limiting
+  - InMemoryRateLimiter with cleanup
+  - RedisRateLimiter for distributed deployments
+  - RateLimitMiddleware for FastAPI
+  - Per-endpoint category rate limits (auth, chat, export, admin)
+  - @rate_limit decorator for custom limits
+- [x] Added rate limit settings to config.py
+- [x] Updated main.py to add RateLimitMiddleware
+
+### CI/CD Pipeline - COMPLETE
+- [x] Created `.github/workflows/ci.yml`
+  - Backend lint (Ruff)
+  - Backend type check (mypy)
+  - Backend tests with PostgreSQL and Redis services
+  - Coverage upload to Codecov
+  - Frontend lint (ESLint)
+  - Frontend build (TypeScript + Vite)
+  - Docker image build
+  - Security scan (Bandit, Safety)
+- [x] Created `.github/workflows/release.yml`
+  - Semantic versioning from tags
+  - Multi-platform Docker builds (amd64, arm64)
+  - GitHub Container Registry publishing
+  - Automatic changelog generation
+  - GitHub Release creation
+
+### Documentation - COMPLETE
+- [x] Created `docs/configuration.md`
+  - Complete environment variable reference
+  - Database, Redis, HTTP client settings
+  - Rate limiting configuration
+  - Authentication settings
+  - Integration configurations (AdGuard, router, LLM)
+  - Email and ntfy notification settings
+  - Example configurations for dev/production
+- [x] Created `CONTRIBUTING.md`
+  - Code of conduct
+  - Development setup instructions
+  - Project structure overview
+  - Coding standards (Python, TypeScript)
+  - Commit message conventions
+  - Testing guidelines
+  - Pull request process
+  - Issue guidelines
+
+### Demo Data Seed Script - COMPLETE
+- [x] Created `backend/scripts/seed_demo_data.py`
+  - Comprehensive seed script for demo/testing data
+  - Creates 3 demo users (admin, operator, viewer)
+  - Creates 17 devices (PCs, mobiles, IoT, servers, network equipment)
+  - Creates 6 log sources (AdGuard, firewall, endpoint, NetFlow, syslog, Ollama)
+  - Creates 380+ events across all types (DNS, firewall, flow, endpoint, LLM)
+  - Creates 6 alerts with various severities and statuses (with LLM analysis)
+  - Creates 5 anomaly detections linked to devices
+  - Creates 20+ device baselines (DNS and traffic)
+  - Creates 5 detection rules
+  - Creates 4 playbooks with executions
+  - Creates 3 threat intelligence feeds with 12 indicators
+  - Creates 9 audit log entries
+  - Creates notification preferences for admin
+  - Creates 4 data retention policies
+  - Idempotent (skips existing records)
+- [x] Updated README.md with demo data section
+- [x] Updated docs/deployment-guide.md with demo data section
+
+---
+
+## Phase 6: Feature Enhancements - COMPLETE (January 2026)
+
+### Dark Mode - COMPLETE
+- [x] Updated `tailwind.config.js` with `darkMode: 'class'` configuration
+- [x] Created `stores/theme.ts` Zustand store with localStorage persistence
+- [x] Created `ThemeToggle.tsx` component with sun/moon/system icons
+- [x] Updated `index.css` with dark mode base styles and component classes
+- [x] Updated `Layout.tsx` with dark mode variants and theme toggle
+- [x] Updated all pages with `dark:` Tailwind variants (Login, Dashboard, Devices, Events, Alerts)
+- [x] Updated `Pagination.tsx` component with dark mode support
+
+### WebSockets - COMPLETE
+- [x] Created `backend/app/api/v1/websocket.py` with ConnectionManager
+  - JWT token verification on connection
+  - Heartbeat ping/pong mechanism
+  - Message broadcasting to all clients
+  - Graceful disconnection handling
+- [x] Updated `backend/app/events/bus.py` to broadcast alerts and device updates via WebSocket
+- [x] Created `frontend/src/hooks/useWebSocket.ts` with auto-reconnection
+- [x] Created `frontend/src/components/RealtimeProvider.tsx` context
+  - Toast notifications for real-time events
+  - Handles alert_created, device_status_changed, anomaly_detected, system_notification
+- [x] Created `frontend/src/pages/SettingsPage.tsx` with tabbed settings interface
+
+### Email Notifications - COMPLETE
+- [x] Created `backend/app/services/email_service.py`
+  - Async SMTP via aiosmtplib
+  - HTML email templates for alerts, anomalies, quarantine
+  - Connection testing
+- [x] Created `backend/app/models/notification_preferences.py`
+  - Per-user email/ntfy preferences
+  - Severity-based notification toggles
+- [x] Created `backend/app/api/v1/notifications.py` endpoints
+  - GET/PUT /preferences - User preferences CRUD
+  - POST /test - Send test notifications
+  - GET /status - Service configuration status
+- [x] Updated `backend/app/config.py` with SMTP settings
+- [x] Updated `backend/app/services/playbook_engine.py` SEND_NOTIFICATION action
+- [x] Added `aiosmtplib>=3.0.0` to pyproject.toml
+- [x] Created database migration `005_add_notification_preferences.py`
+
+### ntfy.sh Notifications - COMPLETE
+- [x] Created `backend/app/services/ntfy_service.py`
+  - HTTP-based push notifications
+  - Configurable server URL (public/self-hosted)
+  - Priority and emoji tag support
+  - Alert, anomaly, and quarantine notification methods
+- [x] Updated `backend/app/config.py` with ntfy settings
+- [x] Updated notification_preferences model with ntfy fields
+- [x] Updated playbook_engine to send via ntfy
+- [x] Created full NotificationSettings UI in SettingsPage
+  - Toggle switches for enabling/disabling
+  - Email address and ntfy topic configuration
+  - Severity-based notification toggles (Critical, High, Medium, Low)
+  - Event-based toggles (Anomalies, Quarantine Actions)
+  - Test notification buttons
+- [x] Added notification hooks to frontend API hooks
+
+### Two-Factor Authentication (TOTP) - COMPLETE
+- [x] Added `pyotp>=2.9.0`, `qrcode>=7.4`, `pillow>=10.0` to pyproject.toml
+- [x] Created `backend/app/services/totp_service.py`
+  - TOTP secret generation (pyotp)
+  - QR code generation for authenticator apps
+  - TOTP verification with valid_window
+  - Backup code generation and verification
+- [x] Updated `backend/app/models/user.py` with 2FA fields
+  - totp_enabled (boolean)
+  - totp_secret (string)
+  - backup_codes (array)
+- [x] Updated `backend/app/core/security.py` with `create_2fa_pending_token()`
+- [x] Updated `backend/app/api/v1/auth.py` with 2FA endpoints
+  - Modified login to return requires_2fa and pending_token
+  - POST /2fa/verify - Complete 2FA login
+  - POST /2fa/setup - Generate QR code and secret
+  - POST /2fa/enable - Enable 2FA after verification
+  - POST /2fa/disable - Disable 2FA (requires password)
+  - POST /2fa/backup-codes - Regenerate backup codes
+  - GET /2fa/status - Get 2FA status
+- [x] Created database migration `006_add_2fa_fields.py`
+- [x] Updated `frontend/src/stores/auth.ts` with 2FA pending state
+- [x] Added 2FA hooks to `frontend/src/api/hooks.ts`
+  - useVerify2FA, use2FAStatus, useSetup2FA
+  - useEnable2FA, useDisable2FA, useRegenerate2FABackupCodes
+- [x] Updated `frontend/src/types/index.ts` with 2FA types
+- [x] Updated `frontend/src/pages/LoginPage.tsx` with 2FA verification flow
+- [x] Updated SecuritySettings in SettingsPage with full 2FA management UI
+  - QR code display for setup
+  - Verification code input
+  - Backup codes display with copy/download
+  - Enable/disable controls
+  - Backup code regeneration
+
+### Data Retention Policies - COMPLETE
+- [x] Created `backend/app/models/retention_policy.py`
+  - RetentionPolicy model with table_name, display_name, description
+  - Configurable retention_days (0 = keep forever)
+  - Enabled flag, last_run timestamp, deleted_count tracking
+- [x] Created `backend/app/services/retention_service.py`
+  - Default policies for raw_events (30d), alerts (90d), anomaly_detections (90d)
+  - Default policies for audit_logs (365d), device_baselines (forever), playbook_executions (90d)
+  - Policy CRUD operations
+  - Cleanup with dry_run support
+  - Storage statistics per table
+- [x] Created `backend/app/api/v1/admin.py` (admin-only endpoints)
+  - GET /admin/retention/policies - List all policies
+  - GET /admin/retention/policies/{id} - Get specific policy
+  - PATCH /admin/retention/policies/{id} - Update policy (days, enabled)
+  - POST /admin/retention/cleanup - Run cleanup (with dry_run option)
+  - GET /admin/retention/stats - Storage statistics
+- [x] Registered admin router in `backend/app/api/v1/router.py`
+- [x] Created database migration `007_add_retention_policies.py`
+- [x] Added retention hooks to `frontend/src/api/hooks.ts`
+  - useRetentionPolicies, useRetentionPolicy
+  - useUpdateRetentionPolicy, useRunRetentionCleanup
+  - useStorageStats
+- [x] Updated RetentionSettings component in SettingsPage
+  - Storage overview with row counts and table sizes
+  - Policy management table with inline editing
+  - Enable/disable toggles for each policy
+  - Preview cleanup (dry run)
+  - Run cleanup with confirmation dialog
+  - Detailed cleanup results display
+
+### CSV/PDF Export - COMPLETE
+- [x] Added `reportlab>=4.0` to pyproject.toml
+- [x] Created `backend/app/services/export_service.py`
+  - ExportService class with to_csv() and to_pdf() methods
+  - Pre-defined column configurations for events, alerts, devices, audit
+  - PDF generation with reportlab (tables, styling, headers)
+  - CSV generation with proper escaping
+- [x] Added export endpoints to `backend/app/api/v1/events.py`
+  - GET /events/export/csv - Export events to CSV
+  - GET /events/export/pdf - Export events to PDF
+  - Supports filtering by event_type, severity, device_id, date range
+- [x] Added export endpoints to `backend/app/api/v1/alerts.py`
+  - GET /alerts/export/csv - Export alerts to CSV
+  - GET /alerts/export/pdf - Export alerts to PDF
+  - Supports filtering by status, severity, device_id
+- [x] Added export endpoints to `backend/app/api/v1/devices.py`
+  - GET /devices/export/csv - Export devices to CSV
+  - GET /devices/export/pdf - Export devices to PDF
+  - Supports filtering by status, device_type
+- [x] Added export endpoints to `backend/app/api/v1/audit.py`
+  - GET /audit/export/csv - Export audit logs to CSV (admin only)
+  - GET /audit/export/pdf - Export audit logs to PDF (admin only)
+  - Supports filtering by action, target_type, user_id
+- [x] Created `frontend/src/components/ExportButton.tsx`
+  - Dropdown button with CSV and PDF options
+  - Loading state during export
+  - Handles blob download
+- [x] Added export functions to `frontend/src/api/hooks.ts`
+  - exportEventsCSV, exportEventsPDF
+  - exportAlertsCSV, exportAlertsPDF
+  - exportDevicesCSV, exportDevicesPDF
+  - exportAuditCSV, exportAuditPDF
+- [x] Updated EventsPage with ExportButton
+- [x] Updated AlertsPage with ExportButton
+- [x] Updated DevicesPage with ExportButton
+
+### Device Grouping/Tagging UI - COMPLETE
+- [x] Added tag management endpoints to `backend/app/api/v1/devices.py`
+  - GET /devices/tags/all - Get all unique tags with counts
+  - POST /devices/bulk-tag - Add/remove tags from multiple devices
+  - PUT /devices/{id}/tags - Set device tags
+  - POST /devices/{id}/tags - Add single tag to device
+  - DELETE /devices/{id}/tags/{tag} - Remove single tag from device
+- [x] Added tags filtering to list_devices endpoint (comma-separated tags query param)
+- [x] Created `frontend/src/components/TagFilter.tsx`
+  - Multi-select dropdown for tag filtering
+  - Checkbox-style selection with tag counts
+  - Selected tags displayed as chips with clear all
+- [x] Created `frontend/src/components/BulkTagModal.tsx`
+  - Modal for bulk tagging selected devices
+  - Create new tags on the fly
+  - Add/remove tags with visual indicators
+  - Existing tags list with add/remove buttons
+- [x] Added tag hooks to `frontend/src/api/hooks.ts`
+  - useAllTags - Fetch all tags with counts
+  - useBulkTagDevices - Bulk tag mutation
+  - useSetDeviceTags, useAddDeviceTag, useRemoveDeviceTag
+- [x] Updated `frontend/src/pages/DevicesPage.tsx`
+  - Tag filter in filters section
+  - Bulk selection with checkbox column
+  - Select all/deselect all toggle
+  - Bulk actions bar with device count
+  - Bulk tag modal integration
+
+### Custom Detection Rules UI - COMPLETE
+- [x] Created `backend/app/api/v1/rules.py`
+  - GET /rules - List rules with filtering (enabled, severity, search)
+  - GET /rules/fields - Get available condition fields with descriptions
+  - GET /rules/{id} - Get specific rule
+  - POST /rules - Create rule (admin only)
+  - PATCH /rules/{id} - Update rule (admin only)
+  - DELETE /rules/{id} - Delete rule (admin only)
+  - POST /rules/{id}/enable - Enable rule (admin only)
+  - POST /rules/{id}/disable - Disable rule (admin only)
+  - POST /rules/test - Test rule conditions against sample event
+- [x] Registered rules router in `backend/app/api/v1/router.py`
+- [x] Added rule types to `frontend/src/types/index.ts`
+  - RuleCondition, RuleConditionGroup, RuleAction
+  - DetectionRule, DetectionRuleListResponse
+  - CreateRuleRequest, UpdateRuleRequest
+  - ConditionFieldInfo, TestRuleRequest, TestRuleResponse
+- [x] Added rule hooks to `frontend/src/api/hooks.ts`
+  - useRules, useRule, useRuleFields
+  - useCreateRule, useUpdateRule, useDeleteRule
+  - useEnableRule, useDisableRule, useTestRule
+- [x] Created `frontend/src/pages/RulesPage.tsx`
+  - Rule cards with expandable details
+  - Conditions and actions display
+  - Enable/disable toggle
+  - Edit and delete actions
+  - Filtering by status and severity
+  - Pagination
+- [x] Created `frontend/src/components/CreateRuleModal.tsx`
+  - 3-step wizard (basic info, conditions, actions)
+  - Visual condition builder with field selection
+  - Multiple operators (eq, ne, gt, lt, contains, regex, etc.)
+  - Action configuration (create_alert, quarantine, tag, webhook, etc.)
+- [x] Created `frontend/src/components/EditRuleModal.tsx`
+  - Edit all rule properties
+  - Add/remove conditions and actions
+- [x] Created `frontend/src/components/TestRuleModal.tsx`
+  - Test rule against sample events
+  - Sample event presets (DNS, firewall, auth)
+  - JSON event editor
+  - Visual condition result display
+- [x] Added /rules route to `frontend/src/App.tsx`
+- [x] Added Rules nav item to `frontend/src/components/Layout.tsx`
+
+### Mobile-Responsive Improvements - COMPLETE
+- [x] Added mobile-first utilities to `frontend/src/index.css`
+  - .touch-target - Min 44px touch target size
+  - .mobile-card, .mobile-card-row - Card view components for mobile
+  - .mobile-tabs, .mobile-tab - Horizontal scrolling tabs
+  - .scrollbar-hide - Hide scrollbars for mobile scroll containers
+  - .btn-mobile - Mobile-friendly button with touch-manipulation
+  - .safe-bottom, .safe-top - Safe area insets for notched devices
+- [x] Layout already had sticky header and mobile menu
+- [x] Updated `frontend/src/pages/DevicesPage.tsx`
+  - Responsive column visibility (hidden md:table-cell, etc.)
+  - Show IP address inline on mobile when column hidden
+  - Smaller icons and padding on mobile
+  - Truncate long text on mobile
+- [x] Updated `frontend/src/pages/EventsPage.tsx`
+  - Responsive column visibility
+  - Show severity inline with type on mobile
+  - Truncate domain on mobile
+- [x] Dashboard and Alerts already had responsive grids
+
+### Threat Intelligence Feed Integration - COMPLETE
+- [x] Created `backend/app/models/threat_intel.py`
+  - ThreatIntelFeed model (id, name, description, feed_type, url, enabled, etc.)
+  - ThreatIndicator model (id, feed_id, indicator_type, value, confidence, severity, etc.)
+  - FeedType enum (CSV, JSON, STIX, URL_LIST, IP_LIST)
+  - IndicatorType enum (IP, DOMAIN, URL, HASH_MD5, HASH_SHA1, HASH_SHA256, EMAIL, CIDR)
+- [x] Created `backend/app/services/threat_intel_service.py`
+  - Feed CRUD operations (create, get, update, delete)
+  - Feed fetching with authentication support (none, basic, bearer, api_key)
+  - Parsers for IP lists, URL lists, CSV, JSON formats
+  - Indicator search and lookup with hit tracking
+  - Statistics aggregation
+- [x] Created `backend/app/api/v1/threat_intel.py`
+  - GET /threat-intel/feeds - List feeds with filtering
+  - GET /threat-intel/feeds/{id} - Get specific feed
+  - POST /threat-intel/feeds - Create feed (admin only)
+  - PATCH /threat-intel/feeds/{id} - Update feed (admin only)
+  - DELETE /threat-intel/feeds/{id} - Delete feed (admin only)
+  - POST /threat-intel/feeds/{id}/fetch - Trigger feed fetch
+  - POST /threat-intel/feeds/{id}/enable - Enable feed
+  - POST /threat-intel/feeds/{id}/disable - Disable feed
+  - GET /threat-intel/indicators - List indicators with filtering
+  - POST /threat-intel/check - Check value against indicators
+  - GET /threat-intel/stats - Threat intel statistics
+- [x] Registered threat_intel router in `backend/app/api/v1/router.py`
+- [x] Created database migration `008_add_threat_intel.py`
+  - threat_intel_feeds table
+  - threat_indicators table with indexes
+  - feedtype and indicatortype PostgreSQL enums
+- [x] Added threat intel types to `frontend/src/types/index.ts`
+  - ThreatIntelFeed, ThreatIndicator interfaces
+  - FeedType, IndicatorType types
+  - Request/response types for API
+- [x] Added threat intel hooks to `frontend/src/api/hooks.ts`
+  - useThreatFeeds, useThreatFeed
+  - useCreateThreatFeed, useUpdateThreatFeed, useDeleteThreatFeed
+  - useFetchThreatFeed, useEnableThreatFeed, useDisableThreatFeed
+  - useThreatIndicators, useCheckIndicator
+  - useThreatIntelStats
+- [x] Created `frontend/src/pages/ThreatIntelPage.tsx`
+  - Stats overview (total feeds, enabled feeds, indicators, hits)
+  - Tabbed interface (Feeds, Indicators, Lookup)
+  - Feed cards with status, indicator count, last fetch info
+  - Feed management menu (fetch, enable/disable, delete)
+  - Indicator table with filtering (type, severity, search)
+  - Indicator lookup with results display
+  - Pagination for indicators
+- [x] Created `frontend/src/components/AddFeedModal.tsx`
+  - 3-step wizard (basic info, feed config, authentication)
+  - Feed type selection (IP list, URL list, CSV, JSON, STIX)
+  - URL and update interval configuration
+  - CSV field mapping for custom feeds
+  - Authentication options (none, basic, bearer, api_key)
+- [x] Added /threat-intel route to `frontend/src/App.tsx`
+- [x] Added Threat Intel nav item to `frontend/src/components/Layout.tsx`
+
+---
+
 ## Phase 5: Polish & Extensions - COMPLETE (January 2026)
 
 ### Ollama LLM Monitoring - COMPLETE
@@ -474,6 +904,7 @@ Tasks completed during implementation.
   - user.py, device.py, log_source.py, alert.py, raw_event.py, detection_rule.py
 - [x] Fixed login response to include user object
 - [x] Fixed collector/parser registration by updating `__init__.py` imports
+- [x] Fixed frontend login to use URLSearchParams instead of FormData (FormData sends multipart, but OAuth2 expects x-www-form-urlencoded)
 
 ---
 

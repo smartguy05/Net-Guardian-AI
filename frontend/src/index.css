@@ -4,13 +4,15 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    /* Light mode: clean white/light gray background */
+    /* Dark mode: neutral charcoal (not blue-tinted slate) */
+    @apply bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-100 antialiased transition-colors;
   }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
@@ -18,7 +20,7 @@
   }
 
   .btn-secondary {
-    @apply btn bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500;
+    @apply btn bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-600 focus:ring-gray-500;
   }
 
   .btn-danger {
@@ -26,11 +28,11 @@
   }
 
   .input {
-    @apply block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+    @apply block w-full px-3 py-2 text-sm border border-gray-300 dark:border-zinc-600 rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
   }
 
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200;
+    @apply bg-white dark:bg-zinc-800 rounded-xl shadow-sm border border-gray-200 dark:border-zinc-700;
   }
 
   .badge {
@@ -38,18 +40,104 @@
   }
 
   .badge-success {
-    @apply badge bg-success-100 text-success-700;
+    @apply badge bg-success-100 dark:bg-success-900/30 text-success-700 dark:text-success-400;
   }
 
   .badge-warning {
-    @apply badge bg-warning-100 text-warning-700;
+    @apply badge bg-warning-100 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400;
   }
 
   .badge-danger {
-    @apply badge bg-danger-100 text-danger-700;
+    @apply badge bg-danger-100 dark:bg-danger-900/30 text-danger-700 dark:text-danger-400;
   }
 
   .badge-info {
-    @apply badge bg-primary-100 text-primary-700;
+    @apply badge bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400;
+  }
+
+  /* Table styles */
+  .table-header {
+    @apply bg-gray-50 dark:bg-zinc-800/50;
+  }
+
+  .table-row {
+    @apply border-b border-gray-200 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50;
+  }
+
+  /* Dropdown/Select styles */
+  select {
+    @apply bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600 text-gray-900 dark:text-gray-100;
+  }
+
+  /* Scrollbar styles for dark mode */
+  .dark ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    @apply bg-zinc-800;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-600 rounded-full;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-500;
+  }
+
+  /* Mobile-first utilities */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Mobile card view for tables */
+  .mobile-card {
+    @apply card p-4 space-y-3;
+  }
+
+  .mobile-card-row {
+    @apply flex justify-between items-start gap-2;
+  }
+
+  .mobile-card-label {
+    @apply text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide;
+  }
+
+  .mobile-card-value {
+    @apply text-sm text-gray-900 dark:text-gray-100 text-right;
+  }
+
+  /* Horizontal scroll tabs for mobile */
+  .mobile-tabs {
+    @apply flex overflow-x-auto scrollbar-hide gap-1 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0;
+  }
+
+  .mobile-tab {
+    @apply flex-shrink-0 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap;
+  }
+
+  /* Hide scrollbar for horizontal scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mobile-friendly buttons */
+  .btn-mobile {
+    @apply btn min-h-[44px] touch-manipulation;
+  }
+
+  /* Safe area insets for notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0);
   }
 }

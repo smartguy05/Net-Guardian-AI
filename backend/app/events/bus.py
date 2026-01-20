@@ -118,6 +118,13 @@ class EventBus:
 
     async def publish_alert(self, alert_data: Dict[str, Any]) -> str:
         """Publish an alert event."""
+        # Broadcast to WebSocket clients
+        try:
+            from app.api.v1.websocket import broadcast_alert_created
+            await broadcast_alert_created(alert_data)
+        except Exception as e:
+            logger.warning("websocket_broadcast_failed", error=str(e))
+
         return await self.publish(
             self.STREAM_ALERTS,
             "alert_created",
@@ -131,6 +138,18 @@ class EventBus:
         data: Dict[str, Any],
     ) -> str:
         """Publish a device update event."""
+        # Broadcast device status changes to WebSocket clients
+        if update_type in ("device_quarantined", "device_released", "device_status_changed"):
+            try:
+                from app.api.v1.websocket import broadcast_device_status_changed
+                await broadcast_device_status_changed(
+                    device_id,
+                    data.get("status", update_type),
+                    data,
+                )
+            except Exception as e:
+                logger.warning("websocket_broadcast_failed", error=str(e))
+
         return await self.publish(
             self.STREAM_DEVICE_UPDATES,
             update_type,

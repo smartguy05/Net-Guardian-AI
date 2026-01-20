@@ -3,7 +3,9 @@
 from typing import Annotated, Any, Dict, List, Optional
 from uuid import UUID
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +15,11 @@ from app.db.session import get_async_session
 from app.models.device import Device, DeviceStatus, DeviceType
 from app.models.user import User
 from app.services.quarantine_service import get_quarantine_service
+from app.services.export_service import (
+    ExportService,
+    DEVICES_COLUMNS,
+    DEVICES_HEADERS,
+)
 
 router = APIRouter()
 
@@ -87,6 +94,7 @@ async def list_devices(
     status: Optional[DeviceStatus] = None,
     device_type: Optional[DeviceType] = None,
     search: Optional[str] = None,
+    tags: Optional[str] = Query(None, description="Comma-separated list of tags to filter by"),
 ) -> DeviceListResponse:
     """List all devices with filtering and pagination."""
     # Build query
@@ -103,6 +111,12 @@ async def list_devices(
             | (Device.mac_address.ilike(search_pattern))
             | (Device.manufacturer.ilike(search_pattern))
         )
+    if tags:
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+        if tag_list:
+            # Filter devices that have ALL specified tags
+            for tag in tag_list:
+                query = query.where(Device.tags.contains([tag]))
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
@@ -275,3 +289,268 @@ async def list_quarantined_devices(
     """Get all quarantined devices with their blocking status."""
     quarantine_service = get_quarantine_service()
     return await quarantine_service.get_quarantined_devices()
+
+
+async def _get_devices_for_export(
+    session: AsyncSession,
+    status_filter: Optional[DeviceStatus] = None,
+    device_type: Optional[DeviceType] = None,
+    limit: int = 10000,
+) -> List[Dict[str, Any]]:
+    """Get devices formatted for export."""
+    query = select(Device)
+
+    if status_filter:
+        query = query.where(Device.status == status_filter)
+    if device_type:
+        query = query.where(Device.device_type == device_type)
+
+    query = query.order_by(Device.last_seen.desc()).limit(limit)
+    result = await session.execute(query)
+    devices = result.scalars().all()
+
+    return [
+        {
+            "hostname": d.hostname or "",
+            "mac_address": d.mac_address,
+            "ip_addresses": ", ".join(d.ip_addresses) if d.ip_addresses else "",
+            "device_type": d.device_type.value,
+            "status": d.status.value,
+            "first_seen": d.first_seen,
+            "last_seen": d.last_seen,
+        }
+        for d in devices
+    ]
+
+
+@router.get("/export/csv")
+async def export_devices_csv(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    status_filter: Optional[DeviceStatus] = Query(None, alias="status"),
+    device_type: Optional[DeviceType] = None,
+    limit: int = Query(10000, ge=1, le=100000),
+) -> Response:
+    """Export devices to CSV format."""
+    devices = await _get_devices_for_export(
+        session,
+        status_filter=status_filter,
+        device_type=device_type,
+        limit=limit,
+    )
+
+    csv_content = ExportService.to_csv(devices, DEVICES_COLUMNS, DEVICES_HEADERS)
+    filename = f"devices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/pdf")
+async def export_devices_pdf(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    status_filter: Optional[DeviceStatus] = Query(None, alias="status"),
+    device_type: Optional[DeviceType] = None,
+    limit: int = Query(1000, ge=1, le=10000),
+) -> Response:
+    """Export devices to PDF format."""
+    devices = await _get_devices_for_export(
+        session,
+        status_filter=status_filter,
+        device_type=device_type,
+        limit=limit,
+    )
+
+    # Build subtitle with filters
+    filters = []
+    if status_filter:
+        filters.append(f"Status: {status_filter.value}")
+    if device_type:
+        filters.append(f"Type: {device_type.value}")
+    subtitle = " | ".join(filters) if filters else None
+
+    pdf_content = ExportService.to_pdf(
+        devices,
+        title="Network Devices Report",
+        columns=DEVICES_COLUMNS,
+        headers=DEVICES_HEADERS,
+        subtitle=subtitle,
+    )
+    filename = f"devices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+# Tag management endpoints
+class TagsResponse(BaseModel):
+    tags: List[str]
+    counts: Dict[str, int]
+
+
+class BulkTagRequest(BaseModel):
+    device_ids: List[UUID]
+    tags_to_add: Optional[List[str]] = None
+    tags_to_remove: Optional[List[str]] = None
+
+
+class BulkTagResponse(BaseModel):
+    updated_count: int
+    devices: List[DeviceResponse]
+
+
+@router.get("/tags/all", response_model=TagsResponse)
+async def get_all_tags(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+) -> TagsResponse:
+    """Get all unique tags used across devices with counts."""
+    result = await session.execute(select(Device))
+    devices = result.scalars().all()
+
+    tag_counts: Dict[str, int] = {}
+    for device in devices:
+        for tag in device.profile_tags or []:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+
+    # Sort tags alphabetically
+    sorted_tags = sorted(tag_counts.keys())
+
+    return TagsResponse(tags=sorted_tags, counts=tag_counts)
+
+
+@router.post("/bulk-tag", response_model=BulkTagResponse)
+async def bulk_tag_devices(
+    request: BulkTagRequest,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _operator: Annotated[User, Depends(require_operator)],
+) -> BulkTagResponse:
+    """Add or remove tags from multiple devices at once."""
+    if not request.tags_to_add and not request.tags_to_remove:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must specify tags_to_add or tags_to_remove",
+        )
+
+    result = await session.execute(
+        select(Device).where(Device.id.in_(request.device_ids))
+    )
+    devices = list(result.scalars().all())
+
+    if not devices:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No devices found with the specified IDs",
+        )
+
+    updated_devices = []
+    for device in devices:
+        current_tags = set(device.profile_tags or [])
+
+        if request.tags_to_add:
+            current_tags.update(request.tags_to_add)
+
+        if request.tags_to_remove:
+            current_tags -= set(request.tags_to_remove)
+
+        device.profile_tags = sorted(list(current_tags))
+        updated_devices.append(device)
+
+    await session.commit()
+
+    # Refresh all devices
+    for device in updated_devices:
+        await session.refresh(device)
+
+    return BulkTagResponse(
+        updated_count=len(updated_devices),
+        devices=[_device_to_response(d) for d in updated_devices],
+    )
+
+
+@router.put("/{device_id}/tags", response_model=DeviceResponse)
+async def set_device_tags(
+    device_id: UUID,
+    tags: List[str],
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _operator: Annotated[User, Depends(require_operator)],
+) -> DeviceResponse:
+    """Set the complete list of tags for a device."""
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found",
+        )
+
+    # Clean and deduplicate tags
+    clean_tags = sorted(list(set(tag.strip() for tag in tags if tag.strip())))
+    device.profile_tags = clean_tags
+
+    await session.commit()
+    await session.refresh(device)
+
+    return _device_to_response(device)
+
+
+@router.post("/{device_id}/tags", response_model=DeviceResponse)
+async def add_device_tag(
+    device_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _operator: Annotated[User, Depends(require_operator)],
+    tag: str = Query(..., min_length=1, max_length=50),
+) -> DeviceResponse:
+    """Add a single tag to a device."""
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found",
+        )
+
+    current_tags = set(device.profile_tags or [])
+    current_tags.add(tag.strip())
+    device.profile_tags = sorted(list(current_tags))
+
+    await session.commit()
+    await session.refresh(device)
+
+    return _device_to_response(device)
+
+
+@router.delete("/{device_id}/tags/{tag}", response_model=DeviceResponse)
+async def remove_device_tag(
+    device_id: UUID,
+    tag: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _operator: Annotated[User, Depends(require_operator)],
+) -> DeviceResponse:
+    """Remove a single tag from a device."""
+    result = await session.execute(select(Device).where(Device.id == device_id))
+    device = result.scalar_one_or_none()
+
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found",
+        )
+
+    current_tags = set(device.profile_tags or [])
+    current_tags.discard(tag)
+    device.profile_tags = sorted(list(current_tags))
+
+    await session.commit()
+    await session.refresh(device)
+
+    return _device_to_response(device)

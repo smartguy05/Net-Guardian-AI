@@ -57,6 +57,57 @@ This guide covers deploying NetGuardian AI in development and production environ
    - Backend API: http://localhost:8000
    - API Documentation: http://localhost:8000/docs
 
+## Loading Demo Data
+
+For testing, demos, or screenshots, you can populate the database with realistic sample data:
+
+```bash
+# Via Docker
+docker-compose exec backend python scripts/seed_demo_data.py
+
+# Via Podman
+podman exec netguardian-backend python scripts/seed_demo_data.py
+```
+
+### What Gets Created
+
+The seed script creates a comprehensive dataset:
+
+| Data Type | Count | Description |
+|-----------|-------|-------------|
+| Users | 3 | Admin, operator, and viewer accounts |
+| Devices | 17 | PCs, mobiles, IoT, servers, network equipment |
+| Log Sources | 6 | AdGuard, firewall, endpoint, NetFlow, syslog, Ollama |
+| Events | 380+ | DNS, firewall, flow, endpoint, and LLM events |
+| Alerts | 6 | Various severities (critical to low) and statuses |
+| Anomalies | 5 | Different anomaly types linked to devices |
+| Baselines | 20+ | DNS and traffic baselines for active devices |
+| Detection Rules | 5 | Pre-configured security rules |
+| Playbooks | 4 | Automated response playbooks |
+| Threat Feeds | 3 | Sample threat intelligence feeds |
+| Indicators | 12 | IPs, domains, URLs, file hashes |
+| Audit Logs | 9 | Sample administrative actions |
+| Retention Policies | 4 | Data lifecycle policies |
+
+### Demo Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `demo_admin` | `DemoAdmin123!` |
+| Operator | `demo_operator` | `DemoOp123!` |
+| Viewer | `demo_viewer` | `DemoView123!` |
+
+### Re-running the Script
+
+The script is idempotent - it checks for existing records and skips them. To fully reset:
+
+```bash
+# Drop and recreate the database (WARNING: destroys all data)
+docker-compose exec backend alembic downgrade base
+docker-compose exec backend alembic upgrade head
+docker-compose exec backend python scripts/seed_demo_data.py
+```
+
 ## Environment Configuration
 
 ### Required Variables
@@ -438,6 +489,37 @@ curl -X POST http://localhost:8000/api/v1/sources \
 
 ## Monitoring and Troubleshooting
 
+### Prometheus Metrics
+
+NetGuardian exposes Prometheus-compatible metrics at `/api/v1/metrics`:
+
+```bash
+# Fetch metrics
+curl http://localhost:8000/api/v1/metrics
+```
+
+**Available metrics:**
+- `http_requests_total` - HTTP request counts by method, endpoint, status
+- `http_request_duration_seconds` - Request latency histogram
+- `http_requests_in_progress` - Current in-flight requests
+- `websocket_connections_active` - Active WebSocket connections
+- `events_processed_total` - Events by type and source
+- `alerts_created_total` / `alerts_active` - Alert metrics
+- `anomalies_detected_total` - Anomaly detection metrics
+- `devices_total` / `devices_quarantined` - Device counts
+- `collector_runs_total` / `collector_errors_total` - Collector metrics
+- `threat_intel_feeds_total` / `threat_intel_hits_total` - Threat intel metrics
+- `llm_requests_total` / `llm_request_duration_seconds` - LLM usage metrics
+
+**Prometheus configuration:**
+```yaml
+scrape_configs:
+  - job_name: 'netguardian'
+    static_configs:
+      - targets: ['netguardian-backend:8000']
+    metrics_path: /api/v1/metrics
+```
+
 ### Checking Service Health
 
 ```bash
@@ -538,7 +620,62 @@ For larger deployments:
 3. **Multiple Collectors:** Run multiple collector instances for high-volume log sources
 4. **Load Balancer:** Place multiple backend instances behind a load balancer
 
+## API Rate Limiting
+
+NetGuardian includes built-in rate limiting to prevent abuse:
+
+| Endpoint Category | Limit | Description |
+|------------------|-------|-------------|
+| `auth` | 10/min | Login, password reset |
+| `chat` | 20/min | LLM chat endpoints |
+| `export` | 5/min | CSV/PDF exports |
+| `admin` | 30/min | Admin operations |
+| `default` | 60/min | All other endpoints |
+
+**Rate limit headers:**
+- `X-RateLimit-Limit` - Requests allowed per minute
+- `X-RateLimit-Remaining` - Requests remaining
+- `X-RateLimit-Reset` - Unix timestamp when window resets
+- `Retry-After` - Seconds to wait (when rate limited)
+
+**Configuration:**
+```bash
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_DEFAULT_RPM=60
+RATE_LIMIT_AUTH_RPM=10
+RATE_LIMIT_CHAT_RPM=20
+RATE_LIMIT_EXPORT_RPM=5
+```
+
+## CI/CD Pipeline
+
+NetGuardian includes GitHub Actions workflows for CI/CD:
+
+### Continuous Integration (ci.yml)
+
+Runs on push/PR to `main` and `develop`:
+- Backend lint (Ruff), type check (mypy), tests with coverage
+- Frontend lint (ESLint), TypeScript build
+- Docker image builds
+- Security scan (Bandit, Safety)
+
+### Release Automation (release.yml)
+
+Runs on version tags (e.g., `v1.0.0`):
+- Multi-platform Docker builds (amd64, arm64)
+- Push images to GitHub Container Registry
+- Generate changelog
+- Create GitHub Release
+
+**Creating a release:**
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
 ## Support
 
 - GitHub Issues: https://github.com/your-repo/net-guardian-ai/issues
 - Documentation: See `/docs` directory
+- Configuration: See [docs/configuration.md](configuration.md)
+- Contributing: See [CONTRIBUTING.md](../CONTRIBUTING.md)

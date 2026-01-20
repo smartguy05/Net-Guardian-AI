@@ -9,8 +9,18 @@ import structlog
 
 from app.collectors.base import BaseCollector
 from app.collectors.registry import register_collector
+from app.collectors.error_handler import (
+    RetryConfig,
+    RetryHandler,
+    CircuitBreaker,
+    ErrorTracker,
+    CollectorError,
+    CollectorCircuitOpenError,
+    categorize_error,
+)
 from app.models.log_source import LogSource, SourceType
 from app.parsers.base import BaseParser, ParseResult
+from app.services.metrics_service import COLLECTOR_CIRCUIT_STATE
 
 logger = structlog.get_logger()
 
@@ -49,6 +59,20 @@ class ApiPullCollector(BaseCollector):
         self._last_cursor: Optional[str] = None
         self._last_timestamp: Optional[datetime] = None
         self._event_queue: asyncio.Queue = asyncio.Queue()
+
+        # Error handling setup
+        retry_config = RetryConfig(
+            max_retries=self.config.get("max_retries", 3),
+            initial_delay=self.config.get("retry_initial_delay", 1.0),
+            max_delay=self.config.get("retry_max_delay", 60.0),
+        )
+        self._circuit_breaker = CircuitBreaker(
+            failure_threshold=self.config.get("circuit_failure_threshold", 5),
+            recovery_timeout=self.config.get("circuit_recovery_timeout", 30.0),
+        )
+        self._retry_handler = RetryHandler(retry_config, self._circuit_breaker)
+        self._error_tracker = ErrorTracker()
+        self._consecutive_failures = 0
 
     def _build_url(self) -> str:
         """Build the full URL for the API request."""
@@ -184,7 +208,21 @@ class ApiPullCollector(BaseCollector):
     async def _poll_once(self) -> list[ParseResult]:
         """Perform a single poll and return parsed events."""
         try:
-            response_data = await self._make_request()
+            # Use retry handler for the API request
+            response_data = await self._retry_handler.execute(
+                self._make_request,
+                self.source_id,
+                "api_poll",
+            )
+
+            # Reset consecutive failures on success
+            self._consecutive_failures = 0
+
+            # Update circuit breaker metric
+            COLLECTOR_CIRCUIT_STATE.labels(source_id=self.source_id).set(
+                0 if self._circuit_breaker.is_closed else
+                (1 if self._circuit_breaker.state == CircuitBreaker.State.HALF_OPEN else 2)
+            )
 
             # Parse the response
             results = self.parser.parse(response_data)
@@ -206,10 +244,40 @@ class ApiPullCollector(BaseCollector):
 
             return results
 
+        except CollectorCircuitOpenError:
+            # Circuit is open - don't attempt request
+            logger.warning(
+                "api_poll_circuit_open",
+                source_id=self.source_id,
+            )
+            COLLECTOR_CIRCUIT_STATE.labels(source_id=self.source_id).set(2)
+            return []
+
         except Exception as e:
+            self._consecutive_failures += 1
+
+            # Track the error
+            category, retryable = categorize_error(e)
+            error = CollectorError(
+                category=category,
+                message=str(e),
+                source_id=self.source_id,
+                retryable=retryable,
+                original_exception=e,
+            )
+            await self._error_tracker.record_error(error)
+
+            # Update circuit breaker metric
+            COLLECTOR_CIRCUIT_STATE.labels(source_id=self.source_id).set(
+                0 if self._circuit_breaker.is_closed else
+                (1 if self._circuit_breaker.state == CircuitBreaker.State.HALF_OPEN else 2)
+            )
+
             logger.error(
                 "api_poll_failed",
                 source_id=self.source_id,
+                error_category=category.value,
+                consecutive_failures=self._consecutive_failures,
                 error=str(e),
             )
             return []

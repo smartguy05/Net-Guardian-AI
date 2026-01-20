@@ -154,6 +154,37 @@ def create_refresh_token(
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
 
 
+def create_2fa_pending_token(
+    subject: str,
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Create a temporary token for 2FA verification.
+
+    This token is issued after password verification but before 2FA completion.
+    It has a short expiration and can only be used for 2FA verification.
+
+    Args:
+        subject: The subject (user ID) for the token.
+        expires_delta: Optional custom expiration time (default: 5 minutes).
+
+    Returns:
+        Encoded JWT token string.
+    """
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+
+    to_encode = {
+        "sub": subject,
+        "exp": expire,
+        "type": "2fa_pending",
+        "iat": datetime.now(timezone.utc),
+    }
+
+    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
 def decode_token(token: str) -> Dict[str, Any]:
     """Decode and validate a JWT token.
 

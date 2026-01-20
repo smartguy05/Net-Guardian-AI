@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Shield,
@@ -11,9 +10,9 @@ import {
   Wifi,
   Server,
   History,
-  Sync,
+  RotateCcw,
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { format } from 'date-fns';
 import clsx from 'clsx';
 import {
   useQuarantinedDevices,
@@ -234,7 +233,7 @@ export default function QuarantinePage() {
               disabled={syncQuarantine.isPending}
               className="btn-secondary"
             >
-              <Sync className={clsx('w-4 h-4 mr-2', syncQuarantine.isPending && 'animate-spin')} />
+              <RotateCcw className={clsx('w-4 h-4 mr-2', syncQuarantine.isPending && 'animate-spin')} />
               Sync Status
             </button>
           )}
@@ -335,7 +334,7 @@ export default function QuarantinePage() {
           )}
         >
           <div className="flex items-center gap-3">
-            <Sync className="w-5 h-5 text-gray-600" />
+            <RotateCcw className="w-5 h-5 text-gray-600" />
             <div>
               <div className="font-medium">Sync Complete</div>
               <div className="text-sm text-gray-600">

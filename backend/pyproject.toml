@@ -51,6 +51,20 @@ dependencies = [
 
     # LLM Integration
     "anthropic>=0.40.0",
+
+    # Email
+    "aiosmtplib>=3.0.0",
+
+    # Two-Factor Authentication
+    "pyotp>=2.9.0",
+    "qrcode>=7.4",
+    "pillow>=10.0",
+
+    # Export/Reports
+    "reportlab>=4.0",
+
+    # Metrics
+    "prometheus-client>=0.19.0",
 ]
 
 [project.optional-dependencies]

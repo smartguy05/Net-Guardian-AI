@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CRITICAL: Memory Files
+
+**ALWAYS update the `.memories/` directory files when relevant.** These files track project state across sessions:
+
+| File | Purpose | When to Update |
+|------|---------|----------------|
+| `.memories/completed.md` | Completed tasks by phase | When finishing ANY task, feature, or fix |
+| `.memories/todos.md` | Remaining tasks and tech debt | When adding, completing, or deprioritizing tasks |
+| `.memories/notes.md` | Issues, gotchas, lessons learned | When encountering bugs, workarounds, or patterns |
+
+**Rules:**
+1. Update these files **AT ALL TIMES** - they are the project's memory
+2. Update `completed.md` immediately after finishing a task (not at end of session)
+3. Update `todos.md` to check off completed items and add new discovered tasks
+4. Update `notes.md` with any issue you debug/solve that others might hit
+5. Keep entries concise but descriptive - future you needs to understand
+
 ## Project Overview
 
 NetGuardian AI is an AI-powered home network security monitoring system with multi-source log collection, device inventory, anomaly detection, LLM-assisted threat analysis, and automated response capabilities.
@@ -109,7 +126,7 @@ The backend uses a layered architecture:
 4. **Collectors** (`app/collectors/`): Data collection from various sources (API pull, file watch, UDP listener)
 5. **Parsers** (`app/parsers/`): Log format parsers (AdGuard, syslog, JSON, NetFlow, sFlow, endpoint)
 6. **Events** (`app/events/`): Redis Streams event bus for async communication
-7. **Core** (`app/core/`): Security, caching, rate limiting, validation utilities
+7. **Core** (`app/core/`): Security, caching, rate limiting, validation, middleware utilities
 
 ### Key Patterns
 
@@ -132,6 +149,24 @@ role: Mapped[UserRole] = mapped_column(
 **Async Database Sessions**: Use `AsyncSession` with dependency injection:
 ```python
 async def endpoint(session: Annotated[AsyncSession, Depends(get_async_session)]):
+```
+
+**Collector Error Handling**: Use RetryHandler and CircuitBreaker for robust collection:
+```python
+from app.collectors.error_handler import RetryHandler, CircuitBreaker, RetryConfig
+
+retry_handler = RetryHandler(RetryConfig(max_retries=3), CircuitBreaker())
+result = await retry_handler.execute(fetch_func, source_id, "operation_name")
+```
+
+**Rate Limiting**: API endpoints are automatically rate limited via middleware. For custom limits:
+```python
+from app.core.rate_limiter import rate_limit
+
+@router.get("/expensive")
+@rate_limit(requests_per_minute=5)
+async def expensive_endpoint(request: Request):
+    ...
 ```
 
 ### Data Flow
@@ -167,5 +202,25 @@ Environment variables are defined in `deploy/.env`. Key settings:
 - `REDIS_URL`: Redis connection string
 - `ANTHROPIC_API_KEY`: For LLM features
 - `ADGUARD_*` / `ROUTER_*`: Integration settings
+- `RATE_LIMIT_*`: API rate limiting settings
+- `SMTP_*` / `NTFY_*`: Notification settings
 
-See `deploy/.env.example` for all options.
+See `docs/configuration.md` for complete reference.
+
+## Important Files
+
+### Core Modules
+- `app/core/middleware.py` - MetricsMiddleware, RequestLoggingMiddleware
+- `app/core/rate_limiter.py` - Token bucket rate limiting
+- `app/core/cache.py` - Redis caching layer
+- `app/collectors/error_handler.py` - Retry logic, circuit breaker
+
+### Key API Endpoints
+- `app/api/v1/metrics.py` - Prometheus metrics (`/api/v1/metrics`)
+- `app/api/v1/topology.py` - Network topology visualization
+- `app/api/v1/threat_intel.py` - Threat intelligence feeds
+- `app/api/v1/rules.py` - Custom detection rules
+
+### CI/CD
+- `.github/workflows/ci.yml` - Continuous integration
+- `.github/workflows/release.yml` - Release automation

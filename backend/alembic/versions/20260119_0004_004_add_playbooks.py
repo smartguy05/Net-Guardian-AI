@@ -20,229 +20,89 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create playbook status enum
-    playbookstatus_enum = postgresql.ENUM(
-        "active",
-        "disabled",
-        "draft",
-        name="playbookstatus",
-        create_type=True,
-    )
-    playbookstatus_enum.create(op.get_bind(), checkfirst=True)
+    # Create enums using raw SQL
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'playbookstatus') THEN
+                CREATE TYPE playbookstatus AS ENUM ('active', 'disabled', 'draft');
+            END IF;
+        END$$
+    """)
 
-    # Create playbook trigger type enum
-    playbooktriggertype_enum = postgresql.ENUM(
-        "anomaly_detected",
-        "alert_created",
-        "device_new",
-        "device_status_change",
-        "threshold_exceeded",
-        "schedule",
-        "manual",
-        name="playbooktriggertype",
-        create_type=True,
-    )
-    playbooktriggertype_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'playbooktriggertype') THEN
+                CREATE TYPE playbooktriggertype AS ENUM (
+                    'anomaly_detected', 'alert_created', 'device_new',
+                    'device_status_change', 'threshold_exceeded', 'schedule', 'manual'
+                );
+            END IF;
+        END$$
+    """)
 
-    # Create execution status enum
-    executionstatus_enum = postgresql.ENUM(
-        "pending",
-        "running",
-        "completed",
-        "failed",
-        "cancelled",
-        name="executionstatus",
-        create_type=True,
-    )
-    executionstatus_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'executionstatus') THEN
+                CREATE TYPE executionstatus AS ENUM ('pending', 'running', 'completed', 'failed', 'cancelled');
+            END IF;
+        END$$
+    """)
 
     # Create playbooks table
-    op.create_table(
-        "playbooks",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("name", sa.String(100), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column(
-            "status",
-            sa.Enum(
-                "active",
-                "disabled",
-                "draft",
-                name="playbookstatus",
-                create_type=False,
-            ),
-            nullable=False,
-            server_default="draft",
-        ),
-        sa.Column(
-            "trigger_type",
-            sa.Enum(
-                "anomaly_detected",
-                "alert_created",
-                "device_new",
-                "device_status_change",
-                "threshold_exceeded",
-                "schedule",
-                "manual",
-                name="playbooktriggertype",
-                create_type=False,
-            ),
-            nullable=False,
-        ),
-        sa.Column(
-            "trigger_conditions",
-            postgresql.JSON(),
-            nullable=False,
-            server_default="{}",
-        ),
-        sa.Column(
-            "actions",
-            postgresql.JSON(),
-            nullable=False,
-            server_default="[]",
-        ),
-        sa.Column(
-            "cooldown_minutes",
-            sa.Integer(),
-            nullable=False,
-            server_default="60",
-        ),
-        sa.Column(
-            "max_executions_per_hour",
-            sa.Integer(),
-            nullable=False,
-            server_default="10",
-        ),
-        sa.Column(
-            "require_approval",
-            sa.Boolean(),
-            nullable=False,
-            server_default="false",
-        ),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
-        sa.Column(
-            "updated_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
-        sa.Column("created_by", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["created_by"],
-            ["users.id"],
-            ondelete="SET NULL",
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
+    op.execute("""
+        CREATE TABLE playbooks (
+            id UUID NOT NULL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            description TEXT,
+            status playbookstatus NOT NULL DEFAULT 'draft',
+            trigger_type playbooktriggertype NOT NULL,
+            trigger_conditions JSON NOT NULL DEFAULT '{}',
+            actions JSON NOT NULL DEFAULT '[]',
+            cooldown_minutes INTEGER NOT NULL DEFAULT 60,
+            max_executions_per_hour INTEGER NOT NULL DEFAULT 10,
+            require_approval BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_by UUID REFERENCES users(id) ON DELETE SET NULL
+        )
+    """)
 
-    # Create playbook indexes
-    op.create_index(
-        "ix_playbooks_status",
-        "playbooks",
-        ["status"],
-    )
-    op.create_index(
-        "ix_playbooks_trigger_type",
-        "playbooks",
-        ["trigger_type"],
-    )
+    op.execute("CREATE INDEX ix_playbooks_status ON playbooks(status)")
+    op.execute("CREATE INDEX ix_playbooks_trigger_type ON playbooks(trigger_type)")
 
     # Create playbook_executions table
-    op.create_table(
-        "playbook_executions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("playbook_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column(
-            "status",
-            sa.Enum(
-                "pending",
-                "running",
-                "completed",
-                "failed",
-                "cancelled",
-                name="executionstatus",
-                create_type=False,
-            ),
-            nullable=False,
-            server_default="pending",
-        ),
-        sa.Column(
-            "trigger_event",
-            postgresql.JSON(),
-            nullable=False,
-            server_default="{}",
-        ),
-        sa.Column("trigger_device_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "action_results",
-            postgresql.JSON(),
-            nullable=False,
-            server_default="[]",
-        ),
-        sa.Column("error_message", sa.Text(), nullable=True),
-        sa.Column("triggered_by", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.text("CURRENT_TIMESTAMP"),
-        ),
-        sa.ForeignKeyConstraint(
-            ["playbook_id"],
-            ["playbooks.id"],
-            ondelete="CASCADE",
-        ),
-        sa.ForeignKeyConstraint(
-            ["trigger_device_id"],
-            ["devices.id"],
-            ondelete="SET NULL",
-        ),
-        sa.ForeignKeyConstraint(
-            ["triggered_by"],
-            ["users.id"],
-            ondelete="SET NULL",
-        ),
-        sa.PrimaryKeyConstraint("id"),
-    )
+    op.execute("""
+        CREATE TABLE playbook_executions (
+            id UUID NOT NULL PRIMARY KEY,
+            playbook_id UUID NOT NULL REFERENCES playbooks(id) ON DELETE CASCADE,
+            status executionstatus NOT NULL DEFAULT 'pending',
+            trigger_event JSON NOT NULL DEFAULT '{}',
+            trigger_device_id UUID REFERENCES devices(id) ON DELETE SET NULL,
+            started_at TIMESTAMP WITH TIME ZONE,
+            completed_at TIMESTAMP WITH TIME ZONE,
+            action_results JSON NOT NULL DEFAULT '[]',
+            error_message TEXT,
+            triggered_by UUID REFERENCES users(id) ON DELETE SET NULL,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
-    # Create playbook_executions indexes
-    op.create_index(
-        "ix_playbook_executions_playbook_id",
-        "playbook_executions",
-        ["playbook_id"],
-    )
-    op.create_index(
-        "ix_playbook_executions_status",
-        "playbook_executions",
-        ["status"],
-    )
-    op.create_index(
-        "ix_playbook_executions_created_at",
-        "playbook_executions",
-        ["created_at"],
-    )
+    op.execute("CREATE INDEX ix_playbook_executions_playbook_id ON playbook_executions(playbook_id)")
+    op.execute("CREATE INDEX ix_playbook_executions_status ON playbook_executions(status)")
+    op.execute("CREATE INDEX ix_playbook_executions_created_at ON playbook_executions(created_at)")
 
 
 def downgrade() -> None:
-    # Drop indexes
-    op.drop_index("ix_playbook_executions_created_at", table_name="playbook_executions")
-    op.drop_index("ix_playbook_executions_status", table_name="playbook_executions")
-    op.drop_index("ix_playbook_executions_playbook_id", table_name="playbook_executions")
-    op.drop_index("ix_playbooks_trigger_type", table_name="playbooks")
-    op.drop_index("ix_playbooks_status", table_name="playbooks")
-
-    # Drop tables
-    op.drop_table("playbook_executions")
-    op.drop_table("playbooks")
-
-    # Drop enums
+    op.execute("DROP INDEX IF EXISTS ix_playbook_executions_created_at")
+    op.execute("DROP INDEX IF EXISTS ix_playbook_executions_status")
+    op.execute("DROP INDEX IF EXISTS ix_playbook_executions_playbook_id")
+    op.execute("DROP INDEX IF EXISTS ix_playbooks_trigger_type")
+    op.execute("DROP INDEX IF EXISTS ix_playbooks_status")
+    op.execute("DROP TABLE IF EXISTS playbook_executions")
+    op.execute("DROP TABLE IF EXISTS playbooks")
     op.execute("DROP TYPE IF EXISTS executionstatus")
     op.execute("DROP TYPE IF EXISTS playbooktriggertype")
     op.execute("DROP TYPE IF EXISTS playbookstatus")

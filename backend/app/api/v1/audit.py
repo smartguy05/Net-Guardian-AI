@@ -5,6 +5,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +14,11 @@ from app.db.session import get_async_session
 from app.models.audit_log import AuditAction
 from app.models.user import User
 from app.services.audit_service import AuditService
+from app.services.export_service import (
+    ExportService,
+    AUDIT_COLUMNS,
+    AUDIT_HEADERS,
+)
 
 router = APIRouter()
 
@@ -166,4 +172,122 @@ async def get_audit_stats(
         releases_24h=releases,
         logins_24h=logins,
         user_actions_24h=user_actions,
+    )
+
+
+@router.get("/export/csv")
+async def export_audit_csv(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _admin: Annotated[User, Depends(require_admin)],
+    action: Optional[str] = Query(None, description="Filter by action type"),
+    target_type: Optional[str] = Query(None, description="Filter by target type"),
+    user_id: Optional[UUID] = Query(None, description="Filter by user"),
+    success_only: Optional[bool] = Query(None, description="Filter by success status"),
+    limit: int = Query(10000, ge=1, le=100000),
+) -> Response:
+    """Export audit logs to CSV format (Admin only)."""
+    audit_service = AuditService(session)
+
+    # Parse action enum if provided
+    action_enum = None
+    if action:
+        try:
+            action_enum = AuditAction(action)
+        except ValueError:
+            pass
+
+    logs = await audit_service.get_logs(
+        action=action_enum,
+        target_type=target_type,
+        user_id=user_id,
+        success_only=success_only,
+        limit=limit,
+    )
+
+    audit_data = [
+        {
+            "timestamp": log.timestamp,
+            "action": log.action.value,
+            "username": log.username or "",
+            "target_type": log.target_type,
+            "target_name": log.target_name or "",
+            "description": log.description,
+            "success": log.success,
+        }
+        for log in logs
+    ]
+
+    csv_content = ExportService.to_csv(audit_data, AUDIT_COLUMNS, AUDIT_HEADERS)
+    filename = f"audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/pdf")
+async def export_audit_pdf(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _admin: Annotated[User, Depends(require_admin)],
+    action: Optional[str] = Query(None, description="Filter by action type"),
+    target_type: Optional[str] = Query(None, description="Filter by target type"),
+    user_id: Optional[UUID] = Query(None, description="Filter by user"),
+    success_only: Optional[bool] = Query(None, description="Filter by success status"),
+    limit: int = Query(1000, ge=1, le=10000),
+) -> Response:
+    """Export audit logs to PDF format (Admin only)."""
+    audit_service = AuditService(session)
+
+    # Parse action enum if provided
+    action_enum = None
+    if action:
+        try:
+            action_enum = AuditAction(action)
+        except ValueError:
+            pass
+
+    logs = await audit_service.get_logs(
+        action=action_enum,
+        target_type=target_type,
+        user_id=user_id,
+        success_only=success_only,
+        limit=limit,
+    )
+
+    audit_data = [
+        {
+            "timestamp": log.timestamp,
+            "action": log.action.value,
+            "username": log.username or "",
+            "target_type": log.target_type,
+            "target_name": log.target_name or "",
+            "description": log.description,
+            "success": log.success,
+        }
+        for log in logs
+    ]
+
+    # Build subtitle with filters
+    filters = []
+    if action_enum:
+        filters.append(f"Action: {action_enum.value}")
+    if target_type:
+        filters.append(f"Target: {target_type}")
+    subtitle = " | ".join(filters) if filters else None
+
+    pdf_content = ExportService.to_pdf(
+        audit_data,
+        title="Audit Log Report",
+        columns=AUDIT_COLUMNS,
+        headers=AUDIT_HEADERS,
+        subtitle=subtitle,
+    )
+    filename = f"audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )

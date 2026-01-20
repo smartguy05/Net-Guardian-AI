@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     http_max_connections: int = 100  # Max connections per host
     http_keepalive_expiry: int = 30  # Seconds to keep idle connections
 
+    # Rate Limiting
+    rate_limit_enabled: bool = True
+    rate_limit_default_rpm: int = 60  # Requests per minute for default endpoints
+    rate_limit_auth_rpm: int = 10  # Requests per minute for auth endpoints
+    rate_limit_chat_rpm: int = 20  # Requests per minute for chat endpoints
+    rate_limit_export_rpm: int = 5  # Requests per minute for export endpoints
+
     # Authentication
     secret_key: str = "change-this-to-a-secure-secret-key"
     jwt_algorithm: str = "HS256"
@@ -97,6 +104,20 @@ class Settings(BaseSettings):
     ollama_prompt_analysis_enabled: bool = True  # Use Claude to analyze prompts
     ollama_alert_on_injection: bool = True  # Create alerts for detected attacks
     ollama_injection_severity: str = "high"  # Alert severity for injections
+
+    # Email Notifications (SMTP)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_use_tls: bool = True
+    smtp_sender_email: str = ""
+    smtp_sender_name: str = "NetGuardian AI"
+
+    # ntfy.sh Push Notifications
+    ntfy_server_url: str = "https://ntfy.sh"
+    ntfy_default_topic: str = ""
+    ntfy_auth_token: str = ""  # Optional for private topics
 
     @property
     def async_database_url(self) -> str:

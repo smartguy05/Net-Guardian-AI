@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/auth';
+import { RealtimeProvider } from './components/RealtimeProvider';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
@@ -12,6 +13,10 @@ import SourcesPage from './pages/SourcesPage';
 import UsersPage from './pages/UsersPage';
 import ChatPage from './pages/ChatPage';
 import QuarantinePage from './pages/QuarantinePage';
+import SettingsPage from './pages/SettingsPage';
+import RulesPage from './pages/RulesPage';
+import ThreatIntelPage from './pages/ThreatIntelPage';
+import TopologyPage from './pages/TopologyPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -20,7 +25,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  return <>{children}</>;
+  return <RealtimeProvider>{children}</RealtimeProvider>;
 }
 
 function App() {
@@ -52,6 +57,10 @@ function App() {
         <Route path="quarantine" element={<QuarantinePage />} />
         <Route path="sources" element={<SourcesPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="rules" element={<RulesPage />} />
+        <Route path="threat-intel" element={<ThreatIntelPage />} />
+        <Route path="topology" element={<TopologyPage />} />
       </Route>
     </Routes>
   );

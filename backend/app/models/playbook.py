@@ -71,14 +71,14 @@ class Playbook(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[PlaybookStatus] = mapped_column(
-        ENUM(PlaybookStatus, name="playbookstatus", create_type=False),
+        ENUM(PlaybookStatus, name="playbookstatus", create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=PlaybookStatus.DRAFT,
     )
 
     # Trigger configuration
     trigger_type: Mapped[PlaybookTriggerType] = mapped_column(
-        ENUM(PlaybookTriggerType, name="playbooktriggertype", create_type=False),
+        ENUM(PlaybookTriggerType, name="playbooktriggertype", create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
     trigger_conditions: Mapped[Dict[str, Any]] = mapped_column(
@@ -156,7 +156,7 @@ class PlaybookExecution(Base):
         nullable=False,
     )
     status: Mapped[ExecutionStatus] = mapped_column(
-        ENUM(ExecutionStatus, name="executionstatus", create_type=False),
+        ENUM(ExecutionStatus, name="executionstatus", create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=ExecutionStatus.PENDING,
     )

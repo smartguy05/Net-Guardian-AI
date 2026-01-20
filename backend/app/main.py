@@ -14,6 +14,8 @@ from app.core.exceptions import NetGuardianException
 from app.core.logging import get_logger, setup_logging
 from app.core.cache import CacheService, set_cache_service
 from app.core.http_client import close_http_client_pool
+from app.core.middleware import MetricsMiddleware, RequestLoggingMiddleware
+from app.core.rate_limiter import RateLimitMiddleware
 from app.db.session import close_db, init_db
 from app.events.bus import close_event_bus, get_event_bus
 from app.services.init_service import initialize_application
@@ -83,6 +85,19 @@ def create_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Add metrics middleware for Prometheus
+    app.add_middleware(MetricsMiddleware)
+
+    # Add rate limiting middleware
+    app.add_middleware(
+        RateLimitMiddleware,
+        enabled=settings.rate_limit_enabled,
+    )
+
+    # Add request logging middleware (after metrics so it logs after metrics are recorded)
+    if settings.debug:
+        app.add_middleware(RequestLoggingMiddleware)
 
     # Exception handlers
     @app.exception_handler(NetGuardianException)

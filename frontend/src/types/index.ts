@@ -10,6 +10,7 @@ export interface User {
   must_change_password: boolean;
   last_login: string | null;
   created_at: string;
+  totp_enabled?: boolean;
 }
 
 export interface UserListResponse {
@@ -43,8 +44,10 @@ export interface LoginResponse {
   access_token: string;
   refresh_token: string;
   token_type: string;
-  expires_in: number;
+  expires_in?: number;
   user: User;
+  requires_2fa?: boolean;
+  pending_token?: string;
 }
 
 // Device types
@@ -346,4 +349,213 @@ export interface LLMAnalysis {
   false_positive_reasoning?: string;
   additional_context?: string;
   error?: string;
+}
+
+// Detection Rule types
+export interface RuleCondition {
+  field: string;
+  operator: string;
+  value: unknown;
+}
+
+export interface RuleConditionGroup {
+  logic: 'and' | 'or';
+  conditions: RuleCondition[];
+}
+
+export interface RuleAction {
+  type: string;
+  config: Record<string, unknown>;
+}
+
+export interface DetectionRule {
+  id: string;
+  name: string;
+  description: string | null;
+  severity: AlertSeverity;
+  enabled: boolean;
+  conditions: RuleConditionGroup;
+  response_actions: RuleAction[];
+  cooldown_minutes: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DetectionRuleListResponse {
+  items: DetectionRule[];
+  total: number;
+}
+
+export interface CreateRuleRequest {
+  id: string;
+  name: string;
+  description?: string;
+  severity: AlertSeverity;
+  enabled?: boolean;
+  conditions: RuleConditionGroup;
+  response_actions?: RuleAction[];
+  cooldown_minutes?: number;
+}
+
+export interface UpdateRuleRequest {
+  name?: string;
+  description?: string;
+  severity?: AlertSeverity;
+  enabled?: boolean;
+  conditions?: RuleConditionGroup;
+  response_actions?: RuleAction[];
+  cooldown_minutes?: number;
+}
+
+export interface ConditionFieldInfo {
+  name: string;
+  description: string;
+  type: string;
+  example_values?: string[];
+}
+
+export interface TestRuleRequest {
+  conditions: RuleConditionGroup;
+  event: Record<string, unknown>;
+}
+
+export interface TestRuleResponse {
+  matches: boolean;
+  condition_results: Array<{
+    field: string;
+    operator: string;
+    expected: unknown;
+    actual: unknown;
+    result: boolean;
+  }>;
+}
+
+// Threat Intelligence types
+export type FeedType = 'csv' | 'json' | 'stix' | 'url_list' | 'ip_list';
+export type IndicatorType = 'ip' | 'domain' | 'url' | 'hash_md5' | 'hash_sha1' | 'hash_sha256' | 'email' | 'cidr';
+
+export interface ThreatIntelFeed {
+  id: string;
+  name: string;
+  description: string | null;
+  feed_type: FeedType;
+  url: string;
+  enabled: boolean;
+  update_interval_hours: number;
+  auth_type: string;
+  auth_config: Record<string, unknown>;
+  field_mapping: Record<string, unknown>;
+  last_fetch_at: string | null;
+  last_fetch_status: string | null;
+  last_fetch_message: string | null;
+  indicator_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ThreatIndicator {
+  id: string;
+  feed_id: string;
+  feed_name: string | null;
+  indicator_type: IndicatorType;
+  value: string;
+  confidence: number;
+  severity: string;
+  tags: string[];
+  description: string | null;
+  source_ref: string | null;
+  first_seen_at: string | null;
+  last_seen_at: string | null;
+  expires_at: string | null;
+  metadata: Record<string, unknown>;
+  hit_count: number;
+  last_hit_at: string | null;
+  created_at: string;
+}
+
+export interface ThreatIntelFeedListResponse {
+  items: ThreatIntelFeed[];
+  total: number;
+}
+
+export interface ThreatIndicatorListResponse {
+  items: ThreatIndicator[];
+  total: number;
+}
+
+export interface CreateFeedRequest {
+  name: string;
+  description?: string;
+  feed_type: FeedType;
+  url: string;
+  enabled?: boolean;
+  update_interval_hours?: number;
+  auth_type?: string;
+  auth_config?: Record<string, unknown>;
+  field_mapping?: Record<string, unknown>;
+}
+
+export interface UpdateFeedRequest {
+  name?: string;
+  description?: string;
+  feed_type?: FeedType;
+  url?: string;
+  enabled?: boolean;
+  update_interval_hours?: number;
+  auth_type?: string;
+  auth_config?: Record<string, unknown>;
+  field_mapping?: Record<string, unknown>;
+}
+
+export interface IndicatorCheckRequest {
+  value: string;
+  indicator_type?: IndicatorType;
+}
+
+export interface IndicatorCheckResponse {
+  found: boolean;
+  matches: ThreatIndicator[];
+}
+
+export interface ThreatIntelStats {
+  total_feeds: number;
+  enabled_feeds: number;
+  total_indicators: number;
+  indicators_by_type: Record<string, number>;
+  indicators_by_severity: Record<string, number>;
+  recent_hits: number;
+}
+
+// Network Topology types
+export interface TopologyNode {
+  id: string;
+  label: string;
+  type: string;
+  status: string;
+  ip_address?: string;
+  mac_address?: string;
+  manufacturer?: string;
+  device_type?: string;
+  event_count_24h: number;
+  tags: string[];
+  is_quarantined: boolean;
+}
+
+export interface TopologyLink {
+  source: string;
+  target: string;
+  traffic_volume: number;
+  link_type: string;
+}
+
+export interface TopologyData {
+  nodes: TopologyNode[];
+  links: TopologyLink[];
+  stats: {
+    total_devices: number;
+    active_devices: number;
+    quarantined_devices: number;
+    total_events: number;
+    time_window_hours: number;
+  };
 }

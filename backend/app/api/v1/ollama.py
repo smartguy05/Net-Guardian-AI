@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.core.security import get_current_user, require_admin
+from app.api.v1.auth import get_current_user, require_admin
 from app.models.user import User
 from app.services.ollama_monitoring_service import get_ollama_service
 

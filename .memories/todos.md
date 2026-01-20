@@ -1,87 +1,78 @@
 # NetGuardian AI - Todo List
 
-Remaining tasks organized by phase and priority.
+Remaining tasks organized by priority.
 
-**Completed:** Phase 1, Phase 2, Phase 3, Phase 4
-**Current:** Phase 5 (Polish & Extensions)
-
----
-
-## Phase 5: Polish & Extensions (Current)
-
-- [x] Add Ollama API monitoring (LLM-malware detection)
-- [ ] Create optional endpoint agent
-- [ ] Add NetFlow/sFlow support
-- [ ] Performance optimization
-- [ ] Security hardening review
-- [ ] Write deployment documentation
-- [ ] Write user guide
+**Status:** Phase 7 (Technical Debt & DevOps) COMPLETE
 
 ---
 
-## Technical Debt
+## Phase 7: Technical Debt & DevOps (COMPLETE)
 
-- [ ] Add comprehensive error handling in collectors
-- [ ] Add retry logic for API collectors
-- [ ] Add connection pooling configuration
-- [ ] Add request/response logging middleware
-- [ ] Add API rate limiting
-- [ ] Add input validation for all endpoints
-- [ ] Set up CI/CD pipeline
+### Completed
+- [x] Prometheus metrics endpoint (`/metrics`)
+- [x] Network topology visualization
+- [x] Comprehensive error handling in collectors
+- [x] Retry logic with exponential backoff for API collectors
+- [x] Circuit breaker pattern for failed services
+- [x] Request/response logging middleware
+- [x] API rate limiting with token bucket
+- [x] Input validation (Pydantic already in place)
+- [x] CI/CD pipeline (GitHub Actions)
+- [x] Configuration reference documentation
+- [x] Contributing guidelines
 
 ---
 
-## Documentation
+## Phase 6: Feature Enhancements (COMPLETE)
+
+### Completed
+- [x] Dark mode theme (Phase 6.1)
+- [x] WebSocket real-time updates for events/alerts (Phase 6.2)
+- [x] Email notifications via SMTP (Phase 6.3)
+- [x] ntfy.sh push notifications (Phase 6.4)
+- [x] Two-factor authentication (2FA/TOTP) (Phase 6.5)
+- [x] Data retention policies (auto-purge old events) (Phase 6.6)
+- [x] CSV/PDF export for reports (Phase 6.7)
+- [x] Device grouping/tagging UI improvements (Phase 6.8)
+- [x] Custom detection rules UI builder (Phase 6.9)
+- [x] Mobile-responsive improvements (Phase 6.10)
+- [x] Threat intelligence feed integration (Phase 6.11)
+
+---
+
+## Future Enhancements (Nice to Have)
+
+- [ ] Dashboard customization (drag-and-drop widgets)
+- [ ] Multi-tenant support
+- [ ] LDAP/Active Directory integration
+- [ ] Grafana dashboard templates
+- [ ] Kubernetes Helm chart
+
+---
+
+## Documentation (COMPLETE)
 
 - [x] README.md - Project overview
 - [x] docs/implementation-status.md - Status tracking
 - [x] docs/prd.md - Product requirements
-- [x] .memories/completed.md - Completed tasks
-- [x] .memories/todos.md - Todo list
-- [x] .memories/notes.md - Development notes
+- [x] docs/deployment-guide.md - Deployment instructions
+- [x] docs/user-guide.md - User documentation
+- [x] docs/configuration.md - Configuration reference
+- [x] CLAUDE.md - Claude Code guidance
+- [x] CONTRIBUTING.md - Contributing guidelines
+- [x] .memories/* - Project memory files
 - [x] API documentation (auto-generated at /docs)
-- [ ] Deployment guide for different platforms
-- [ ] Configuration reference
-- [ ] Troubleshooting guide
-- [ ] Contributing guidelines
 
 ---
 
-## Completed Phases
+## Completed Phases Summary
 
-### Phase 4: Active Response - COMPLETE
-- [x] Implement AdGuard Home blocking integration
-- [x] Implement router integration (UniFi, pfSense/OPNsense)
-- [x] Create response playbook engine with triggers and actions
-- [x] Implement audit logging system
-- [x] Add quarantine management UI
-- [x] Create quarantine service with integration orchestration
-- [x] Write tests for Phase 4 (45 tests)
+All phases are complete. See `.memories/completed.md` for detailed task lists.
 
-### Phase 3: LLM Integration - COMPLETE
-- [x] Create Claude API integration service with prompt caching
-- [x] Implement alert triage with LLM analysis
-- [x] Add natural language query endpoint
-- [x] Create chat UI component
-- [x] Add incident summarization
-- [x] Write tests for LLM integration (22 tests)
-
-### Phase 2: Anomaly Detection - COMPLETE
-- [x] Design baseline engine architecture
-- [x] Implement per-device behavioral profiling
-- [x] Implement DNS query pattern tracking
-- [x] Implement z-score anomaly detection
-- [x] Create anomaly detection service
-- [x] Implement alert generation from anomalies
-- [x] Create anomalies UI page
-- [x] Write tests (30 tests)
-
-### Phase 1: Foundation - COMPLETE
-- [x] Project scaffolding
-- [x] Database layer with TimescaleDB
-- [x] Authentication system with JWT
-- [x] Device inventory management
-- [x] Log source configuration
-- [x] Event ingestion (API pull, file watch, API push)
-- [x] Basic dashboard UI
-- [x] User management UI
+- **Phase 1:** Foundation (auth, devices, events, log sources, UI)
+- **Phase 2:** Anomaly Detection (baselines, z-score detection, anomaly UI)
+- **Phase 3:** LLM Integration (Claude API, chat, alert analysis)
+- **Phase 4:** Active Response (quarantine, playbooks, audit, integrations)
+- **Phase 5:** Polish (Ollama monitoring, endpoint agent, NetFlow/sFlow, docs, security, performance)
+- **Phase 6:** Feature Enhancements (dark mode, WebSocket, notifications, 2FA, exports, rules UI, threat intel)
+- **Phase 7:** Technical Debt & DevOps (metrics, topology, error handling, CI/CD, documentation)

@@ -5,6 +5,7 @@ from typing import Annotated, Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,11 @@ from app.models.device_baseline import DeviceBaseline
 from app.models.raw_event import RawEvent
 from app.models.user import User
 from app.services.llm_service import get_llm_service, LLMModel
+from app.services.export_service import (
+    ExportService,
+    ALERTS_COLUMNS,
+    ALERTS_HEADERS,
+)
 
 router = APIRouter()
 
@@ -291,3 +297,117 @@ async def analyze_alert(
     await session.refresh(alert)
 
     return _alert_to_response(alert)
+
+
+async def _get_alerts_for_export(
+    session: AsyncSession,
+    status_filter: Optional[AlertStatus] = None,
+    severity: Optional[AlertSeverity] = None,
+    device_id: Optional[UUID] = None,
+    limit: int = 10000,
+) -> List[Dict[str, Any]]:
+    """Get alerts formatted for export."""
+    query = select(Alert).outerjoin(Device, Alert.device_id == Device.id)
+
+    if status_filter:
+        query = query.where(Alert.status == status_filter)
+    if severity:
+        query = query.where(Alert.severity == severity)
+    if device_id:
+        query = query.where(Alert.device_id == device_id)
+
+    query = query.order_by(Alert.timestamp.desc()).limit(limit)
+    result = await session.execute(query)
+    alerts = result.scalars().all()
+
+    # Get device hostnames for the alerts
+    device_ids = [a.device_id for a in alerts if a.device_id]
+    device_map = {}
+    if device_ids:
+        devices_result = await session.execute(
+            select(Device).where(Device.id.in_(device_ids))
+        )
+        for d in devices_result.scalars().all():
+            device_map[d.id] = d.hostname
+
+    return [
+        {
+            "created_at": a.timestamp,
+            "title": a.title,
+            "severity": a.severity.value,
+            "status": a.status.value,
+            "device_hostname": device_map.get(a.device_id, "") if a.device_id else "",
+            "rule_name": a.rule_id,
+        }
+        for a in alerts
+    ]
+
+
+@router.get("/export/csv")
+async def export_alerts_csv(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    status_filter: Optional[AlertStatus] = Query(None, alias="status"),
+    severity: Optional[AlertSeverity] = None,
+    device_id: Optional[UUID] = None,
+    limit: int = Query(10000, ge=1, le=100000),
+) -> Response:
+    """Export alerts to CSV format."""
+    alerts = await _get_alerts_for_export(
+        session,
+        status_filter=status_filter,
+        severity=severity,
+        device_id=device_id,
+        limit=limit,
+    )
+
+    csv_content = ExportService.to_csv(alerts, ALERTS_COLUMNS, ALERTS_HEADERS)
+    filename = f"alerts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/pdf")
+async def export_alerts_pdf(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    status_filter: Optional[AlertStatus] = Query(None, alias="status"),
+    severity: Optional[AlertSeverity] = None,
+    device_id: Optional[UUID] = None,
+    limit: int = Query(1000, ge=1, le=10000),
+) -> Response:
+    """Export alerts to PDF format."""
+    alerts = await _get_alerts_for_export(
+        session,
+        status_filter=status_filter,
+        severity=severity,
+        device_id=device_id,
+        limit=limit,
+    )
+
+    # Build subtitle with filters
+    filters = []
+    if status_filter:
+        filters.append(f"Status: {status_filter.value}")
+    if severity:
+        filters.append(f"Severity: {severity.value}")
+    subtitle = " | ".join(filters) if filters else None
+
+    pdf_content = ExportService.to_pdf(
+        alerts,
+        title="Security Alerts Report",
+        columns=ALERTS_COLUMNS,
+        headers=ALERTS_HEADERS,
+        subtitle=subtitle,
+    )
+    filename = f"alerts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

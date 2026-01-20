@@ -273,17 +273,29 @@ sa.PrimaryKeyConstraint("id", "timestamp")  -- Both columns in PK
 
 ### Form Data vs JSON for Login
 
-**Note:** OAuth2PasswordRequestForm expects form-urlencoded data, not JSON:
+**Note:** OAuth2PasswordRequestForm expects `application/x-www-form-urlencoded` data, not JSON or multipart.
+
+**Problem:** Using `FormData` with explicit `Content-Type: application/x-www-form-urlencoded` doesn't work because `FormData` always sends as `multipart/form-data`.
+
+**Solution:** Use `URLSearchParams` which correctly serializes to URL-encoded format:
 
 ```javascript
-// Correct
+// Correct - URLSearchParams
+const params = new URLSearchParams();
+params.append('username', credentials.username);
+params.append('password', credentials.password);
+await apiClient.post('/auth/login', params, {
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+});
+
+// Incorrect - FormData (sends as multipart/form-data)
 const formData = new FormData();
 formData.append('username', credentials.username);
 formData.append('password', credentials.password);
-await apiClient.post('/auth/login', formData);
+await apiClient.post('/auth/login', formData);  // Wrong!
 
-// Incorrect
-await apiClient.post('/auth/login', { username, password });
+// Incorrect - JSON
+await apiClient.post('/auth/login', { username, password });  // Wrong!
 ```
 
 ---
@@ -311,6 +323,93 @@ HTTP_TIMEOUT_SECONDS=30
 HTTP_MAX_CONNECTIONS=100
 HTTP_KEEPALIVE_EXPIRY=30
 ```
+
+---
+
+## Phase 7 Notes
+
+### Prometheus Metrics (Phase 7)
+
+**Module:** `app/services/metrics_service.py`
+
+Exposes metrics at `/api/v1/metrics` for Prometheus scraping. Metrics include:
+- HTTP request counts and latency histograms
+- WebSocket connection gauges
+- Event processing counters
+- Alert and anomaly metrics
+- Device and collector metrics
+- Threat intelligence metrics
+
+**Middleware:** `app/core/middleware.py` - MetricsMiddleware automatically tracks all HTTP requests.
+
+### Network Topology Visualization (Phase 7)
+
+**Backend:** `app/api/v1/topology.py`
+- Returns nodes (devices, router, internet) and links (connections)
+- Calculates event counts per device for the time window
+- Supports filtering by time window (1-168 hours)
+
+**Frontend:** `pages/TopologyPage.tsx`
+- Canvas-based force-directed graph using custom physics simulation
+- Interactive: drag nodes, pan (right-click), zoom (scroll)
+- Click nodes to view details in side panel
+
+### Collector Error Handling (Phase 7)
+
+**Module:** `app/collectors/error_handler.py`
+
+Provides robust error handling for collectors:
+- **ErrorCategory** enum: network, auth, rate_limit, server, client, parse, config, resource
+- **RetryHandler**: Exponential backoff with jitter
+- **CircuitBreaker**: Prevents overwhelming failed services (closed → open → half_open states)
+- **ErrorTracker**: Monitors error rates and history
+
+**Usage in API Pull Collector:**
+```python
+self._retry_handler = RetryHandler(retry_config, self._circuit_breaker)
+response = await self._retry_handler.execute(self._make_request, self.source_id, "api_poll")
+```
+
+**Configurable via source config:**
+- `max_retries`: Number of retry attempts (default: 3)
+- `retry_initial_delay`: Initial delay in seconds (default: 1.0)
+- `retry_max_delay`: Maximum delay cap (default: 60.0)
+- `circuit_failure_threshold`: Failures before opening circuit (default: 5)
+- `circuit_recovery_timeout`: Seconds before testing recovery (default: 30)
+
+### API Rate Limiting (Phase 7)
+
+**Module:** `app/core/rate_limiter.py`
+
+Token bucket rate limiting with per-endpoint categories:
+- `auth`: 10 requests/minute (login, password reset)
+- `chat`: 20 requests/minute (LLM chat endpoints)
+- `export`: 5 requests/minute (CSV/PDF exports)
+- `default`: 60 requests/minute (all other endpoints)
+
+**Headers returned:**
+- `X-RateLimit-Limit`: Requests allowed per minute
+- `X-RateLimit-Remaining`: Requests remaining in window
+- `X-RateLimit-Reset`: Unix timestamp when window resets
+- `Retry-After`: Seconds to wait (when rate limited)
+
+**Excluded paths:** `/health`, `/metrics`, `/docs`, `/redoc`, `/openapi.json`
+
+### CI/CD Pipeline (Phase 7)
+
+**GitHub Actions workflows:**
+
+**ci.yml** - Runs on push/PR to main/develop:
+- Backend lint (Ruff), type check (mypy), tests with coverage
+- Frontend lint (ESLint), build (TypeScript + Vite)
+- Docker image builds
+- Security scan (Bandit, Safety)
+
+**release.yml** - Runs on version tags (v*):
+- Multi-platform Docker builds (amd64, arm64)
+- Push to GitHub Container Registry
+- Automatic changelog generation
+- GitHub Release creation
 
 ---
 

@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    admin,
     auth,
     users,
     devices,
@@ -18,6 +19,12 @@ from app.api.v1 import (
     integrations,
     playbooks,
     ollama,
+    websocket,
+    notifications,
+    rules,
+    threat_intel,
+    metrics,
+    topology,
 )
 
 api_router = APIRouter()
@@ -66,3 +73,24 @@ api_router.include_router(playbooks.router, prefix="/playbooks", tags=["Playbook
 
 # Ollama LLM monitoring endpoints
 api_router.include_router(ollama.router, prefix="/ollama", tags=["Ollama Monitoring"])
+
+# WebSocket endpoint for real-time updates
+api_router.include_router(websocket.router, tags=["WebSocket"])
+
+# Notification preferences endpoints
+api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+
+# Admin endpoints (retention policies, system config)
+api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
+
+# Detection rules endpoints
+api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"])
+
+# Threat intelligence endpoints
+api_router.include_router(threat_intel.router, tags=["Threat Intelligence"])
+
+# Prometheus metrics endpoint (no auth required for scraping)
+api_router.include_router(metrics.router, tags=["Metrics"])
+
+# Network topology endpoints
+api_router.include_router(topology.router, tags=["Network Topology"])

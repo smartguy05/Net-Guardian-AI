@@ -12,7 +12,8 @@
       "Bash(printf:*)",
       "Bash(python -m pytest:*)",
       "Bash(python -c:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "WebSearch"
     ]
   }
 }

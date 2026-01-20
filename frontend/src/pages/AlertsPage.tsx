@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Bell, Search, RefreshCw, CheckCircle, XCircle, Eye } from 'lucide-react';
-import { useAlerts, useUpdateAlertStatus } from '../api/hooks';
+import { useAlerts, useUpdateAlertStatus, exportAlertsCSV, exportAlertsPDF } from '../api/hooks';
 import { useAuthStore } from '../stores/auth';
 import { formatDistanceToNow, format } from 'date-fns';
 import clsx from 'clsx';
 import type { Alert, AlertSeverity, AlertStatus } from '../types';
 import Pagination from '../components/Pagination';
+import ExportButton from '../components/ExportButton';
 
 const severityColors: Record<AlertSeverity, string> = {
   low: 'badge-info',
@@ -18,7 +19,7 @@ const statusColors: Record<AlertStatus, string> = {
   new: 'badge-danger',
   acknowledged: 'badge-warning',
   resolved: 'badge-success',
-  false_positive: 'bg-gray-100 text-gray-700',
+  false_positive: 'bg-gray-100 dark:bg-zinc-700 text-gray-700 dark:text-gray-300',
 };
 
 function AlertCard({ alert }: { alert: Alert }) {
@@ -50,12 +51,12 @@ function AlertCard({ alert }: { alert: Alert }) {
               {alert.status.replace('_', ' ')}
             </span>
           </div>
-          <h3 className="mt-2 text-lg font-semibold text-gray-900">
+          <h3 className="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
             {alert.title}
           </h3>
-          <p className="mt-1 text-sm text-gray-600">{alert.description}</p>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{alert.description}</p>
 
-          <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
+          <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
             <span>
               Created: {format(new Date(alert.timestamp), 'MMM d, yyyy HH:mm')}
             </span>
@@ -101,7 +102,7 @@ function AlertCard({ alert }: { alert: Alert }) {
             <button
               onClick={handleFalsePositive}
               disabled={updateStatus.isPending}
-              className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="text-xs px-3 py-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg"
             >
               <XCircle className="w-3 h-3 mr-1 inline" />
               False Positive
@@ -111,11 +112,11 @@ function AlertCard({ alert }: { alert: Alert }) {
       </div>
 
       {alert.llm_analysis && (
-        <div className="mt-4 p-4 bg-primary-50 rounded-lg">
-          <h4 className="text-sm font-medium text-primary-900 mb-2">
+        <div className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/30 rounded-lg">
+          <h4 className="text-sm font-medium text-primary-900 dark:text-primary-300 mb-2">
             AI Analysis
           </h4>
-          <p className="text-sm text-primary-700">
+          <p className="text-sm text-primary-700 dark:text-primary-400">
             {typeof alert.llm_analysis === 'object'
               ? JSON.stringify(alert.llm_analysis, null, 2)
               : alert.llm_analysis}
@@ -170,21 +171,33 @@ export default function AlertsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Alerts</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Alerts</h1>
+          <p className="text-gray-500 dark:text-gray-400">
             {activeCount} active alerts
           </p>
         </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="btn-secondary"
-        >
-          <RefreshCw
-            className={clsx('w-4 h-4 mr-2', isFetching && 'animate-spin')}
+        <div className="flex items-center gap-3">
+          <ExportButton
+            onExportCSV={() => exportAlertsCSV({
+              status: statusFilter || undefined,
+              severity: severityFilter || undefined,
+            })}
+            onExportPDF={() => exportAlertsPDF({
+              status: statusFilter || undefined,
+              severity: severityFilter || undefined,
+            })}
           />
-          Refresh
-        </button>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="btn-secondary"
+          >
+            <RefreshCw
+              className={clsx('w-4 h-4 mr-2', isFetching && 'animate-spin')}
+            />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -240,9 +253,9 @@ export default function AlertsPage() {
           [...Array(3)].map((_, i) => (
             <div key={i} className="card p-6">
               <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-gray-100 rounded w-24" />
-                <div className="h-6 bg-gray-100 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-full" />
+                <div className="h-4 bg-gray-100 dark:bg-zinc-700 rounded w-24" />
+                <div className="h-6 bg-gray-100 dark:bg-zinc-700 rounded w-3/4" />
+                <div className="h-4 bg-gray-100 dark:bg-zinc-700 rounded w-full" />
               </div>
             </div>
           ))
@@ -252,8 +265,8 @@ export default function AlertsPage() {
           ))
         ) : (
           <div className="card p-12 text-center">
-            <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">No alerts found</p>
+            <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-gray-500 dark:text-gray-400">No alerts found</p>
           </div>
         )}
       </div>

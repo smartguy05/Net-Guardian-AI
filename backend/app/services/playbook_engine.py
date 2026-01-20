@@ -539,23 +539,76 @@ class PlaybookEngine:
         trigger_event: Dict[str, Any],
         device_id: Optional[UUID],
     ) -> Dict[str, Any]:
-        """Send a notification (placeholder for future integrations)."""
-        # This would integrate with notification services (email, Slack, etc.)
-        notification_type = params.get("type", "log")
-        message = params.get("message", str(trigger_event))
+        """Send a notification via email and/or ntfy.sh."""
+        from app.services.email_service import get_email_service
+        from app.services.ntfy_service import get_ntfy_service
+
+        notification_type = params.get("type", "all")  # email, ntfy, all
+        message = params.get("message", str(trigger_event.get("description", "")))
+        title = params.get("title", trigger_event.get("title", "NetGuardian Notification"))
+        severity = params.get("severity", trigger_event.get("severity", "medium"))
+        recipients = params.get("recipients", [])  # List of emails
+        ntfy_topic = params.get("ntfy_topic")  # Optional topic override
+
+        results = {
+            "success": True,
+            "notification_type": notification_type,
+            "email_sent": False,
+            "ntfy_sent": False,
+        }
+
+        # Get device name if available
+        device_name = None
+        if device_id:
+            session = await self._get_session()
+            try:
+                result = await session.execute(
+                    select(Device).where(Device.id == device_id)
+                )
+                device = result.scalar_one_or_none()
+                if device:
+                    device_name = device.hostname or str(device.mac_address)
+            finally:
+                await self._close_session(session)
+
+        # Send email notifications
+        if notification_type in ("email", "all") and recipients:
+            email_service = get_email_service()
+            if email_service.is_configured:
+                for recipient in recipients:
+                    sent = await email_service.send_alert_notification(
+                        to_email=recipient,
+                        alert_title=title,
+                        alert_description=message,
+                        severity=severity,
+                        device_name=device_name,
+                    )
+                    if sent:
+                        results["email_sent"] = True
+
+        # Send ntfy notification
+        if notification_type in ("ntfy", "all"):
+            ntfy_service = get_ntfy_service()
+            if ntfy_service.is_configured:
+                sent = await ntfy_service.send_alert_notification(
+                    alert_title=title,
+                    alert_description=message,
+                    severity=severity,
+                    topic=ntfy_topic,
+                    device_name=device_name,
+                )
+                if sent:
+                    results["ntfy_sent"] = True
 
         logger.info(
-            "Playbook notification",
+            "Playbook notification sent",
             notification_type=notification_type,
-            message=message,
+            email_sent=results["email_sent"],
+            ntfy_sent=results["ntfy_sent"],
             device_id=str(device_id) if device_id else None,
         )
 
-        return {
-            "success": True,
-            "notification_type": notification_type,
-            "message": message,
-        }
+        return results
 
     async def _action_log_event(
         self,

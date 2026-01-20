@@ -35,20 +35,52 @@ import type {
 // Auth hooks
 export function useLogin() {
   const login = useAuthStore((state) => state.login);
+  const setPending2FA = useAuthStore((state) => state.setPending2FA);
 
   return useMutation({
     mutationFn: async (credentials: LoginRequest): Promise<LoginResponse> => {
-      const formData = new FormData();
-      formData.append('username', credentials.username);
-      formData.append('password', credentials.password);
+      const params = new URLSearchParams();
+      params.append('username', credentials.username);
+      params.append('password', credentials.password);
 
-      const response = await apiClient.post<LoginResponse>('/auth/login', formData, {
+      const response = await apiClient.post<LoginResponse>('/auth/login', params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       return response.data;
     },
     onSuccess: (data) => {
+      if (data.requires_2fa && data.pending_token) {
+        // 2FA required - store pending state
+        setPending2FA(true, data.pending_token, data.user);
+      } else {
+        // Normal login
+        login(data.user, data.access_token, data.refresh_token);
+      }
+    },
+  });
+}
+
+export function useVerify2FA() {
+  const login = useAuthStore((state) => state.login);
+  const clearPending2FA = useAuthStore((state) => state.clearPending2FA);
+
+  return useMutation({
+    mutationFn: async ({
+      pendingToken,
+      code,
+    }: {
+      pendingToken: string;
+      code: string;
+    }): Promise<LoginResponse> => {
+      const response = await apiClient.post<LoginResponse>('/auth/2fa/verify', {
+        pending_token: pendingToken,
+        code,
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
       login(data.user, data.access_token, data.refresh_token);
+      clearPending2FA();
     },
   });
 }
@@ -74,6 +106,90 @@ export function useCurrentUser() {
     queryFn: async (): Promise<User> => {
       const response = await apiClient.get('/auth/me');
       return response.data;
+    },
+  });
+}
+
+// 2FA Management hooks
+export interface TwoFactorSetupResponse {
+  secret: string;
+  qr_code: string;
+  backup_codes: string[];
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  backup_codes_remaining: number;
+}
+
+export function use2FAStatus() {
+  return useQuery({
+    queryKey: ['auth', '2fa', 'status'],
+    queryFn: async (): Promise<TwoFactorStatus> => {
+      const response = await apiClient.get('/auth/2fa/status');
+      return response.data;
+    },
+  });
+}
+
+export function useSetup2FA() {
+  return useMutation({
+    mutationFn: async (): Promise<TwoFactorSetupResponse> => {
+      const response = await apiClient.post('/auth/2fa/setup');
+      return response.data;
+    },
+  });
+}
+
+export function useEnable2FA() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (code: string): Promise<{ message: string }> => {
+      const response = await apiClient.post('/auth/2fa/enable', { code });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auth', '2fa', 'status'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    },
+  });
+}
+
+export function useDisable2FA() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      password,
+      code,
+    }: {
+      password: string;
+      code?: string;
+    }): Promise<{ message: string }> => {
+      const response = await apiClient.post('/auth/2fa/disable', {
+        password,
+        code,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auth', '2fa', 'status'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    },
+  });
+}
+
+export function useRegenerate2FABackupCodes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<string[]> => {
+      const response = await apiClient.post('/auth/2fa/backup-codes');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auth', '2fa', 'status'] });
     },
   });
 }
@@ -108,11 +224,17 @@ export function useDevices(params?: {
   page?: number;
   page_size?: number;
   search?: string;
+  tags?: string[];
 }) {
   return useQuery({
     queryKey: ['devices', params],
     queryFn: async (): Promise<DeviceListResponse> => {
-      const response = await apiClient.get('/devices', { params });
+      // Convert tags array to comma-separated string for query param
+      const queryParams = params ? {
+        ...params,
+        tags: params.tags?.join(',') || undefined,
+      } : undefined;
+      const response = await apiClient.get('/devices', { params: queryParams });
       return response.data;
     },
   });
@@ -898,5 +1020,835 @@ export function useAuditStats() {
       return response.data;
     },
     refetchInterval: 60000, // Refresh every minute
+  });
+}
+
+// Notification hooks
+export interface NotificationPreferences {
+  id: string;
+  user_id: string;
+  email_enabled: boolean;
+  email_address: string | null;
+  email_on_critical: boolean;
+  email_on_high: boolean;
+  email_on_medium: boolean;
+  email_on_low: boolean;
+  email_on_anomaly: boolean;
+  email_on_quarantine: boolean;
+  ntfy_enabled: boolean;
+  ntfy_topic: string | null;
+  ntfy_on_critical: boolean;
+  ntfy_on_high: boolean;
+  ntfy_on_medium: boolean;
+  ntfy_on_low: boolean;
+  ntfy_on_anomaly: boolean;
+  ntfy_on_quarantine: boolean;
+}
+
+export interface NotificationPreferencesUpdate {
+  email_enabled?: boolean;
+  email_address?: string;
+  email_on_critical?: boolean;
+  email_on_high?: boolean;
+  email_on_medium?: boolean;
+  email_on_low?: boolean;
+  email_on_anomaly?: boolean;
+  email_on_quarantine?: boolean;
+  ntfy_enabled?: boolean;
+  ntfy_topic?: string;
+  ntfy_on_critical?: boolean;
+  ntfy_on_high?: boolean;
+  ntfy_on_medium?: boolean;
+  ntfy_on_low?: boolean;
+  ntfy_on_anomaly?: boolean;
+  ntfy_on_quarantine?: boolean;
+}
+
+export interface NotificationStatus {
+  email_configured: boolean;
+  ntfy_configured: boolean;
+  ntfy_server_url: string;
+}
+
+export interface TestNotificationResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export function useNotificationStatus() {
+  return useQuery({
+    queryKey: ['notifications', 'status'],
+    queryFn: async (): Promise<NotificationStatus> => {
+      const response = await apiClient.get('/notifications/status');
+      return response.data;
+    },
+  });
+}
+
+export function useNotificationPreferences() {
+  return useQuery({
+    queryKey: ['notifications', 'preferences'],
+    queryFn: async (): Promise<NotificationPreferences> => {
+      const response = await apiClient.get('/notifications/preferences');
+      return response.data;
+    },
+  });
+}
+
+export function useUpdateNotificationPreferences() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      data: NotificationPreferencesUpdate
+    ): Promise<NotificationPreferences> => {
+      const response = await apiClient.put('/notifications/preferences', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'preferences'] });
+    },
+  });
+}
+
+export function useTestNotification() {
+  return useMutation({
+    mutationFn: async ({
+      type,
+      email_address,
+      ntfy_topic,
+    }: {
+      type: 'email' | 'ntfy';
+      email_address?: string;
+      ntfy_topic?: string;
+    }): Promise<TestNotificationResult> => {
+      const response = await apiClient.post('/notifications/test', {
+        type,
+        email_address,
+        ntfy_topic,
+      });
+      return response.data;
+    },
+  });
+}
+
+export function useTestEmailConnection() {
+  return useMutation({
+    mutationFn: async (): Promise<TestNotificationResult> => {
+      const response = await apiClient.post('/notifications/test/email');
+      return response.data;
+    },
+  });
+}
+
+export function useTestNtfyConnection() {
+  return useMutation({
+    mutationFn: async (topic?: string): Promise<TestNotificationResult> => {
+      const response = await apiClient.post('/notifications/test/ntfy', null, {
+        params: topic ? { topic } : undefined,
+      });
+      return response.data;
+    },
+  });
+}
+
+// Retention Policy hooks (Admin only)
+export interface RetentionPolicy {
+  id: string;
+  table_name: string;
+  display_name: string;
+  description: string | null;
+  retention_days: number;
+  enabled: boolean;
+  last_run: string | null;
+  deleted_count: number;
+}
+
+export interface RetentionPolicyUpdate {
+  retention_days?: number;
+  enabled?: boolean;
+}
+
+export interface RetentionCleanupResult {
+  dry_run: boolean;
+  policies_processed: number;
+  total_deleted: number;
+  details: Array<{
+    table: string;
+    status: string;
+    cutoff_date?: string;
+    deleted?: number;
+    reason?: string;
+    error?: string;
+  }>;
+}
+
+export interface StorageStats {
+  tables: Array<{
+    table_name: string;
+    display_name: string;
+    row_count?: number;
+    table_size?: string;
+    retention_days?: number;
+    enabled?: boolean;
+    last_run?: string | null;
+    last_deleted?: number;
+    error?: string;
+  }>;
+  total_rows: number;
+}
+
+export function useRetentionPolicies() {
+  return useQuery({
+    queryKey: ['admin', 'retention', 'policies'],
+    queryFn: async (): Promise<RetentionPolicy[]> => {
+      const response = await apiClient.get('/admin/retention/policies');
+      return response.data;
+    },
+  });
+}
+
+export function useRetentionPolicy(policyId: string) {
+  return useQuery({
+    queryKey: ['admin', 'retention', 'policies', policyId],
+    queryFn: async (): Promise<RetentionPolicy> => {
+      const response = await apiClient.get(`/admin/retention/policies/${policyId}`);
+      return response.data;
+    },
+    enabled: !!policyId,
+  });
+}
+
+export function useUpdateRetentionPolicy() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      policyId,
+      ...data
+    }: RetentionPolicyUpdate & { policyId: string }): Promise<RetentionPolicy> => {
+      const response = await apiClient.patch(`/admin/retention/policies/${policyId}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'retention', 'policies'] });
+    },
+  });
+}
+
+export function useRunRetentionCleanup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      policyId,
+      dryRun = true,
+    }: {
+      policyId?: string;
+      dryRun?: boolean;
+    }): Promise<RetentionCleanupResult> => {
+      const response = await apiClient.post('/admin/retention/cleanup', {
+        policy_id: policyId,
+        dry_run: dryRun,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'retention'] });
+    },
+  });
+}
+
+export function useStorageStats() {
+  return useQuery({
+    queryKey: ['admin', 'retention', 'stats'],
+    queryFn: async (): Promise<StorageStats> => {
+      const response = await apiClient.get('/admin/retention/stats');
+      return response.data;
+    },
+  });
+}
+
+// Export functions (not hooks - these trigger downloads directly)
+export async function exportEventsCSV(params?: {
+  event_type?: string;
+  severity?: string;
+  device_id?: string;
+  start_time?: string;
+  end_time?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/events/export/csv', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `events_${formatDateForFilename()}.csv`);
+}
+
+export async function exportEventsPDF(params?: {
+  event_type?: string;
+  severity?: string;
+  device_id?: string;
+  start_time?: string;
+  end_time?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/events/export/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `events_${formatDateForFilename()}.pdf`);
+}
+
+export async function exportAlertsCSV(params?: {
+  status?: string;
+  severity?: string;
+  device_id?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/alerts/export/csv', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `alerts_${formatDateForFilename()}.csv`);
+}
+
+export async function exportAlertsPDF(params?: {
+  status?: string;
+  severity?: string;
+  device_id?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/alerts/export/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `alerts_${formatDateForFilename()}.pdf`);
+}
+
+export async function exportDevicesCSV(params?: {
+  status?: string;
+  device_type?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/devices/export/csv', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `devices_${formatDateForFilename()}.csv`);
+}
+
+export async function exportDevicesPDF(params?: {
+  status?: string;
+  device_type?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/devices/export/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `devices_${formatDateForFilename()}.pdf`);
+}
+
+export async function exportAuditCSV(params?: {
+  action?: string;
+  target_type?: string;
+  user_id?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/audit/export/csv', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `audit_${formatDateForFilename()}.csv`);
+}
+
+export async function exportAuditPDF(params?: {
+  action?: string;
+  target_type?: string;
+  user_id?: string;
+}): Promise<void> {
+  const response = await apiClient.get('/audit/export/pdf', {
+    params,
+    responseType: 'blob',
+  });
+  downloadBlob(response.data, `audit_${formatDateForFilename()}.pdf`);
+}
+
+// Helper functions for exports
+function formatDateForFilename(): string {
+  const now = new Date();
+  return now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+}
+
+// Device Tag Management hooks
+export interface TagsResponse {
+  tags: string[];
+  counts: Record<string, number>;
+}
+
+export interface BulkTagResponse {
+  updated_count: number;
+  devices: Device[];
+}
+
+export function useAllTags() {
+  return useQuery({
+    queryKey: ['devices', 'tags'],
+    queryFn: async (): Promise<TagsResponse> => {
+      const response = await apiClient.get('/devices/tags/all');
+      return response.data;
+    },
+  });
+}
+
+export function useBulkTagDevices() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      deviceIds,
+      tagsToAdd,
+      tagsToRemove,
+    }: {
+      deviceIds: string[];
+      tagsToAdd?: string[];
+      tagsToRemove?: string[];
+    }): Promise<BulkTagResponse> => {
+      const response = await apiClient.post('/devices/bulk-tag', {
+        device_ids: deviceIds,
+        tags_to_add: tagsToAdd,
+        tags_to_remove: tagsToRemove,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+    },
+  });
+}
+
+export function useSetDeviceTags() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      deviceId,
+      tags,
+    }: {
+      deviceId: string;
+      tags: string[];
+    }): Promise<Device> => {
+      const response = await apiClient.put(`/devices/${deviceId}/tags`, tags);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+      queryClient.invalidateQueries({ queryKey: ['device', variables.deviceId] });
+    },
+  });
+}
+
+export function useAddDeviceTag() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      deviceId,
+      tag,
+    }: {
+      deviceId: string;
+      tag: string;
+    }): Promise<Device> => {
+      const response = await apiClient.post(`/devices/${deviceId}/tags`, null, {
+        params: { tag },
+      });
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+      queryClient.invalidateQueries({ queryKey: ['device', variables.deviceId] });
+    },
+  });
+}
+
+export function useRemoveDeviceTag() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      deviceId,
+      tag,
+    }: {
+      deviceId: string;
+      tag: string;
+    }): Promise<Device> => {
+      const response = await apiClient.delete(`/devices/${deviceId}/tags/${encodeURIComponent(tag)}`);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
+      queryClient.invalidateQueries({ queryKey: ['device', variables.deviceId] });
+    },
+  });
+}
+
+// Detection Rules hooks
+import type {
+  DetectionRule,
+  DetectionRuleListResponse,
+  CreateRuleRequest,
+  UpdateRuleRequest,
+  ConditionFieldInfo,
+  TestRuleRequest,
+  TestRuleResponse,
+} from '../types';
+
+export function useRules(params?: {
+  enabled?: boolean;
+  severity?: string;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  return useQuery({
+    queryKey: ['rules', params],
+    queryFn: async (): Promise<DetectionRuleListResponse> => {
+      const response = await apiClient.get('/rules', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useRule(ruleId: string) {
+  return useQuery({
+    queryKey: ['rules', ruleId],
+    queryFn: async (): Promise<DetectionRule> => {
+      const response = await apiClient.get(`/rules/${ruleId}`);
+      return response.data;
+    },
+    enabled: !!ruleId,
+  });
+}
+
+export function useRuleFields() {
+  return useQuery({
+    queryKey: ['rules', 'fields'],
+    queryFn: async (): Promise<ConditionFieldInfo[]> => {
+      const response = await apiClient.get('/rules/fields');
+      return response.data;
+    },
+  });
+}
+
+export function useCreateRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateRuleRequest): Promise<DetectionRule> => {
+      const response = await apiClient.post('/rules', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rules'] });
+    },
+  });
+}
+
+export function useUpdateRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      ruleId,
+      ...data
+    }: UpdateRuleRequest & { ruleId: string }): Promise<DetectionRule> => {
+      const response = await apiClient.patch(`/rules/${ruleId}`, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['rules'] });
+      queryClient.invalidateQueries({ queryKey: ['rules', variables.ruleId] });
+    },
+  });
+}
+
+export function useDeleteRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ruleId: string): Promise<void> => {
+      await apiClient.delete(`/rules/${ruleId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rules'] });
+    },
+  });
+}
+
+export function useEnableRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ruleId: string): Promise<DetectionRule> => {
+      const response = await apiClient.post(`/rules/${ruleId}/enable`);
+      return response.data;
+    },
+    onSuccess: (_, ruleId) => {
+      queryClient.invalidateQueries({ queryKey: ['rules'] });
+      queryClient.invalidateQueries({ queryKey: ['rules', ruleId] });
+    },
+  });
+}
+
+export function useDisableRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ruleId: string): Promise<DetectionRule> => {
+      const response = await apiClient.post(`/rules/${ruleId}/disable`);
+      return response.data;
+    },
+    onSuccess: (_, ruleId) => {
+      queryClient.invalidateQueries({ queryKey: ['rules'] });
+      queryClient.invalidateQueries({ queryKey: ['rules', ruleId] });
+    },
+  });
+}
+
+export function useTestRule() {
+  return useMutation({
+    mutationFn: async (data: TestRuleRequest): Promise<TestRuleResponse> => {
+      const response = await apiClient.post('/rules/test', data);
+      return response.data;
+    },
+  });
+}
+
+// Threat Intelligence hooks
+import type {
+  ThreatIntelFeed,
+  ThreatIntelFeedListResponse,
+  ThreatIndicatorListResponse,
+  CreateFeedRequest,
+  UpdateFeedRequest,
+  IndicatorCheckResponse,
+  ThreatIntelStats,
+  FeedType,
+  IndicatorType,
+  TopologyData,
+} from '../types';
+
+export function useThreatFeeds(params?: {
+  enabled?: boolean;
+  feed_type?: FeedType;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['threat-intel', 'feeds', params],
+    queryFn: async (): Promise<ThreatIntelFeedListResponse> => {
+      const response = await apiClient.get('/threat-intel/feeds', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useThreatFeed(feedId: string) {
+  return useQuery({
+    queryKey: ['threat-intel', 'feeds', feedId],
+    queryFn: async (): Promise<ThreatIntelFeed> => {
+      const response = await apiClient.get(`/threat-intel/feeds/${feedId}`);
+      return response.data;
+    },
+    enabled: !!feedId,
+  });
+}
+
+export function useCreateThreatFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateFeedRequest): Promise<ThreatIntelFeed> => {
+      const response = await apiClient.post('/threat-intel/feeds', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'stats'] });
+    },
+  });
+}
+
+export function useUpdateThreatFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      feedId,
+      ...data
+    }: UpdateFeedRequest & { feedId: string }): Promise<ThreatIntelFeed> => {
+      const response = await apiClient.patch(`/threat-intel/feeds/${feedId}`, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds', variables.feedId] });
+    },
+  });
+}
+
+export function useDeleteThreatFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<void> => {
+      await apiClient.delete(`/threat-intel/feeds/${feedId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'stats'] });
+    },
+  });
+}
+
+export function useFetchThreatFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<{ message: string; feed_id: string }> => {
+      const response = await apiClient.post(`/threat-intel/feeds/${feedId}/fetch`);
+      return response.data;
+    },
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds', feedId] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'indicators'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'stats'] });
+    },
+  });
+}
+
+export function useEnableThreatFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<ThreatIntelFeed> => {
+      const response = await apiClient.post(`/threat-intel/feeds/${feedId}/enable`);
+      return response.data;
+    },
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds', feedId] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'stats'] });
+    },
+  });
+}
+
+export function useDisableThreatFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<ThreatIntelFeed> => {
+      const response = await apiClient.post(`/threat-intel/feeds/${feedId}/disable`);
+      return response.data;
+    },
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'feeds', feedId] });
+      queryClient.invalidateQueries({ queryKey: ['threat-intel', 'stats'] });
+    },
+  });
+}
+
+export function useThreatIndicators(params?: {
+  feed_id?: string;
+  indicator_type?: IndicatorType;
+  severity?: string;
+  value_contains?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['threat-intel', 'indicators', params],
+    queryFn: async (): Promise<ThreatIndicatorListResponse> => {
+      const response = await apiClient.get('/threat-intel/indicators', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useCheckIndicator() {
+  return useMutation({
+    mutationFn: async ({
+      value,
+      indicator_type,
+    }: {
+      value: string;
+      indicator_type?: IndicatorType;
+    }): Promise<IndicatorCheckResponse> => {
+      const response = await apiClient.post('/threat-intel/check', {
+        value,
+        indicator_type,
+      });
+      return response.data;
+    },
+  });
+}
+
+export function useThreatIntelStats() {
+  return useQuery({
+    queryKey: ['threat-intel', 'stats'],
+    queryFn: async (): Promise<ThreatIntelStats> => {
+      const response = await apiClient.get('/threat-intel/stats');
+      return response.data;
+    },
+  });
+}
+
+// Network Topology hooks
+export function useTopology(params?: {
+  hours?: number;
+  include_inactive?: boolean;
+}) {
+  return useQuery({
+    queryKey: ['topology', params],
+    queryFn: async (): Promise<TopologyData> => {
+      const response = await apiClient.get('/topology', { params });
+      return response.data;
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+}
+
+export interface DeviceConnectionsResponse {
+  device_id: string;
+  connections: Array<{
+    domain: string | null;
+    target_ip: string | null;
+    event_type: string;
+    action: string | null;
+    count: number;
+    last_seen: string | null;
+  }>;
+  time_window_hours: number;
+}
+
+export function useDeviceConnections(deviceId: string, params?: {
+  hours?: number;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ['topology', 'connections', deviceId, params],
+    queryFn: async (): Promise<DeviceConnectionsResponse> => {
+      const response = await apiClient.get(`/topology/device/${deviceId}/connections`, { params });
+      return response.data;
+    },
+    enabled: !!deviceId,
   });
 }
