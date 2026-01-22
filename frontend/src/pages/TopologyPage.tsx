@@ -85,20 +85,19 @@ export default function TopologyPage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [nodes, setNodes] = useState<Node[]>([]);
   const [links, setLinks] = useState<Link[]>([]);
+  const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   const animationRef = useRef<number>();
   const draggedNodeRef = useRef<Node | null>(null);
 
   const { data, isLoading, refetch, isFetching } = useTopology({ hours, include_inactive: includeInactive });
 
-  // Initialize nodes with positions when data changes
+  // Initialize nodes with positions when data changes or canvas size is available
   useEffect(() => {
     if (!data) return;
+    if (canvasSize.width === 0 || canvasSize.height === 0) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+    const centerX = canvasSize.width / 2;
+    const centerY = canvasSize.height / 2;
 
     // Position nodes in a circular layout initially
     const newNodes: Node[] = data.nodes.map((node) => {
@@ -115,7 +114,7 @@ export default function TopologyPage() {
         const deviceNodes = data.nodes.filter(n => n.id !== 'internet' && n.id !== 'router');
         const deviceIndex = deviceNodes.findIndex(n => n.id === node.id);
         const angle = (deviceIndex / deviceNodes.length) * 2 * Math.PI - Math.PI / 2;
-        const radius = 180;
+        const radius = Math.min(180, Math.min(centerX, centerY) * 0.6);
         x = centerX + Math.cos(angle) * radius;
         y = centerY + Math.sin(angle) * radius + 50;
       }
@@ -131,7 +130,7 @@ export default function TopologyPage() {
 
     setNodes(newNodes);
     setLinks(data.links);
-  }, [data]);
+  }, [data, canvasSize.width, canvasSize.height]);
 
   // Force simulation
   useEffect(() => {
@@ -185,10 +184,9 @@ export default function TopologyPage() {
           });
 
           // Center gravity
-          const canvas = canvasRef.current;
-          if (canvas) {
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
+          if (canvasSize.width > 0 && canvasSize.height > 0) {
+            const centerX = canvasSize.width / 2;
+            const centerY = canvasSize.height / 2;
             node.vx += (centerX - node.x) * 0.001;
             node.vy += (centerY - node.y) * 0.001;
           }
@@ -213,7 +211,7 @@ export default function TopologyPage() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [links, nodes.length]);
+  }, [links, nodes.length, canvasSize.width, canvasSize.height]);
 
   // Draw canvas
   useEffect(() => {
@@ -294,13 +292,26 @@ export default function TopologyPage() {
       const container = containerRef.current;
       if (!canvas || !container) return;
 
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      canvas.width = width;
+      canvas.height = height;
+      setCanvasSize({ width, height });
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    // Also observe container size changes
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+    };
   }, []);
 
   // Mouse handlers
@@ -496,7 +507,7 @@ export default function TopologyPage() {
                 onMouseLeave={handleMouseUp}
                 onClick={handleClick}
                 onWheel={handleWheel}
-                className="cursor-grab active:cursor-grabbing"
+                className="w-full h-full cursor-grab active:cursor-grabbing"
               />
             )}
           </div>

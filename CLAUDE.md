@@ -73,7 +73,59 @@ npm run build
 npm run lint
 ```
 
-### Docker/Podman Deployment
+### Local Development (Windows with Podman/WSL)
+
+The backend requires PostgreSQL (TimescaleDB) and Redis. On Windows, use Podman with WSL:
+
+```bash
+# 1. Start Podman machine (if not already running)
+podman machine start
+
+# 2. If Podman SSH fails (common issue), run containers directly via WSL as root:
+wsl -d podman-machine-default -u root -- podman run -d --name netguardian-db \
+  -e POSTGRES_USER=netguardian \
+  -e POSTGRES_PASSWORD=netguardian-dev-password \
+  -e POSTGRES_DB=netguardian \
+  -p 5432:5432 timescale/timescaledb:latest-pg16
+
+wsl -d podman-machine-default -u root -- podman run -d --name netguardian-redis \
+  -p 6379:6379 redis:7-alpine
+
+# 3. Get WSL IP address
+wsl -d podman-machine-default -- ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
+# Example output: 172.27.3.179
+
+# 4. Set up Windows port forwarding (run as Administrator)
+netsh interface portproxy add v4tov4 listenport=5432 listenaddress=127.0.0.1 connectport=5432 connectaddress=<WSL_IP>
+netsh interface portproxy add v4tov4 listenaddress=127.0.0.1 listenport=6379 connectport=6379 connectaddress=<WSL_IP>
+
+# 5. Verify port forwarding
+netsh interface portproxy show all
+
+# 6. Create backend/.env for local development
+cat > backend/.env << 'EOF'
+DATABASE_URL=postgresql+asyncpg://netguardian:netguardian-dev-password@localhost:5432/netguardian
+REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=dev-secret-key-change-in-production-must-be-64-chars-hex
+DEBUG=true
+LOG_LEVEL=DEBUG
+EOF
+
+# 7. Run migrations and start servers
+cd backend && alembic upgrade head
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
+cd ../frontend && npm run dev &
+```
+
+**Note:** The WSL IP address can change on reboot. If connections fail, get the new IP and update port forwarding.
+
+To clean up port forwarding:
+```bash
+netsh interface portproxy delete v4tov4 listenport=5432 listenaddress=127.0.0.1
+netsh interface portproxy delete v4tov4 listenport=6379 listenaddress=127.0.0.1
+```
+
+### Docker/Podman Deployment (Production)
 
 ```bash
 cd deploy

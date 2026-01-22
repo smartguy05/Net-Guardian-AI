@@ -49,21 +49,33 @@ All phases complete! The system provides comprehensive network security monitori
 ## Quick Start
 
 ### Prerequisites
-- Docker or Podman with Compose
+- **Linux/macOS**: Docker or Podman, Python 3.11+, Node.js 18+
+- **Windows**: Podman Desktop (with WSL2), Python 3.11+, Node.js 18+
 - 2GB RAM minimum
 
-### Start the Stack
+### Development Setup (Recommended)
 
+The easiest way to run NetGuardian AI for development:
+
+**Linux/macOS:**
 ```bash
-cd deploy
-cp .env.example .env  # Edit with your settings
-podman-compose up -d  # or docker-compose
+# Make scripts executable (first time only)
+chmod +x scripts/*.sh
+
+# Start everything (containers + backend + frontend)
+./scripts/start-dev.sh
+
+# Or start with demo data pre-loaded
+./scripts/start-dev.sh --seed-data
 ```
 
-### Run Database Migrations
+**Windows (PowerShell as Administrator):**
+```powershell
+# Start everything
+.\scripts\start-dev.ps1
 
-```bash
-podman exec netguardian-backend alembic upgrade head
+# Or start with demo data pre-loaded
+.\scripts\start-dev.ps1 -SeedData
 ```
 
 ### Access
@@ -76,34 +88,45 @@ podman exec netguardian-backend alembic upgrade head
 
 ### Default Login
 
-On first startup, an admin user is created with a randomly generated password. Check the backend logs:
-
-```bash
-podman logs netguardian-backend | grep "Initial admin"
+On first startup, an admin user is created with a randomly generated password. Check the terminal output for:
+```
+INITIAL ADMIN USER CREATED
+Username: admin
+Password: <random-password>
 ```
 
-### Load Demo Data (Optional)
+### Demo Data
 
-To populate the database with realistic demo data for testing and screenshots:
+To load demo data for testing (17 devices, 380+ events, alerts, etc.):
 
 ```bash
-podman exec netguardian-backend python scripts/seed_demo_data.py
-```
+# Linux/macOS
+./scripts/start-dev.sh --seed-data
 
-This creates:
-- 3 demo users (admin/operator/viewer)
-- 17 devices (PCs, mobiles, IoT, servers, network equipment)
-- 380+ events (DNS, firewall, flow, endpoint, LLM)
-- 6 alerts with various severities and statuses
-- Anomaly detections and device baselines
-- Detection rules and playbooks
-- Threat intelligence feeds with indicators
-- Audit logs and retention policies
+# Windows
+.\scripts\start-dev.ps1 -SeedData
+
+# Or manually after startup
+cd backend && python scripts/seed_demo_data.py
+```
 
 **Demo Credentials:**
-- Admin: `demo_admin` / `DemoAdmin123!`
-- Operator: `demo_operator` / `DemoOp123!`
-- Viewer: `demo_viewer` / `DemoView123!`
+| User | Password | Role |
+|------|----------|------|
+| demo_admin | DemoAdmin123! | Admin |
+| demo_operator | DemoOp123! | Operator |
+| demo_viewer | DemoView123! | Viewer |
+
+### Production Deployment
+
+For production, use Docker/Podman Compose:
+
+```bash
+cd deploy
+cp .env.example .env  # Edit with your settings
+docker-compose up -d  # or podman-compose
+docker exec netguardian-backend alembic upgrade head
+```
 
 ## Architecture
 
@@ -147,6 +170,12 @@ net-guardian-ai/
 │   ├── netguardian_agent.py # Standalone monitoring agent
 │   ├── agent_config.yaml.example
 │   └── requirements.txt
+├── scripts/
+│   ├── start-dev.sh          # Linux/macOS startup script
+│   ├── start-dev.ps1         # Windows startup script
+│   ├── stop-dev.sh           # Linux/macOS stop script
+│   ├── stop-dev.ps1          # Windows stop script
+│   └── seed_demo_data.py     # Demo data seeder (in backend/scripts/)
 ├── deploy/
 │   ├── docker-compose.yml
 │   ├── Dockerfile.backend
@@ -240,18 +269,93 @@ curl -X POST http://localhost:8000/api/v1/sources \
 
 ## Development
 
-### Backend
+### Development Scripts
+
+Scripts are provided for easy development setup on both Linux and Windows.
+
+| Script | Linux/macOS | Windows (PowerShell) |
+|--------|-------------|----------------------|
+| Start all | `./scripts/start-dev.sh` | `.\scripts\start-dev.ps1` |
+| Start + demo data | `./scripts/start-dev.sh --seed-data` | `.\scripts\start-dev.ps1 -SeedData` |
+| Use Docker | `./scripts/start-dev.sh --docker` | N/A (uses Podman) |
+| Stop servers | `./scripts/stop-dev.sh` | `.\scripts\stop-dev.ps1` |
+| Stop all | `./scripts/stop-dev.sh --stop-containers` | `.\scripts\stop-dev.ps1 -StopContainers` |
+
+**First time on Linux/macOS:**
+```bash
+chmod +x scripts/*.sh
+```
+
+**Windows users:** Run PowerShell as Administrator, or double-click `start-netguardian.bat`.
+
+### What the Scripts Do
+
+1. Start database (TimescaleDB) and Redis containers
+2. Set up port forwarding (Windows only - for WSL)
+3. Create `backend/.env` if it doesn't exist
+4. Run database migrations
+5. Optionally seed demo data
+6. Start backend (port 8000) and frontend (port 5173)
+
+### Manual Setup
+
+If you prefer to run things manually:
+
+**1. Start containers:**
+```bash
+# Linux (Podman)
+podman run -d --name netguardian-db -e POSTGRES_USER=netguardian \
+  -e POSTGRES_PASSWORD=netguardian-dev-password -e POSTGRES_DB=netguardian \
+  -p 5432:5432 timescale/timescaledb:latest-pg16
+
+podman run -d --name netguardian-redis -p 6379:6379 redis:7-alpine
+
+# Or use Docker
+docker run -d --name netguardian-db ...
+```
+
+**2. Create backend/.env:**
+```bash
+cat > backend/.env << 'EOF'
+DATABASE_URL=postgresql+asyncpg://netguardian:netguardian-dev-password@localhost:5432/netguardian
+REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=dev-secret-key-change-in-production-must-be-64-chars-hex
+DEBUG=true
+LOG_LEVEL=DEBUG
+EOF
+```
+
+**3. Run backend:**
 ```bash
 cd backend
 pip install -e .
-uvicorn app.main:app --reload
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend
+**4. Run frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
+```
+
+### Windows/Podman Notes
+
+Podman on Windows uses WSL2 and sometimes has SSH tunnel issues. The startup script handles this automatically by:
+- Running containers via WSL directly (`wsl -d podman-machine-default -u root -- podman ...`)
+- Setting up Windows port forwarding to the WSL IP address
+
+If you need to manually fix port forwarding after a reboot:
+```powershell
+# Get new WSL IP
+wsl -d podman-machine-default -- ip addr show eth0 | Select-String "inet "
+
+# Update port forwarding (as Administrator)
+netsh interface portproxy delete v4tov4 listenport=5432 listenaddress=127.0.0.1
+netsh interface portproxy delete v4tov4 listenport=6379 listenaddress=127.0.0.1
+netsh interface portproxy add v4tov4 listenport=5432 listenaddress=127.0.0.1 connectport=5432 connectaddress=<NEW_IP>
+netsh interface portproxy add v4tov4 listenport=6379 listenaddress=127.0.0.1 connectport=6379 connectaddress=<NEW_IP>
 ```
 
 ### Running Tests

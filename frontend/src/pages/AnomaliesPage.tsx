@@ -24,18 +24,18 @@ import type { AnomalyDetection, AnomalyStatus, AnomalyType } from '../types';
 const PAGE_SIZE = 20;
 
 const severityColors = {
-  critical: 'bg-red-100 text-red-700 border-red-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  low: 'bg-blue-100 text-blue-700 border-blue-200',
-  info: 'bg-gray-100 text-gray-700 border-gray-200',
+  critical: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+  high: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
+  medium: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800',
+  low: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+  info: 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600',
 };
 
 const statusColors = {
-  active: 'bg-red-100 text-red-700',
-  reviewed: 'bg-blue-100 text-blue-700',
-  false_positive: 'bg-gray-100 text-gray-700',
-  confirmed: 'bg-green-100 text-green-700',
+  active: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  reviewed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  false_positive: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
 };
 
 const anomalyTypeLabels: Record<AnomalyType, string> = {
@@ -93,15 +93,15 @@ export default function AnomaliesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Anomaly Detection</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Anomaly Detection</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Monitor behavioral anomalies detected across your network devices
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-700"
           >
             <RefreshCw className="h-4 w-4" />
             Refresh
@@ -122,51 +122,51 @@ export default function AnomaliesPage() {
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
-                <p className="text-sm text-gray-600">Active Anomalies</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.active}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Active Anomalies</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {(stats.by_severity?.critical || 0) + (stats.by_severity?.high || 0)}
                 </p>
-                <p className="text-sm text-gray-600">High/Critical</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">High/Critical</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.by_status?.reviewed || 0}
                 </p>
-                <p className="text-sm text-gray-600">Reviewed</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Reviewed</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                <Activity className="h-5 w-5 text-gray-600" />
+              <div className="p-2 bg-gray-100 dark:bg-zinc-700 rounded-lg">
+                <Activity className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                <p className="text-sm text-gray-600">Total Anomalies</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Anomalies</p>
               </div>
             </div>
           </div>
@@ -174,11 +174,11 @@ export default function AnomaliesPage() {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Filters:</span>
+            <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
           </div>
           <select
             value={statusFilter}
@@ -186,7 +186,7 @@ export default function AnomaliesPage() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
+            className="text-sm border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100"
           >
             <option value="">All Statuses</option>
             <option value="active">Active</option>
@@ -200,7 +200,7 @@ export default function AnomaliesPage() {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
+            className="text-sm border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100"
           >
             <option value="">All Types</option>
             <option value="new_domain">New Domain</option>
@@ -217,7 +217,7 @@ export default function AnomaliesPage() {
               setSeverityFilter(e.target.value);
               setPage(1);
             }}
-            className="text-sm border border-gray-300 rounded-lg px-3 py-1.5"
+            className="text-sm border border-gray-300 dark:border-zinc-600 rounded-lg px-3 py-1.5 bg-white dark:bg-zinc-700 text-gray-900 dark:text-gray-100"
           >
             <option value="">All Severities</option>
             <option value="critical">Critical</option>
@@ -230,12 +230,12 @@ export default function AnomaliesPage() {
       </div>
 
       {/* Anomalies List */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-500">Loading anomalies...</div>
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">Loading anomalies...</div>
         ) : !anomalies?.items.length ? (
-          <div className="p-8 text-center text-gray-500">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
             <p>No anomalies found</p>
             <p className="text-sm mt-1">
               {statusFilter || typeFilter || severityFilter
@@ -246,32 +246,32 @@ export default function AnomaliesPage() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+                <thead className="bg-gray-50 dark:bg-zinc-900">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Anomaly
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Device
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Severity
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Detected
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
                   {anomalies.items.map((anomaly) => (
-                    <tr key={anomaly.id} className="hover:bg-gray-50">
+                    <tr key={anomaly.id} className="hover:bg-gray-50 dark:hover:bg-zinc-700/50">
                       <td className="px-4 py-4">
                         <div className="flex items-start gap-3">
                           <AlertTriangle
@@ -287,10 +287,10 @@ export default function AnomaliesPage() {
                             )}
                           />
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {anomalyTypeLabels[anomaly.anomaly_type]}
                             </p>
-                            <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
                               {anomaly.description}
                             </p>
                           </div>
@@ -299,7 +299,7 @@ export default function AnomaliesPage() {
                       <td className="px-4 py-4">
                         <Link
                           to={`/devices/${anomaly.device_id}`}
-                          className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                          className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
                         >
                           View Device
                           <ExternalLink className="h-3 w-3" />
@@ -325,14 +325,14 @@ export default function AnomaliesPage() {
                           {anomaly.status.replace('_', ' ')}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-500">
+                      <td className="px-4 py-4 text-sm text-gray-500 dark:text-gray-400">
                         {formatDate(anomaly.detected_at)}
                       </td>
                       <td className="px-4 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setSelectedAnomaly(anomaly)}
-                            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                            className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded"
                             title="View Details"
                           >
                             <Eye className="h-4 w-4" />
@@ -341,14 +341,14 @@ export default function AnomaliesPage() {
                             <>
                               <button
                                 onClick={() => handleStatusUpdate(anomaly.id, 'reviewed')}
-                                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+                                className="p-1.5 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
                                 title="Mark Reviewed"
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => handleStatusUpdate(anomaly.id, 'false_positive')}
-                                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                                className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded"
                                 title="Mark False Positive"
                               >
                                 <XCircle className="h-4 w-4" />
@@ -376,20 +376,20 @@ export default function AnomaliesPage() {
       {/* Detail Modal */}
       {selectedAnomaly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-zinc-700">
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {anomalyTypeLabels[selectedAnomaly.anomaly_type]}
                   </h2>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Detected {formatDate(selectedAnomaly.detected_at)}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedAnomaly(null)}
-                  className="p-2 text-gray-400 hover:text-gray-600"
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <XCircle className="h-5 w-5" />
                 </button>
@@ -397,12 +397,12 @@ export default function AnomaliesPage() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-1">Description</h3>
-                <p className="text-sm text-gray-900">{selectedAnomaly.description}</p>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</h3>
+                <p className="text-sm text-gray-900 dark:text-white">{selectedAnomaly.description}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Severity</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severity</h3>
                   <span
                     className={clsx(
                       'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border',
@@ -413,32 +413,32 @@ export default function AnomaliesPage() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Score</h3>
-                  <p className="text-sm text-gray-900">{selectedAnomaly.score.toFixed(2)}</p>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Score</h3>
+                  <p className="text-sm text-gray-900 dark:text-white">{selectedAnomaly.score.toFixed(2)}</p>
                 </div>
               </div>
               {Object.keys(selectedAnomaly.details).length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Details</h3>
-                  <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-x-auto">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Details</h3>
+                  <pre className="text-xs bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-gray-100 p-3 rounded-lg overflow-x-auto">
                     {JSON.stringify(selectedAnomaly.details, null, 2)}
                   </pre>
                 </div>
               )}
               {Object.keys(selectedAnomaly.baseline_comparison).length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Baseline Comparison</h3>
-                  <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-x-auto">
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Baseline Comparison</h3>
+                  <pre className="text-xs bg-gray-50 dark:bg-zinc-900 text-gray-900 dark:text-gray-100 p-3 rounded-lg overflow-x-auto">
                     {JSON.stringify(selectedAnomaly.baseline_comparison, null, 2)}
                   </pre>
                 </div>
               )}
               {selectedAnomaly.alert_id && (
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-1">Related Alert</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Related Alert</h3>
                   <Link
                     to={`/alerts?id=${selectedAnomaly.alert_id}`}
-                    className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1"
+                    className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
                   >
                     View Alert <ExternalLink className="h-3 w-3" />
                   </Link>
@@ -446,10 +446,10 @@ export default function AnomaliesPage() {
               )}
             </div>
             {isOperator && selectedAnomaly.status === 'active' && (
-              <div className="p-6 border-t border-gray-200 flex justify-end gap-2">
+              <div className="p-6 border-t border-gray-200 dark:border-zinc-700 flex justify-end gap-2">
                 <button
                   onClick={() => handleStatusUpdate(selectedAnomaly.id, 'false_positive')}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-zinc-700 border border-gray-300 dark:border-zinc-600 rounded-lg hover:bg-gray-50 dark:hover:bg-zinc-600"
                 >
                   False Positive
                 </button>

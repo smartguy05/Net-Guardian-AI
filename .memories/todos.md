@@ -2,7 +2,27 @@
 
 Remaining tasks organized by priority.
 
-**Status:** Phase 7 (Technical Debt & DevOps) COMPLETE
+**Status:** Phase 8 (Landing Page & Help System) COMPLETE
+
+---
+
+## Phase 8: Landing Page & Help System (COMPLETE)
+
+### Completed
+- [x] Public landing page at `/` route
+- [x] Dashboard routes moved to `/dashboard/*`
+- [x] Context-sensitive help panel system
+- [x] Floating "?" help button
+- [x] Keyboard shortcuts (? to toggle, Esc to close)
+- [x] Help content for all 14 pages
+- [x] Screenshots directory with placeholder/README
+
+### Remaining for Screenshots
+- [ ] Install and configure Playwright MCP server
+- [ ] Capture screenshots using Playwright MCP (see SCREENSHOT_PLAN.md)
+- [ ] Screenshots needed: dashboard, devices, alerts, anomalies, events, topology, rules, chat, settings
+- [ ] Each in both light and dark themes (18 total)
+- [ ] Verify all 18 screenshots in `/public/screenshots/`
 
 ---
 

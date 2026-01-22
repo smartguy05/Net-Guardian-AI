@@ -4,6 +4,136 @@ Issues, gotchas, and lessons learned during development.
 
 ---
 
+## Users Page Contrast Issues
+
+**Problem:** Users page had poor contrast in dark mode - usernames, emails, role badges, and dropdown menu were hard to read.
+
+**Fixed elements:**
+- `roleColors` record (added dark variants with `/30` opacity backgrounds)
+- Username (`text-gray-900` → `dark:text-white`)
+- Email text (`dark:text-gray-400`)
+- "You", "Inactive", "Must change password" badges
+- Role badge in header section
+- Dropdown menu (background, borders, hover states)
+- Dropdown menu items and divider
+- Temporary password notification box
+- Page header and role legend text
+- Loading skeletons
+- Empty state
+
+**File:** `frontend/src/pages/UsersPage.tsx`
+
+---
+
+## Sources Page Contrast Issues
+
+**Problem:** Sources page had poor contrast in dark mode - source names were blue (hard to read), descriptions were too faint, and the API Key box had a white background.
+
+**Fixed elements:**
+- Source names (`text-gray-900` → `dark:text-white`)
+- Descriptions (`text-gray-600` → `dark:text-gray-400`)
+- Disabled badge (added dark mode variant)
+- Type/Parser/Events/Last Event labels and values
+- Error notification box
+- API Key box (`bg-gray-50` → `dark:bg-zinc-900`)
+- Copy button hover states
+- Toggle buttons (Disable/Enable)
+- Non-admin info box
+- Loading skeletons
+- Empty state
+
+**File:** `frontend/src/pages/SourcesPage.tsx`
+
+---
+
+## Quarantine Page Theme Issues
+
+**Problem:** Quarantine page had hardcoded light theme colors, making tables and UI elements appear white in dark mode.
+
+**Fixed elements:**
+- Header text (title and subtitle)
+- Stats cards (icon backgrounds, text colors)
+- Integration status cards (backgrounds, text, status indicators)
+- Quarantined devices table (header, body, dividers, empty state)
+- Recent activity table (all elements)
+- QuarantinedDeviceRow component (hover states, text, badges)
+- ActivityLogRow component (hover states, text, action badges)
+- Sync results notification
+- "View all audit logs" link
+
+**File:** `frontend/src/pages/QuarantinePage.tsx`
+
+---
+
+## Anomalies Page Theme Issues
+
+**Problem:** Anomalies page had hardcoded light theme colors, making the table and UI elements appear white/light in dark mode.
+
+**Fixed elements:**
+- Header text (`text-gray-900` → added `dark:text-white`)
+- Stats cards (background, border, text colors)
+- Filter section (background, border, select inputs)
+- Table (header, body, rows, dividers)
+- Severity badges (added dark mode variants with `/30` opacity backgrounds)
+- Status badges (added dark mode variants)
+- Action buttons (hover states)
+- Detail modal (all sections)
+
+**File:** `frontend/src/pages/AnomaliesPage.tsx`
+
+---
+
+## Topology Page Canvas Bug
+
+**Problem:** Network map was clustered in the top-left corner instead of filling the container.
+
+**Cause:** Multiple issues:
+1. Canvas element didn't have CSS classes to fill its parent container
+2. Node positions were initialized before canvas dimensions were set
+3. Canvas dimensions were read directly from the element, which could be 0 initially
+
+**Solution:**
+1. Added `w-full h-full` CSS classes to the canvas element
+2. Added `canvasSize` state to track dimensions reactively
+3. Used `ResizeObserver` to detect container size changes
+4. Updated node initialization to depend on `canvasSize` state
+5. Made node radius calculation responsive to canvas size
+
+**File:** `frontend/src/pages/TopologyPage.tsx`
+
+---
+
+## Phase 8 Notes
+
+### Landing Page & Help System (Phase 8)
+
+**Route Structure Change:**
+- Landing page is now at `/` (public, no auth required)
+- All authenticated dashboard routes moved under `/dashboard/*`
+- Login redirects to `/dashboard` after successful authentication
+- Navigation links in Layout.tsx updated to use `/dashboard` prefix
+
+**Help Panel Implementation:**
+- Uses Zustand store (`stores/help.ts`) for open/close state
+- HelpButton is fixed positioned at bottom-right (z-40)
+- HelpPanel slides from right edge with backdrop overlay
+- Content is route-aware via `getHelpForPath()` function
+- Keyboard shortcuts: `?` to toggle, `Esc` to close
+- Excludes shortcuts when typing in input/textarea
+
+**Theme Store Enhancement:**
+- Added `resolvedTheme` to track actual theme (light/dark)
+- Useful for components that need to know the effective theme
+- System theme listener now updates `resolvedTheme` when preference changes
+
+**Screenshot Fallbacks:**
+- Landing page uses `onError` handler to display SVG placeholder
+- Placeholder shows page name centered in gray box
+- Actual screenshots should be placed in `/public/screenshots/`
+- Naming convention: `{page}-{theme}.png` (e.g., `dashboard-dark.png`)
+
+---
+
 ## Build & Deployment Issues
 
 ### Hatchling Build System
@@ -140,6 +270,57 @@ role: Mapped[UserRole] = mapped_column(
 
 ## Frontend Issues
 
+### Vite WebSocket Proxy Not Working
+
+**Problem:** WebSocket connection to `ws://localhost:5173/api/v1/ws` fails with connection error. Console shows repeated WebSocket errors and disconnections.
+
+**Cause:** Vite's proxy configuration doesn't proxy WebSocket connections by default. The frontend connects to the dev server port (5173), expecting Vite to forward to the backend (8000), but WebSocket upgrade requests weren't being handled.
+
+**Solution:** Add `ws: true` to the Vite proxy configuration in `frontend/vite.config.ts`:
+```typescript
+proxy: {
+  '/api': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    ws: true,  // Enable WebSocket proxy
+  },
+},
+```
+
+**Note:** Must restart the Vite dev server after making this change.
+
+---
+
+### WebSocket Console Spam When Backend Unavailable
+
+**Problem:** When backend is not running, WebSocket connection attempts flood the console with "WebSocket error" messages, potentially freezing the page.
+
+**Cause:** The `useWebSocket` hook logged every error and attempted reconnection with a fixed 3-second interval. Combined with persisted auth state (user appears logged in from previous session), this created rapid error loops.
+
+**Solution:** Updated `frontend/src/hooks/useWebSocket.ts` with:
+1. **Single error logging**: Only log the first connection error via `hasLoggedErrorRef`
+2. **Exponential backoff**: 3s → 6s → 12s → 24s → 48s instead of constant 3s
+3. **Max retry tracking**: `maxRetriesExhaustedRef` stops attempts after max retries
+4. **State reset on auth changes**: Fresh reconnection state when user logs in/out
+
+**Key code pattern:**
+```typescript
+const hasLoggedErrorRef = useRef(false);
+const maxRetriesExhaustedRef = useRef(false);
+
+ws.onerror = (error) => {
+  if (!hasLoggedErrorRef.current) {
+    console.warn('WebSocket connection failed. Backend may be unavailable.');
+    hasLoggedErrorRef.current = true;
+  }
+};
+
+// Exponential backoff in onclose
+const backoffDelay = reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1);
+```
+
+---
+
 ### Login Not Returning User
 
 **Problem:** User logged in but role check failed - always showed "non-admin" UI
@@ -169,6 +350,45 @@ class LoginResponse(BaseModel):
 
 ## Podman-Specific Issues
 
+### Podman Machine SSH Connection Failure on Windows
+
+**Problem:** `podman machine start` reports "machine is not listening on ssh port" even though it says "already running". Commands like `podman ps` fail with "unable to connect to Podman socket".
+
+**Cause:** The SSH tunnel between Windows and the WSL-based Podman machine fails to establish properly. The machine shows as "Currently running" but port forwarding is broken.
+
+**Workaround:** Run Podman commands directly via WSL instead of relying on the SSH tunnel:
+
+```bash
+# Run containers as root in WSL
+wsl -d podman-machine-default -u root -- podman run -d --name mycontainer -p 5432:5432 myimage
+
+# Check running containers
+wsl -d podman-machine-default -u root -- podman ps
+
+# View logs
+wsl -d podman-machine-default -u root -- podman logs mycontainer
+```
+
+**Note:** Using `-u root` is important because rootless podman in WSL often has issues with port binding and cgroups.
+
+**WSL Port Forwarding:** Ports exposed in WSL containers aren't automatically accessible from Windows. Set up port forwarding:
+
+```bash
+# Get WSL IP
+wsl -d podman-machine-default -- ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
+
+# Set up forwarding (run as Administrator)
+netsh interface portproxy add v4tov4 listenport=5432 listenaddress=127.0.0.1 connectport=5432 connectaddress=<WSL_IP>
+
+# Verify
+netsh interface portproxy show all
+
+# Delete when done
+netsh interface portproxy delete v4tov4 listenport=5432 listenaddress=127.0.0.1
+```
+
+---
+
 ### Container Dependencies
 
 **Problem:** Could not remove/restart containers due to dependencies
@@ -181,6 +401,25 @@ podman stop netguardian-collector netguardian-frontend netguardian-backend
 podman rm -f netguardian-collector netguardian-frontend netguardian-backend
 podman-compose up -d backend frontend collector
 ```
+
+---
+
+### Rollup Optional Dependency Not Installing (npm bug)
+
+**Problem:** `Cannot find module @rollup/rollup-win32-x64-msvc` when running `npm run dev`
+
+**Cause:** npm has a known bug with optional dependencies (https://github.com/npm/cli/issues/4828) where platform-specific packages aren't installed properly.
+
+**Solution:** Manually download and extract the package:
+```bash
+cd frontend/node_modules/@rollup
+npm pack @rollup/rollup-win32-x64-msvc@4.55.2
+tar -xzf rollup-rollup-win32-x64-msvc-4.55.2.tgz
+mv package rollup-win32-x64-msvc
+rm rollup-rollup-win32-x64-msvc-4.55.2.tgz
+```
+
+**Note:** The version (4.55.2) must match what's in `node_modules/rollup/package.json` under `optionalDependencies`.
 
 ---
 

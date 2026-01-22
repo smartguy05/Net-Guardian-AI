@@ -4,6 +4,51 @@ Tasks completed during implementation.
 
 ---
 
+## Phase 8: Landing Page & Help System - COMPLETE (January 2026)
+
+### Landing Page - COMPLETE
+- [x] Created public landing page at `/` route
+- [x] Updated `App.tsx` routing:
+  - Landing page at `/` (public)
+  - Login redirects to `/dashboard` when authenticated
+  - All dashboard routes moved under `/dashboard/*`
+- [x] Updated `Layout.tsx` navigation hrefs to use `/dashboard` prefix
+- [x] Created `frontend/src/pages/LandingPage.tsx`:
+  - Fixed header with logo, nav links, theme toggle, login button
+  - Hero section with headline, tagline, CTAs, and screenshot
+  - Features grid (8 feature cards)
+  - Screenshots section with theme toggle and page tabs
+  - Architecture section with component cards and data flow diagram
+  - Quick Start section with prerequisites and installation commands
+  - Footer with links
+- [x] Created `/public/screenshots/` directory with README
+- [x] Added `resolvedTheme` to theme store for screenshot theme switching
+- [x] Screenshots have fallback SVG placeholders when missing
+
+### Help Panel System - COMPLETE
+- [x] Created `frontend/src/stores/help.ts` Zustand store
+  - `isOpen` state, `openHelp`, `closeHelp`, `toggleHelp` methods
+- [x] Created `frontend/src/components/HelpButton.tsx`
+  - Floating "?" button fixed to bottom-right
+  - Triggers help panel toggle
+- [x] Created `frontend/src/components/HelpPanel.tsx`
+  - Slide-out panel from right edge
+  - Semi-transparent backdrop overlay
+  - Close via X button, backdrop click, or Escape key
+  - Keyboard shortcut: `?` to toggle
+  - Displays context-sensitive help based on current route
+- [x] Created `frontend/src/content/helpContent.ts`
+  - Help content for all 14 pages:
+    - Dashboard, Devices, Device Detail, Events, Alerts, Anomalies
+    - Rules, Threat Intel, Quarantine, Chat, Sources
+    - Users, Settings, Topology
+  - Each page has: title, overview, sections with tips
+  - Some pages have keyboard shortcuts
+  - `getHelpForPath()` function for route-based content lookup
+- [x] Integrated HelpButton and HelpPanel into Layout.tsx
+
+---
+
 ## Phase 7: Technical Debt & DevOps - COMPLETE (January 2026)
 
 ### Prometheus Metrics - COMPLETE
@@ -135,6 +180,10 @@ Tasks completed during implementation.
 - [x] Updated `Layout.tsx` with dark mode variants and theme toggle
 - [x] Updated all pages with `dark:` Tailwind variants (Login, Dashboard, Devices, Events, Alerts)
 - [x] Updated `Pagination.tsx` component with dark mode support
+- [x] Fixed AnomaliesPage dark mode (tables, badges, modal, filter section)
+- [x] Fixed QuarantinePage dark mode (tables, integration cards, activity log)
+- [x] Fixed SourcesPage dark mode (source names, API Key box, toggle buttons)
+- [x] Fixed UsersPage dark mode (roleColors, dropdown menu, badges)
 
 ### WebSockets - COMPLETE
 - [x] Created `backend/app/api/v1/websocket.py` with ConnectionManager

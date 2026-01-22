@@ -22,22 +22,24 @@ import {
 import { useAuthStore } from '../stores/auth';
 import { useLogout } from '../api/hooks';
 import ThemeToggle from './ThemeToggle';
+import HelpButton from './HelpButton';
+import HelpPanel from './HelpPanel';
 import clsx from 'clsx';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, adminOnly: false },
-  { name: 'Devices', href: '/devices', icon: Monitor, adminOnly: false },
-  { name: 'Topology', href: '/topology', icon: Network, adminOnly: false },
-  { name: 'Events', href: '/events', icon: Activity, adminOnly: false },
-  { name: 'Alerts', href: '/alerts', icon: Bell, adminOnly: false },
-  { name: 'Anomalies', href: '/anomalies', icon: AlertTriangle, adminOnly: false },
-  { name: 'Rules', href: '/rules', icon: ListFilter, adminOnly: false },
-  { name: 'Threat Intel', href: '/threat-intel', icon: Shield, adminOnly: false },
-  { name: 'Quarantine', href: '/quarantine', icon: ShieldOff, adminOnly: false },
-  { name: 'AI Chat', href: '/chat', icon: MessageSquare, adminOnly: false },
-  { name: 'Sources', href: '/sources', icon: Database, adminOnly: false },
-  { name: 'Users', href: '/users', icon: Users, adminOnly: true },
-  { name: 'Settings', href: '/settings', icon: Settings, adminOnly: false },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, adminOnly: false },
+  { name: 'Devices', href: '/dashboard/devices', icon: Monitor, adminOnly: false },
+  { name: 'Topology', href: '/dashboard/topology', icon: Network, adminOnly: false },
+  { name: 'Events', href: '/dashboard/events', icon: Activity, adminOnly: false },
+  { name: 'Alerts', href: '/dashboard/alerts', icon: Bell, adminOnly: false },
+  { name: 'Anomalies', href: '/dashboard/anomalies', icon: AlertTriangle, adminOnly: false },
+  { name: 'Rules', href: '/dashboard/rules', icon: ListFilter, adminOnly: false },
+  { name: 'Threat Intel', href: '/dashboard/threat-intel', icon: Shield, adminOnly: false },
+  { name: 'Quarantine', href: '/dashboard/quarantine', icon: ShieldOff, adminOnly: false },
+  { name: 'AI Chat', href: '/dashboard/chat', icon: MessageSquare, adminOnly: false },
+  { name: 'Sources', href: '/dashboard/sources', icon: Database, adminOnly: false },
+  { name: 'Users', href: '/dashboard/users', icon: Users, adminOnly: true },
+  { name: 'Settings', href: '/dashboard/settings', icon: Settings, adminOnly: false },
 ];
 
 export default function Layout() {
@@ -186,6 +188,10 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+
+      {/* Help System */}
+      <HelpButton />
+      <HelpPanel />
     </div>
   );
 }

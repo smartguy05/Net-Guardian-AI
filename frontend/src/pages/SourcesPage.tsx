@@ -52,11 +52,11 @@ function SourceCard({ source }: { source: LogSource }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-gray-900">{source.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{source.name}</h3>
             <span
               className={clsx(
                 'badge',
-                source.enabled ? 'badge-success' : 'bg-gray-100 text-gray-500'
+                source.enabled ? 'badge-success' : 'bg-gray-100 dark:bg-zinc-700 text-gray-500 dark:text-gray-400'
               )}
             >
               {source.enabled ? 'Active' : 'Disabled'}
@@ -64,31 +64,31 @@ function SourceCard({ source }: { source: LogSource }) {
           </div>
 
           {source.description && (
-            <p className="mt-1 text-sm text-gray-600">{source.description}</p>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{source.description}</p>
           )}
 
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Type</span>
-              <p className="font-medium text-gray-900">
+              <span className="text-gray-500 dark:text-gray-400">Type</span>
+              <p className="font-medium text-gray-900 dark:text-white">
                 {sourceTypeLabels[source.source_type] || source.source_type}
               </p>
             </div>
             <div>
-              <span className="text-gray-500">Parser</span>
-              <p className="font-medium text-gray-900 capitalize">
+              <span className="text-gray-500 dark:text-gray-400">Parser</span>
+              <p className="font-medium text-gray-900 dark:text-white capitalize">
                 {source.parser_type}
               </p>
             </div>
             <div>
-              <span className="text-gray-500">Events</span>
-              <p className="font-medium text-gray-900">
+              <span className="text-gray-500 dark:text-gray-400">Events</span>
+              <p className="font-medium text-gray-900 dark:text-white">
                 {source.event_count.toLocaleString()}
               </p>
             </div>
             <div>
-              <span className="text-gray-500">Last Event</span>
-              <p className="font-medium text-gray-900">
+              <span className="text-gray-500 dark:text-gray-400">Last Event</span>
+              <p className="font-medium text-gray-900 dark:text-white">
                 {source.last_event_at
                   ? formatDistanceToNow(new Date(source.last_event_at), {
                       addSuffix: true,
@@ -99,26 +99,26 @@ function SourceCard({ source }: { source: LogSource }) {
           </div>
 
           {source.last_error && (
-            <div className="mt-4 p-3 bg-danger-50 border border-danger-200 rounded-lg">
-              <p className="text-sm text-danger-700">{source.last_error}</p>
+            <div className="mt-4 p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+              <p className="text-sm text-danger-700 dark:text-danger-400">{source.last_error}</p>
             </div>
           )}
 
           {source.source_type === 'api_push' && source.api_key && (
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="mt-4 p-3 bg-gray-50 dark:bg-zinc-900 rounded-lg">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <span className="text-xs text-gray-500">API Key</span>
-                  <p className="font-mono text-sm text-gray-900 truncate">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">API Key</span>
+                  <p className="font-mono text-sm text-gray-900 dark:text-gray-100 truncate">
                     {source.api_key}
                   </p>
                 </div>
                 <button
                   onClick={copyApiKey}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 text-success-600" />
+                    <Check className="w-4 h-4 text-success-600 dark:text-success-400" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}
@@ -136,8 +136,8 @@ function SourceCard({ source }: { source: LogSource }) {
               className={clsx(
                 'btn text-xs px-3 py-1.5',
                 source.enabled
-                  ? 'bg-warning-50 text-warning-700 hover:bg-warning-100'
-                  : 'bg-success-50 text-success-700 hover:bg-success-100'
+                  ? 'bg-warning-50 dark:bg-warning-900/30 text-warning-700 dark:text-warning-400 hover:bg-warning-100 dark:hover:bg-warning-900/50'
+                  : 'bg-success-50 dark:bg-success-900/30 text-success-700 dark:text-success-400 hover:bg-success-100 dark:hover:bg-success-900/50'
               )}
             >
               {source.enabled ? (
@@ -180,8 +180,8 @@ export default function SourcesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Log Sources</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Log Sources</h1>
+          <p className="text-gray-500 dark:text-gray-400">
             {activeCount} of {data?.total || 0} sources active
           </p>
         </div>
@@ -209,8 +209,8 @@ export default function SourcesPage() {
       </div>
 
       {!isAdmin && (
-        <div className="p-4 bg-primary-50 border border-primary-200 rounded-lg">
-          <p className="text-sm text-primary-700">
+        <div className="p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+          <p className="text-sm text-primary-700 dark:text-primary-400">
             Only administrators can manage log sources. Contact your admin to add
             or modify sources.
           </p>
@@ -223,11 +223,11 @@ export default function SourcesPage() {
           [...Array(2)].map((_, i) => (
             <div key={i} className="card p-6">
               <div className="animate-pulse space-y-3">
-                <div className="h-6 bg-gray-100 rounded w-1/3" />
-                <div className="h-4 bg-gray-100 rounded w-2/3" />
+                <div className="h-6 bg-gray-100 dark:bg-zinc-700 rounded w-1/3" />
+                <div className="h-4 bg-gray-100 dark:bg-zinc-700 rounded w-2/3" />
                 <div className="grid grid-cols-4 gap-4">
                   {[...Array(4)].map((_, j) => (
-                    <div key={j} className="h-12 bg-gray-100 rounded" />
+                    <div key={j} className="h-12 bg-gray-100 dark:bg-zinc-700 rounded" />
                   ))}
                 </div>
               </div>
@@ -239,10 +239,10 @@ export default function SourcesPage() {
           ))
         ) : (
           <div className="card p-12 text-center">
-            <Database className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">No log sources configured</p>
+            <Database className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+            <p className="text-gray-500 dark:text-gray-400">No log sources configured</p>
             {isAdmin && (
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                 Add a source to start collecting logs
               </p>
             )}

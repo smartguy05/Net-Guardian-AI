@@ -98,6 +98,20 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasLoggedErrorRef = useRef(false);
+  const maxRetriesExhaustedRef = useRef(false);
+
+  // Store callbacks in refs to avoid re-creating connect function
+  const onMessageRef = useRef(onMessage);
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+  const onErrorRef = useRef(onError);
+
+  // Update refs when callbacks change
+  onMessageRef.current = onMessage;
+  onConnectRef.current = onConnect;
+  onDisconnectRef.current = onDisconnect;
+  onErrorRef.current = onError;
 
   const clearTimers = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -115,6 +129,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       return;
     }
 
+    // Don't attempt to reconnect if max retries exhausted
+    if (maxRetriesExhaustedRef.current) {
+      return;
+    }
+
+    // Don't connect if already connected or connecting
+    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
     // Construct WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
@@ -127,7 +151,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       ws.onopen = () => {
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
-        onConnect?.();
+        hasLoggedErrorRef.current = false;
+        maxRetriesExhaustedRef.current = false;
+        onConnectRef.current?.();
 
         // Set up ping interval to keep connection alive
         pingIntervalRef.current = setInterval(() => {
@@ -147,7 +173,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             setConnectionInfo(message.data as ConnectionInfo);
           }
 
-          onMessage?.(message);
+          onMessageRef.current?.(message);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
         }
@@ -157,31 +183,41 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         setIsConnected(false);
         setConnectionInfo({ status: 'disconnected' });
         clearTimers();
-        onDisconnect?.();
+        onDisconnectRef.current?.();
 
-        // Attempt reconnection
+        // Attempt reconnection with exponential backoff
         if (reconnectAttemptsRef.current < reconnectAttempts && isAuthenticated) {
           reconnectAttemptsRef.current += 1;
+          // Exponential backoff: 3s, 6s, 12s, 24s, 48s
+          const backoffDelay = reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1);
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
-          }, reconnectInterval);
+          }, backoffDelay);
+        } else if (reconnectAttemptsRef.current >= reconnectAttempts) {
+          maxRetriesExhaustedRef.current = true;
+          if (!hasLoggedErrorRef.current) {
+            console.warn('WebSocket: Max reconnection attempts reached. Call reconnect() to try again.');
+          }
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        onError?.(error);
+        // Only log the first error to prevent console spam
+        if (!hasLoggedErrorRef.current) {
+          console.warn('WebSocket connection failed. Backend may be unavailable.', error);
+          hasLoggedErrorRef.current = true;
+        }
+        onErrorRef.current?.(error);
       };
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
+      if (!hasLoggedErrorRef.current) {
+        console.warn('Failed to create WebSocket connection:', error);
+        hasLoggedErrorRef.current = true;
+      }
     }
   }, [
     accessToken,
     isAuthenticated,
-    onConnect,
-    onDisconnect,
-    onError,
-    onMessage,
     reconnectAttempts,
     reconnectInterval,
     clearTimers,
@@ -200,6 +236,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   const reconnect = useCallback(() => {
     disconnect();
     reconnectAttemptsRef.current = 0;
+    hasLoggedErrorRef.current = false;
+    maxRetriesExhaustedRef.current = false;
     connect();
   }, [connect, disconnect]);
 
@@ -210,8 +248,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   }, []);
 
   // Connect when authenticated, disconnect when logged out
+  // Only depend on auth state, not on connect/disconnect functions
   useEffect(() => {
     if (isAuthenticated && accessToken) {
+      // Reset state on new auth session
+      hasLoggedErrorRef.current = false;
+      maxRetriesExhaustedRef.current = false;
+      reconnectAttemptsRef.current = 0;
       connect();
     } else {
       disconnect();
@@ -220,7 +263,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     return () => {
       disconnect();
     };
-  }, [isAuthenticated, accessToken, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, accessToken]);
 
   return {
     isConnected,

@@ -91,3 +91,4 @@ frontend/.cache/
 # Deploy logs
 deploy/log-sources/*
 !deploy/log-sources/.gitkeep
+/.playwright-mcp/

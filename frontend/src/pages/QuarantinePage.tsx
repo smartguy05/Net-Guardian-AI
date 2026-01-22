@@ -39,32 +39,32 @@ function IntegrationStatusCard({
   configured: boolean;
   icon: React.ElementType;
 }) {
-  const statusColor = enabled && configured ? 'text-success-600' : configured ? 'text-warning-600' : 'text-gray-400';
-  const bgColor = enabled && configured ? 'bg-success-50' : configured ? 'bg-warning-50' : 'bg-gray-50';
+  const statusColor = enabled && configured ? 'text-success-600 dark:text-success-400' : configured ? 'text-warning-600 dark:text-warning-400' : 'text-gray-400';
+  const bgColor = enabled && configured ? 'bg-success-50 dark:bg-success-900/20' : configured ? 'bg-warning-50 dark:bg-warning-900/20' : 'bg-gray-50 dark:bg-zinc-800';
 
   return (
     <div className={clsx('card p-4', bgColor)}>
       <div className="flex items-center gap-3">
-        <div className={clsx('p-2 rounded-lg', enabled && configured ? 'bg-success-100' : 'bg-gray-100')}>
+        <div className={clsx('p-2 rounded-lg', enabled && configured ? 'bg-success-100 dark:bg-success-900/30' : 'bg-gray-100 dark:bg-zinc-700')}>
           <Icon className={clsx('w-5 h-5', statusColor)} />
         </div>
         <div className="flex-1">
-          <div className="font-medium text-gray-900">{name}</div>
-          <div className="text-xs text-gray-500 capitalize">{type}</div>
+          <div className="font-medium text-gray-900 dark:text-white">{name}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{type}</div>
         </div>
         <div className="text-right">
           {enabled && configured ? (
-            <span className="inline-flex items-center gap-1 text-success-700 text-sm">
+            <span className="inline-flex items-center gap-1 text-success-700 dark:text-success-400 text-sm">
               <CheckCircle className="w-4 h-4" />
               Active
             </span>
           ) : configured ? (
-            <span className="inline-flex items-center gap-1 text-warning-700 text-sm">
+            <span className="inline-flex items-center gap-1 text-warning-700 dark:text-warning-400 text-sm">
               <AlertTriangle className="w-4 h-4" />
               Disabled
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-gray-500 text-sm">
+            <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
               <XCircle className="w-4 h-4" />
               Not configured
             </span>
@@ -88,34 +88,34 @@ function QuarantinedDeviceRow({
   const canManage = user?.role === 'admin' || user?.role === 'operator';
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-gray-50 dark:hover:bg-zinc-700/50">
       <td className="px-6 py-4 whitespace-nowrap">
         <Link to={`/devices/${device.device_id}`} className="flex items-center gap-3">
-          <div className="flex-shrink-0 w-10 h-10 bg-danger-100 rounded-lg flex items-center justify-center">
-            <Monitor className="w-5 h-5 text-danger-500" />
+          <div className="flex-shrink-0 w-10 h-10 bg-danger-100 dark:bg-danger-900/30 rounded-lg flex items-center justify-center">
+            <Monitor className="w-5 h-5 text-danger-500 dark:text-danger-400" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-900 hover:text-primary-600">
+            <div className="text-sm font-medium text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400">
               {device.hostname || 'Unknown'}
             </div>
-            <div className="text-xs text-gray-500">{device.mac_address}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">{device.mac_address}</div>
           </div>
         </Link>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900">
+        <div className="text-sm text-gray-900 dark:text-gray-100">
           {device.ip_addresses.join(', ') || '-'}
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-2">
           {device.adguard_blocked ? (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-success-700 bg-success-50 rounded">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-900/30 rounded">
               <CheckCircle className="w-3 h-3" />
               Blocked
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-warning-700 bg-warning-50 rounded">
+            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/30 rounded">
               <AlertTriangle className="w-3 h-3" />
               Not synced
             </span>
@@ -126,12 +126,12 @@ function QuarantinedDeviceRow({
         <div className="flex items-center gap-2">
           {device.router_type ? (
             device.router_blocked ? (
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-success-700 bg-success-50 rounded">
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-900/30 rounded">
                 <CheckCircle className="w-3 h-3" />
                 Blocked ({device.router_type})
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-warning-700 bg-warning-50 rounded">
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/30 rounded">
                 <AlertTriangle className="w-3 h-3" />
                 Not synced
               </span>
@@ -146,7 +146,7 @@ function QuarantinedDeviceRow({
           <button
             onClick={() => onRelease(device.device_id)}
             disabled={isReleasing}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-success-700 bg-success-50 rounded hover:bg-success-100 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-900/30 rounded hover:bg-success-100 dark:hover:bg-success-900/50 transition-colors disabled:opacity-50"
           >
             <Shield className="w-4 h-4" />
             Release
@@ -161,9 +161,9 @@ function ActivityLogRow({ log }: { log: AuditLog }) {
   const isQuarantine = log.action === 'device_quarantine';
 
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-gray-50 dark:hover:bg-zinc-700/50">
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {format(new Date(log.timestamp), 'MMM d, HH:mm')}
         </div>
       </td>
@@ -171,7 +171,7 @@ function ActivityLogRow({ log }: { log: AuditLog }) {
         <span
           className={clsx(
             'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded',
-            isQuarantine ? 'text-danger-700 bg-danger-50' : 'text-success-700 bg-success-50'
+            isQuarantine ? 'text-danger-700 dark:text-danger-400 bg-danger-50 dark:bg-danger-900/30' : 'text-success-700 dark:text-success-400 bg-success-50 dark:bg-success-900/30'
           )}
         >
           {isQuarantine ? (
@@ -183,10 +183,10 @@ function ActivityLogRow({ log }: { log: AuditLog }) {
         </span>
       </td>
       <td className="px-4 py-3">
-        <div className="text-sm text-gray-900">{log.target_name || 'Unknown device'}</div>
+        <div className="text-sm text-gray-900 dark:text-gray-100">{log.target_name || 'Unknown device'}</div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        <div className="text-sm text-gray-500">{log.username || 'System'}</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">{log.username || 'System'}</div>
       </td>
     </tr>
   );
@@ -221,8 +221,8 @@ export default function QuarantinePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quarantine Management</h1>
-          <p className="text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quarantine Management</h1>
+          <p className="text-gray-500 dark:text-gray-400">
             Manage quarantined devices and integration status
           </p>
         </div>
@@ -252,56 +252,56 @@ export default function QuarantinePage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-danger-100 rounded-lg">
-              <ShieldOff className="w-5 h-5 text-danger-600" />
+            <div className="p-2 bg-danger-100 dark:bg-danger-900/30 rounded-lg">
+              <ShieldOff className="w-5 h-5 text-danger-600 dark:text-danger-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {quarantinedDevices?.length || 0}
               </div>
-              <div className="text-xs text-gray-500">Quarantined Devices</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Quarantined Devices</div>
             </div>
           </div>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <ShieldOff className="w-5 h-5 text-primary-600" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <ShieldOff className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {auditStats?.quarantines_24h || 0}
               </div>
-              <div className="text-xs text-gray-500">Quarantines (24h)</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Quarantines (24h)</div>
             </div>
           </div>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-success-100 rounded-lg">
-              <Shield className="w-5 h-5 text-success-600" />
+            <div className="p-2 bg-success-100 dark:bg-success-900/30 rounded-lg">
+              <Shield className="w-5 h-5 text-success-600 dark:text-success-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {auditStats?.releases_24h || 0}
               </div>
-              <div className="text-xs text-gray-500">Releases (24h)</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Releases (24h)</div>
             </div>
           </div>
         </div>
 
         <div className="card p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gray-100 rounded-lg">
-              <History className="w-5 h-5 text-gray-600" />
+            <div className="p-2 bg-gray-100 dark:bg-zinc-700 rounded-lg">
+              <History className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white">
                 {(auditStats?.quarantines_24h || 0) + (auditStats?.releases_24h || 0)}
               </div>
-              <div className="text-xs text-gray-500">Total Actions (24h)</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Total Actions (24h)</div>
             </div>
           </div>
         </div>
@@ -330,17 +330,17 @@ export default function QuarantinePage() {
         <div
           className={clsx(
             'card p-4',
-            syncQuarantine.data.errors.length > 0 ? 'bg-warning-50' : 'bg-success-50'
+            syncQuarantine.data.errors.length > 0 ? 'bg-warning-50 dark:bg-warning-900/20' : 'bg-success-50 dark:bg-success-900/20'
           )}
         >
           <div className="flex items-center gap-3">
-            <RotateCcw className="w-5 h-5 text-gray-600" />
+            <RotateCcw className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             <div>
-              <div className="font-medium">Sync Complete</div>
-              <div className="text-sm text-gray-600">
+              <div className="font-medium text-gray-900 dark:text-white">Sync Complete</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
                 Checked {syncQuarantine.data.checked} devices, synced {syncQuarantine.data.synced}
                 {syncQuarantine.data.errors.length > 0 && (
-                  <span className="text-warning-700">
+                  <span className="text-warning-700 dark:text-warning-400">
                     {' '}
                     ({syncQuarantine.data.errors.length} errors)
                   </span>
@@ -354,36 +354,36 @@ export default function QuarantinePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Quarantined Devices Table */}
         <div className="lg:col-span-2 card overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Quarantined Devices</h2>
+          <div className="p-4 border-b border-gray-200 dark:border-zinc-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Quarantined Devices</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+              <thead className="bg-gray-50 dark:bg-zinc-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Device
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     IP Address
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     AdGuard
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Router
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
                 {isLoading ? (
                   [...Array(3)].map((_, i) => (
                     <tr key={i}>
                       <td colSpan={5} className="px-6 py-4">
-                        <div className="animate-pulse h-10 bg-gray-100 rounded" />
+                        <div className="animate-pulse h-10 bg-gray-100 dark:bg-zinc-700 rounded" />
                       </td>
                     </tr>
                   ))
@@ -399,8 +399,8 @@ export default function QuarantinePage() {
                 ) : (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center">
-                      <Shield className="w-12 h-12 text-success-300 mx-auto mb-3" />
-                      <div className="text-gray-500">No devices are currently quarantined</div>
+                      <Shield className="w-12 h-12 text-success-300 dark:text-success-600 mx-auto mb-3" />
+                      <div className="text-gray-500 dark:text-gray-400">No devices are currently quarantined</div>
                     </td>
                   </tr>
                 )}
@@ -411,35 +411,35 @@ export default function QuarantinePage() {
 
         {/* Recent Activity */}
         <div className="card overflow-hidden">
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+          <div className="p-4 border-b border-gray-200 dark:border-zinc-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-700">
+              <thead className="bg-gray-50 dark:bg-zinc-900">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Time
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Action
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     Device
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
                     User
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-zinc-700">
                 {recentActivity?.items && recentActivity.items.length > 0 ? (
                   recentActivity.items.map((log) => (
                     <ActivityLogRow key={log.id} log={log} />
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
+                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
                       No recent activity
                     </td>
                   </tr>
@@ -447,8 +447,8 @@ export default function QuarantinePage() {
               </tbody>
             </table>
           </div>
-          <div className="p-3 border-t border-gray-200 text-center">
-            <Link to="/audit" className="text-sm text-primary-600 hover:text-primary-700">
+          <div className="p-3 border-t border-gray-200 dark:border-zinc-700 text-center">
+            <Link to="/audit" className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               View all audit logs
             </Link>
           </div>
