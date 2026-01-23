@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Activity, Search, RefreshCw } from 'lucide-react';
-import { useEvents, exportEventsCSV, exportEventsPDF } from '../api/hooks';
+import { Activity, Search, RefreshCw, Database } from 'lucide-react';
+import { useEvents, useSources, exportEventsCSV, exportEventsPDF } from '../api/hooks';
 import { formatDistanceToNow, format } from 'date-fns';
 import clsx from 'clsx';
-import type { RawEvent, EventSeverity } from '../types';
+import type { RawEvent, EventSeverity, LogSource } from '../types';
 import Pagination from '../components/Pagination';
 import ExportButton from '../components/ExportButton';
 
@@ -21,11 +21,17 @@ const eventTypeLabels: Record<string, string> = {
   auth: 'Auth',
   http: 'HTTP',
   system: 'System',
+  flow: 'Flow',
+  endpoint: 'Endpoint',
+  llm: 'LLM',
+  network: 'Network',
   unknown: 'Unknown',
 };
 
-function EventRow({ event }: { event: RawEvent }) {
+function EventRow({ event, sources }: { event: RawEvent; sources: LogSource[] }) {
   const [expanded, setExpanded] = useState(false);
+  const source = sources.find(s => s.id === event.source_id);
+  const sourceName = source?.name || event.source_id;
 
   return (
     <>
@@ -38,6 +44,14 @@ function EventRow({ event }: { event: RawEvent }) {
             <span>{format(new Date(event.timestamp), 'HH:mm:ss')}</span>
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {formatDistanceToNow(new Date(event.timestamp), { addSuffix: true })}
+            </span>
+          </div>
+        </td>
+        <td className="hidden lg:table-cell px-4 py-3 whitespace-nowrap">
+          <div className="flex items-center gap-1.5">
+            <Database className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[120px]" title={sourceName}>
+              {sourceName}
             </span>
           </div>
         </td>
@@ -61,7 +75,7 @@ function EventRow({ event }: { event: RawEvent }) {
         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 max-w-[150px] sm:max-w-none truncate">
           {event.domain || '-'}
         </td>
-        <td className="hidden lg:table-cell px-4 py-3 whitespace-nowrap">
+        <td className="hidden xl:table-cell px-4 py-3 whitespace-nowrap">
           {event.action && (
             <span
               className={clsx(
@@ -77,14 +91,24 @@ function EventRow({ event }: { event: RawEvent }) {
             </span>
           )}
         </td>
-        <td className="hidden xl:table-cell px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+        <td className="hidden 2xl:table-cell px-4 py-3 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
           {event.raw_message}
         </td>
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={7} className="px-4 py-3 bg-gray-50 dark:bg-zinc-800">
+          <td colSpan={8} className="px-4 py-3 bg-gray-50 dark:bg-zinc-800">
             <div className="text-sm">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Source:</span>
+                  <span className="ml-2 text-gray-900 dark:text-white">{sourceName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Source ID:</span>
+                  <span className="ml-2 font-mono text-xs text-gray-900 dark:text-white">{event.source_id}</span>
+                </div>
+              </div>
               <div className="font-medium text-gray-900 dark:text-white mb-2">Raw Message</div>
               <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-xs">
                 {event.raw_message}
@@ -111,12 +135,17 @@ export default function EventsPage() {
   const [search, setSearch] = useState('');
   const [eventType, setEventType] = useState('');
   const [severity, setSeverity] = useState('');
+  const [sourceId, setSourceId] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
   const offset = (page - 1) * pageSize;
 
+  const { data: sourcesData } = useSources();
+  const sources = sourcesData?.items || [];
+
   const { data, isLoading, refetch, isFetching } = useEvents({
+    source_id: sourceId || undefined,
     event_type: eventType || undefined,
     severity: severity || undefined,
     domain_contains: search || undefined,
@@ -147,10 +176,12 @@ export default function EventsPage() {
         <div className="flex items-center gap-3">
           <ExportButton
             onExportCSV={() => exportEventsCSV({
+              source_id: sourceId || undefined,
               event_type: eventType || undefined,
               severity: severity || undefined,
             })}
             onExportPDF={() => exportEventsPDF({
+              source_id: sourceId || undefined,
               event_type: eventType || undefined,
               severity: severity || undefined,
             })}
@@ -183,7 +214,22 @@ export default function EventsPage() {
             className="input pl-10"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <select
+            value={sourceId}
+            onChange={(e) => {
+              setSourceId(e.target.value);
+              setPage(1);
+            }}
+            className="input w-full sm:w-44"
+          >
+            <option value="">All sources</option>
+            {sources.map((source) => (
+              <option key={source.id} value={source.id}>
+                {source.name}
+              </option>
+            ))}
+          </select>
           <select
             value={eventType}
             onChange={(e) => {
@@ -198,6 +244,9 @@ export default function EventsPage() {
             <option value="auth">Auth</option>
             <option value="http">HTTP</option>
             <option value="system">System</option>
+            <option value="flow">Flow</option>
+            <option value="endpoint">Endpoint</option>
+            <option value="llm">LLM</option>
           </select>
           <select
             value={severity}
@@ -226,6 +275,9 @@ export default function EventsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Time
                 </th>
+                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Source
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
@@ -238,10 +290,10 @@ export default function EventsPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Domain
                 </th>
-                <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Action
                 </th>
-                <th className="hidden xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="hidden 2xl:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Message
                 </th>
               </tr>
@@ -250,19 +302,19 @@ export default function EventsPage() {
               {isLoading ? (
                 [...Array(10)].map((_, i) => (
                   <tr key={i}>
-                    <td colSpan={7} className="px-4 py-3">
+                    <td colSpan={8} className="px-4 py-3">
                       <div className="animate-pulse h-8 bg-gray-100 dark:bg-zinc-700 rounded" />
                     </td>
                   </tr>
                 ))
               ) : data?.items.length ? (
                 data.items.map((event) => (
-                  <EventRow key={event.id} event={event} />
+                  <EventRow key={event.id} event={event} sources={sources} />
                 ))
               ) : (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-12 text-center text-gray-500 dark:text-gray-400"
                   >
                     <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />

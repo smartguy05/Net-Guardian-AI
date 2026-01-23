@@ -12,5 +12,6 @@ from app.parsers import ollama_parser  # noqa: F401
 from app.parsers import endpoint_parser  # noqa: F401
 from app.parsers import netflow_parser  # noqa: F401
 from app.parsers import sflow_parser  # noqa: F401
+from app.parsers import loki_parser  # noqa: F401
 
 __all__ = ["BaseParser", "ParseResult", "ParserRegistry", "get_parser"]

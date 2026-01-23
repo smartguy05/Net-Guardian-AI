@@ -28,6 +28,9 @@ from app.services.rule_suggestion_service import (
     HistoryFilters,
     get_rule_suggestion_service,
 )
+from app.services.llm_providers.claude_provider import ClaudeLLMProvider
+from app.models.log_source import LogSource
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -226,6 +229,13 @@ class RuleHistoryListResponse(BaseModel):
     """List of rule history entries."""
 
     items: List[RuleHistoryResponse]
+
+
+class ResearchQueryResponse(BaseModel):
+    """Response containing AI-generated research query."""
+
+    query: str
+    search_url: str
 
 
 # --- Helper Functions ---
@@ -569,6 +579,117 @@ async def mark_irregular_reviewed(
         )
 
     return _irregular_to_response(log)
+
+
+@router.get("/irregular/{irregular_id}/research-query", response_model=ResearchQueryResponse)
+async def generate_research_query(
+    irregular_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+) -> ResearchQueryResponse:
+    """Generate an AI-powered Google search query for researching an irregular log issue.
+
+    Uses the Anthropic Claude API to analyze the irregular log and generate
+    a high-quality, targeted search query to help investigate the issue.
+    """
+    import urllib.parse
+
+    service = get_semantic_analysis_service(session)
+    log = await service.get_irregular_log_by_id(irregular_id)
+
+    if not log:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Irregular log '{irregular_id}' not found",
+        )
+
+    # Fetch the log source to get its name and type
+    source_result = await session.execute(
+        select(LogSource).where(LogSource.id == log.source_id)
+    )
+    source = source_result.scalar_one_or_none()
+
+    # Build context for the LLM
+    context_parts = []
+
+    # Add source/software information first - this is critical for targeted searches
+    if source:
+        context_parts.append(f"Software/Source: {source.name}")
+        context_parts.append(f"Parser Type: {source.parser_type.value}")
+        if source.description:
+            context_parts.append(f"Source Description: {source.description}")
+    else:
+        context_parts.append(f"Source ID: {log.source_id}")
+
+    context_parts.append(f"Detection Reason: {log.reason}")
+
+    if log.llm_response:
+        context_parts.append(f"LLM Analysis: {log.llm_response}")
+
+    if log.severity_score is not None:
+        severity_label = (
+            "Critical" if log.severity_score >= 0.8 else
+            "High" if log.severity_score >= 0.6 else
+            "Medium" if log.severity_score >= 0.4 else
+            "Low"
+        )
+        context_parts.append(f"Severity: {severity_label} ({log.severity_score:.0%})")
+
+    context = "\n".join(context_parts)
+
+    # Use Claude to generate the search query
+    try:
+        provider = ClaudeLLMProvider(
+            max_tokens=150,
+            temperature=0.2,  # Low temperature for precise output
+        )
+
+        system_prompt = """You are a cybersecurity research assistant. Your task is to generate the perfect Google search query to help a security analyst research and understand a detected security issue.
+
+Rules:
+1. Output ONLY the search query - no explanation, no quotes, no prefixes
+2. The query should be 5-10 words, highly targeted and specific
+3. ALWAYS include the software/source name (e.g., "AdGuard", "pfSense", "Grafana Loki", "nginx") to find relevant documentation
+4. Focus on the technical aspects that would yield useful security documentation, threat intelligence, or remediation guides
+5. Include relevant technical terms, protocols, attack names, or CVE patterns if applicable
+6. Avoid generic terms like "security issue" or "network problem"
+7. Prefer queries that would find: official documentation, security advisories, threat reports, or remediation guides
+
+Example good queries:
+- "AdGuard DNS blocking malicious domain detection"
+- "pfSense firewall brute force SSH protection"
+- "nginx 403 forbidden error troubleshooting"
+- "Grafana Loki log anomaly detection alert\""""
+
+        response = await provider.client.messages.create(
+            model=provider._model,
+            max_tokens=150,
+            temperature=0.2,
+            system=system_prompt,
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"Generate a Google search query for this security issue:\n\n{context}",
+                }
+            ],
+        )
+
+        query = response.content[0].text.strip()
+        # Clean up any quotes or extra formatting
+        query = query.strip('"\'')
+
+        search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+
+        return ResearchQueryResponse(
+            query=query,
+            search_url=search_url,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Failed to generate research query: {str(e)}",
+        )
 
 
 # --- Analysis Run Endpoints ---

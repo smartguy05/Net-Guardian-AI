@@ -89,6 +89,7 @@ View all normalized events from configured log sources:
 | LLM | AI/LLM interaction events |
 | Endpoint | Endpoint agent events (processes, connections) |
 | Flow | Network flow data (NetFlow/sFlow) |
+| HTTP | Web server access/error logs (e.g., from Loki) |
 
 ## Alerts
 
@@ -295,6 +296,34 @@ To receive network flow data:
 2. Select parser type: **netflow** or **sflow**
 3. Configure the UDP port (default: 2055 for NetFlow, 6343 for sFlow)
 4. Configure your router/switch to send flow data to NetGuardian
+
+### Grafana Loki Sources
+
+To collect logs from Grafana Loki:
+
+1. Create an **API Pull** source
+2. Select parser type: **loki**
+3. Configure:
+   - URL: Your Loki server URL (e.g., `http://loki:3100`)
+   - Endpoint: `/loki/api/v1/query_range`
+   - Query: LogQL query (e.g., `{job=~".+"}` for all jobs)
+   - Poll Interval: How often to fetch logs
+
+**Loki Parser Features:**
+- Supports both query API responses and push API format
+- Auto-detects severity from `level` label or log content
+- Maps job names to event types (nginx→HTTP, sshd→AUTH, etc.)
+- Extracts IP addresses from log lines
+- Preserves all Loki labels in parsed fields
+
+**Example Configuration:**
+```
+URL: http://loki.monitoring.svc:3100
+Endpoint: /loki/api/v1/query_range
+Query: {namespace="production"}
+Auth Type: None (or Bearer for secured Loki)
+Poll Interval: 60 seconds
+```
 
 ## User Management
 

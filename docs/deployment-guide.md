@@ -77,8 +77,8 @@ The seed script creates a comprehensive dataset:
 |-----------|-------|-------------|
 | Users | 3 | Admin, operator, and viewer accounts |
 | Devices | 17 | PCs, mobiles, IoT, servers, network equipment |
-| Log Sources | 6 | AdGuard, firewall, endpoint, NetFlow, syslog, Ollama |
-| Events | 380+ | DNS, firewall, flow, endpoint, and LLM events |
+| Log Sources | 7 | AdGuard, firewall, endpoint, NetFlow, syslog, Ollama, Loki |
+| Events | 390+ | DNS, firewall, flow, endpoint, LLM, and Loki events |
 | Alerts | 6 | Various severities (critical to low) and statuses |
 | Anomalies | 5 | Different anomaly types linked to devices |
 | Baselines | 20+ | DNS and traffic baselines for active devices |
@@ -500,6 +500,24 @@ curl -X POST http://localhost:8000/api/v1/sources \
   }'
 
 # The response includes an API key for pushing events
+
+# Create a Grafana Loki source
+curl -X POST http://localhost:8000/api/v1/sources \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "loki-cluster",
+    "name": "Kubernetes Loki",
+    "source_type": "api_pull",
+    "parser_type": "loki",
+    "enabled": true,
+    "config": {
+      "url": "http://loki.monitoring.svc:3100",
+      "endpoint": "/loki/api/v1/query_range",
+      "query": "{namespace=\"production\"}",
+      "poll_interval_seconds": 60
+    }
+  }'
 ```
 
 ## Monitoring and Troubleshooting

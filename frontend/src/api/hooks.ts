@@ -1287,6 +1287,7 @@ export function useStorageStats() {
 
 // Export functions (not hooks - these trigger downloads directly)
 export async function exportEventsCSV(params?: {
+  source_id?: string;
   event_type?: string;
   severity?: string;
   device_id?: string;
@@ -1301,6 +1302,7 @@ export async function exportEventsCSV(params?: {
 }
 
 export async function exportEventsPDF(params?: {
+  source_id?: string;
   event_type?: string;
   severity?: string;
   device_id?: string;
@@ -1995,6 +1997,20 @@ export function useMarkIrregularReviewed() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['semantic', 'irregular'] });
       queryClient.invalidateQueries({ queryKey: ['semantic', 'stats'] });
+    },
+  });
+}
+
+export interface ResearchQueryResponse {
+  query: string;
+  search_url: string;
+}
+
+export function useGenerateResearchQuery() {
+  return useMutation({
+    mutationFn: async (irregularId: string): Promise<ResearchQueryResponse> => {
+      const response = await apiClient.get(`/semantic/irregular/${irregularId}/research-query`);
+      return response.data;
     },
   });
 }

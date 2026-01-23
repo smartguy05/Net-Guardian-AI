@@ -102,6 +102,20 @@ Remaining tasks organized by priority.
 
 ---
 
+## Log Sources Added
+
+- [x] AdGuard Home (DNS logs)
+- [x] Syslog (RFC 3164/5424)
+- [x] JSON (flexible field mapping)
+- [x] Custom (regex-based)
+- [x] NetFlow v5/v9
+- [x] sFlow v5
+- [x] Endpoint Agent
+- [x] Ollama LLM monitoring
+- [x] Grafana Loki (query + push API)
+
+---
+
 ## Documentation (COMPLETE)
 
 - [x] README.md - Project overview

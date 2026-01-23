@@ -339,6 +339,20 @@ DEMO_LOG_SOURCES = [
         },
         "event_count": 234,
     },
+    {
+        "id": "loki-aggregator",
+        "name": "Grafana Loki Logs",
+        "description": "Centralized log aggregation from Kubernetes cluster",
+        "source_type": SourceType.API_PULL,
+        "parser_type": ParserType.LOKI,
+        "config": {
+            "url": "http://loki.monitoring.svc:3100",
+            "endpoint": "/loki/api/v1/query_range",
+            "query": '{job=~".+"}',
+            "poll_interval_seconds": 60,
+        },
+        "event_count": 12456,
+    },
 ]
 
 # Common domains for DNS events
@@ -1150,6 +1164,112 @@ async def seed_events(session: AsyncSession, devices: dict[str, Device], sources
                 device_id=server.id,
             )
             events.append(event)
+
+    # Loki Events (from Grafana Loki aggregator)
+    print("  Creating Loki events...")
+    loki_source = sources.get("loki-aggregator")
+    loki_logs = [
+        # nginx access logs
+        {
+            "job": "nginx",
+            "level": "info",
+            "msg": "192.168.1.100 - - GET /api/users 200 15ms",
+            "event_type": EventType.HTTP,
+            "severity": EventSeverity.INFO,
+        },
+        {
+            "job": "nginx",
+            "level": "warning",
+            "msg": "192.168.1.150 - - POST /api/login 401 12ms - invalid credentials",
+            "event_type": EventType.HTTP,
+            "severity": EventSeverity.WARNING,
+        },
+        {
+            "job": "nginx",
+            "level": "error",
+            "msg": "192.168.1.100 - - GET /api/admin 403 5ms - forbidden",
+            "event_type": EventType.HTTP,
+            "severity": EventSeverity.ERROR,
+        },
+        # auth service logs
+        {
+            "job": "auth-service",
+            "level": "info",
+            "msg": "User anthony@example.com logged in successfully from 192.168.1.100",
+            "event_type": EventType.AUTH,
+            "severity": EventSeverity.INFO,
+        },
+        {
+            "job": "auth-service",
+            "level": "warning",
+            "msg": "Failed login attempt for user admin from 192.168.1.250 - account locked",
+            "event_type": EventType.AUTH,
+            "severity": EventSeverity.WARNING,
+        },
+        {
+            "job": "auth-service",
+            "level": "error",
+            "msg": "Multiple failed auth attempts detected from 10.0.0.55 - possible brute force",
+            "event_type": EventType.AUTH,
+            "severity": EventSeverity.ERROR,
+        },
+        # systemd/system logs
+        {
+            "job": "systemd",
+            "level": "info",
+            "msg": "Started Docker Application Container Engine",
+            "event_type": EventType.SYSTEM,
+            "severity": EventSeverity.INFO,
+        },
+        {
+            "job": "systemd",
+            "level": "warning",
+            "msg": "High memory pressure detected on node worker-1",
+            "event_type": EventType.SYSTEM,
+            "severity": EventSeverity.WARNING,
+        },
+        # kubernetes logs
+        {
+            "job": "kube-apiserver",
+            "level": "info",
+            "msg": "Audit: user system:admin created deployment/netguardian in namespace production",
+            "event_type": EventType.SYSTEM,
+            "severity": EventSeverity.INFO,
+        },
+        {
+            "job": "kube-apiserver",
+            "level": "warning",
+            "msg": "Failed to authenticate request: invalid bearer token",
+            "event_type": EventType.AUTH,
+            "severity": EventSeverity.WARNING,
+        },
+    ]
+
+    for i, log_data in enumerate(loki_logs):
+        timestamp = NOW - timedelta(hours=i * 2, minutes=i * 7)
+        device = device_list[i % len(device_list)]
+
+        event = RawEvent(
+            id=uuid.uuid4(),
+            timestamp=timestamp,
+            source_id=loki_source.id if loki_source else "loki-aggregator",
+            event_type=log_data["event_type"],
+            severity=log_data["severity"],
+            client_ip=device.ip_addresses[0] if device.ip_addresses else "192.168.1.100",
+            raw_message=log_data["msg"],
+            parsed_fields={
+                "labels": {
+                    "job": log_data["job"],
+                    "level": log_data["level"],
+                    "namespace": "production",
+                    "pod": f"{log_data['job']}-abc123",
+                },
+                "job": log_data["job"],
+                "namespace": "production",
+            },
+            device_id=device.id,
+        )
+        events.append(event)
 
     # Add all events
     session.add_all(events)

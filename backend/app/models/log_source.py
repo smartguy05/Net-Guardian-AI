@@ -32,6 +32,7 @@ class ParserType(str, Enum):
     ENDPOINT = "endpoint"  # Endpoint agent data parser
     NETFLOW = "netflow"  # NetFlow v5/v9/IPFIX parser
     SFLOW = "sflow"  # sFlow v5 parser
+    LOKI = "loki"  # Grafana Loki log aggregation
 
     # Generic parsers
     JSON = "json"

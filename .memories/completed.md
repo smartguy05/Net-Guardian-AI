@@ -4,6 +4,78 @@ Tasks completed during implementation.
 
 ---
 
+## Log Source Additions (January 2026)
+
+### Grafana Loki Parser - COMPLETE
+- [x] Created `backend/app/parsers/loki_parser.py`
+  - Handles Loki query API response format (`/loki/api/v1/query_range`)
+  - Handles Loki push API format (streams with values)
+  - Single stream object and list of streams support
+  - Nanosecond timestamp parsing to datetime
+  - Severity detection from labels (`level`, `severity`, `log_level`)
+  - Severity extraction from log line patterns (`[ERROR]`, `level=error`)
+  - Event type mapping from job/app labels (nginx→HTTP, coredns→DNS, etc.)
+  - IP address extraction from log lines (filters localhost)
+  - Configurable label mappings (severity_label, event_type_label, client_ip_label)
+  - Custom event type mappings via config
+  - All labels preserved in parsed_fields
+- [x] Added `LOKI = "loki"` to ParserType enum in `backend/app/models/log_source.py`
+- [x] Registered parser in `backend/app/parsers/__init__.py`
+- [x] Created `backend/tests/parsers/test_loki_parser.py` with 33 tests
+  - Query API and push API format tests
+  - Timestamp parsing tests
+  - Severity and event type mapping tests
+  - IP extraction tests
+  - Configuration option tests
+  - Error handling tests
+- [x] Added Loki log source to demo data script (`backend/scripts/seed_demo_data.py`)
+  - New log source: `loki-aggregator` (Grafana Loki Logs)
+  - 10 demo Loki events (nginx, auth-service, systemd, kube-apiserver)
+- [x] Updated documentation:
+  - `docs/user-guide.md` - Added Grafana Loki Sources section with configuration examples
+  - `docs/deployment-guide.md` - Added Loki API example, updated log source count to 7
+  - `README.md` - Added Grafana Loki to multi-source log collection features
+- [x] Created database migration for LOKI parser type (`backend/alembic/versions/20260123_1654_4ac0c165a6e9_add_loki_parser_type.py`)
+- [x] Added Source column and filter to Events page (`frontend/src/pages/EventsPage.tsx`)
+  - New "Source" column showing log source name with database icon
+  - Source filter dropdown populated from useSources hook
+  - Expanded event details now show Source name and ID
+  - Added missing event types to filter (flow, endpoint, llm)
+  - Updated eventTypeLabels to include all event types
+  - Updated export functions in hooks.ts to support source_id parameter
+
+### Semantic Review Page Expandable Rows - COMPLETE
+- [x] Added expandable row functionality to SemanticReviewPage
+- [x] Created `IrregularLogRow` component with expand/collapse on click
+- [x] Expanded view shows:
+  - Metadata row: Source name, Event ID, Pattern ID, Detection timestamp
+  - Detection Reason section with full text
+  - LLM Analysis section with full analysis text
+  - Review Status section with review timestamp (if reviewed)
+- [x] Added chevron icons (ChevronRight/ChevronDown) to indicate expandable state
+- [x] Added relative timestamps ("2 hours ago") to timestamp column
+- [x] Shows source names instead of raw source IDs using useSources hook
+- [x] Fixed pre-existing pagination bug (added missing totalItems and pageSize props)
+- [x] Removed unused searchQuery state variable
+
+### Semantic Review Page "Research this issue" Button - COMPLETE
+- [x] Added "Research this issue" button to expanded rows with AI-powered query generation
+- [x] Backend: Created `/api/v1/semantic/irregular/{id}/research-query` endpoint
+  - Uses Anthropic Claude API to generate high-quality search queries
+  - Fetches log source details (name, parser type, description) from database
+  - Sends software/source name, parser type, detection reason, LLM analysis, and severity to Claude
+  - Claude generates targeted 5-10 word security research queries including the software name
+  - System prompt includes examples like "AdGuard DNS blocking malicious domain detection"
+  - Returns both the query and pre-built Google search URL
+  - Falls back gracefully if API unavailable
+- [x] Frontend: Added `useGenerateResearchQuery` hook in hooks.ts
+- [x] Button shows loading spinner while generating query
+- [x] Opens Google search in new tab with AI-generated query
+- [x] Fallback to basic search if API call fails
+- [x] Added action bar at bottom of expanded row with Research and Mark Reviewed buttons
+
+---
+
 ## Bug Fixes (January 2026)
 
 ### API Route Ordering Fix

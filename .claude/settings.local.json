@@ -42,7 +42,8 @@
       "Bash(taskkill /F /PID 40812)",
       "Bash(powershell -Command:*)",
       "Bash(uvicorn app.main:app:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(alembic revision:*)"
     ]
   }
 }

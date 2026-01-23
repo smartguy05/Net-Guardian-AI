@@ -18,7 +18,7 @@ All phases complete! The system provides comprehensive network security monitori
 ## Features
 
 ### Core Features
-- **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow)
+- **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow), Grafana Loki
 - **Device Inventory** - Auto-discovery with network topology visualization
 - **Real-time Event Processing** - Redis Streams event bus with WebSocket updates
 - **Authentication & RBAC** - JWT tokens, 2FA (TOTP), admin/operator/viewer roles
