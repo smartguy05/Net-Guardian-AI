@@ -565,6 +565,120 @@ export const helpContent: Record<string, HelpContent> = {
       { key: 'f', action: 'Fit to screen' },
     ],
   },
+
+  '/dashboard/patterns': {
+    title: 'Log Patterns',
+    overview:
+      'View and manage learned log patterns. Patterns are normalized templates extracted from your log messages to identify irregular activity.',
+    sections: [
+      {
+        title: 'Pattern Learning',
+        description:
+          'NetGuardian automatically learns patterns from your logs by normalizing variables like IPs, timestamps, and UUIDs into placeholders.',
+        tips: [
+          'Patterns with <IP>, <TIMESTAMP>, <UUID> show where variables were extracted',
+          'Occurrence count shows how often a pattern appears',
+          'Rare patterns (below threshold) may indicate unusual activity',
+        ],
+      },
+      {
+        title: 'Pattern Management',
+        description:
+          'Control which patterns are monitored for irregularities.',
+        tips: [
+          'Toggle "Ignore" to exclude known benign rare patterns',
+          'Ignored patterns won\'t trigger semantic analysis',
+          'Filter by source to focus on specific log sources',
+        ],
+      },
+      {
+        title: 'Rarity Detection',
+        description:
+          'Patterns seen fewer times than the rarity threshold are flagged as irregular.',
+        tips: [
+          'Default threshold is 3 occurrences',
+          'Adjust threshold per-source in Settings',
+          'New patterns are automatically flagged until they become common',
+        ],
+      },
+    ],
+  },
+
+  '/dashboard/semantic-review': {
+    title: 'Semantic Review',
+    overview:
+      'Review logs flagged as irregular by the semantic analysis system. AI-powered analysis helps identify potential security concerns in unusual log messages.',
+    sections: [
+      {
+        title: 'Irregular Logs',
+        description:
+          'Logs that match rare or new patterns are queued for review with AI-generated analysis.',
+        tips: [
+          'Severity score (0.0-1.0) indicates AI-assessed risk level',
+          'Click a row to expand and see the full LLM analysis',
+          'High severity items (≥0.7) require priority attention',
+        ],
+      },
+      {
+        title: 'LLM Analysis',
+        description:
+          'Each irregular log is analyzed by an AI (Claude or Ollama) to assess security relevance.',
+        tips: [
+          'Analysis includes threat assessment and recommendations',
+          'Context from similar patterns helps identify false positives',
+          'Analysis runs in batches based on configured interval',
+        ],
+      },
+      {
+        title: 'Review Actions',
+        description:
+          'Mark logs as reviewed after investigation.',
+        tips: [
+          'Mark Reviewed acknowledges you\'ve investigated the log',
+          'If a pattern is consistently benign, ignore it on the Patterns page',
+          'Filter by "Pending" to see items needing review',
+        ],
+      },
+    ],
+  },
+
+  '/dashboard/suggested-rules': {
+    title: 'Suggested Rules',
+    overview:
+      'Review and approve detection rules suggested by AI analysis. The LLM can identify patterns worth monitoring and propose rules to catch similar issues.',
+    sections: [
+      {
+        title: 'Pending Rules',
+        description:
+          'Rules awaiting your review, suggested based on irregular log analysis.',
+        tips: [
+          'Each rule shows the reason it was suggested',
+          'Review the linked irregular log for context',
+          'Rule types include pattern match, threshold, and sequence',
+        ],
+      },
+      {
+        title: 'Rule Approval',
+        description:
+          'Approve rules to add them to your detection rule set.',
+        tips: [
+          'Approved rules can be enabled immediately or kept disabled',
+          'Edit rule configuration before approving if needed',
+          'Approved rules appear in the Detection Rules page',
+        ],
+      },
+      {
+        title: 'Rule Rejection',
+        description:
+          'Reject rules that aren\'t applicable to your environment.',
+        tips: [
+          'Provide a reason when rejecting for future reference',
+          'Rejected rule patterns won\'t be suggested again',
+          'View rejection history in the History tab',
+        ],
+      },
+    ],
+  },
 };
 
 // Get help content for a given path

@@ -51,6 +51,18 @@ from app.models.playbook import (
 )
 from app.models.raw_event import EventSeverity, EventType, RawEvent
 from app.models.retention_policy import RetentionPolicy
+from app.models.semantic_analysis import (
+    AnalysisRunStatus,
+    IrregularLog,
+    LLMProvider,
+    LogPattern,
+    SemanticAnalysisConfig,
+    SemanticAnalysisRun,
+    SuggestedRule,
+    SuggestedRuleHistory,
+    SuggestedRuleStatus,
+    SuggestedRuleType,
+)
 from app.models.threat_intel import FeedType, IndicatorType, ThreatIndicator, ThreatIntelFeed
 from app.models.user import User, UserRole
 
@@ -541,6 +553,317 @@ DEMO_RETENTION_POLICIES = [
     {"table_name": "audit_logs", "display_name": "Audit Logs", "retention_days": 365, "description": "Administrative action logs"},
     {"table_name": "anomaly_detections", "display_name": "Anomaly Detections", "retention_days": 180, "description": "Detected anomalies"},
     {"table_name": "playbook_executions", "display_name": "Playbook Executions", "retention_days": 90, "description": "Automation run history"},
+]
+
+# Additional detection rules
+DEMO_ADDITIONAL_RULES = [
+    {
+        "id": "failed-auth-threshold",
+        "name": "Failed Authentication Threshold",
+        "description": "Alerts when multiple failed authentication attempts occur from the same source",
+        "severity": AlertSeverity.HIGH,
+        "conditions": {
+            "event_type": "auth",
+            "status": "failed",
+            "count_threshold": 5,
+            "time_window_minutes": 10,
+        },
+        "response_actions": ["create_alert", "notify_admin"],
+        "cooldown_minutes": 30,
+    },
+    {
+        "id": "dns-tunneling-detection",
+        "name": "DNS Tunneling Detection",
+        "description": "Detects potential DNS tunneling based on query patterns",
+        "severity": AlertSeverity.HIGH,
+        "conditions": {
+            "event_type": "dns",
+            "query_length": {"$gt": 50},
+            "subdomain_count": {"$gt": 4},
+        },
+        "response_actions": ["create_alert", "quarantine_device"],
+        "cooldown_minutes": 60,
+    },
+    {
+        "id": "unusual-outbound-port",
+        "name": "Unusual Outbound Port",
+        "description": "Detects outbound connections on non-standard ports",
+        "severity": AlertSeverity.MEDIUM,
+        "conditions": {
+            "event_type": "firewall",
+            "direction": "outbound",
+            "port": {"$nin": [80, 443, 53, 22, 21, 25, 587, 993, 995]},
+        },
+        "response_actions": ["create_alert"],
+        "cooldown_minutes": 120,
+    },
+    {
+        "id": "iot-firmware-check",
+        "name": "IoT Device Communication Pattern",
+        "description": "Monitors IoT devices for unusual communication patterns",
+        "severity": AlertSeverity.MEDIUM,
+        "conditions": {
+            "device_type": "iot",
+            "unique_destinations_hourly": {"$gt": 20},
+        },
+        "response_actions": ["create_alert", "notify_admin"],
+        "cooldown_minutes": 240,
+    },
+    {
+        "id": "crypto-mining-detection",
+        "name": "Cryptocurrency Mining Detection",
+        "description": "Detects connections to known mining pools",
+        "severity": AlertSeverity.HIGH,
+        "conditions": {
+            "event_type": "dns",
+            "domain_pattern": r".*(pool|mining|miner|stratum).*\.(com|net|org|io)",
+        },
+        "response_actions": ["create_alert", "quarantine_device"],
+        "cooldown_minutes": 15,
+    },
+    {
+        "id": "after-hours-activity",
+        "name": "After Hours Network Activity",
+        "description": "Alerts on significant network activity outside business hours",
+        "severity": AlertSeverity.LOW,
+        "conditions": {
+            "event_type": "flow",
+            "time_range": {"start": "23:00", "end": "05:00"},
+            "bytes_total": {"$gt": 10000000},
+        },
+        "response_actions": ["create_alert"],
+        "cooldown_minutes": 480,
+    },
+]
+
+# Demo log patterns (normalized templates)
+DEMO_LOG_PATTERNS = [
+    # Common patterns (high occurrence)
+    {
+        "normalized_pattern": "DNS query for <DOMAIN> from <IP> - NOERROR",
+        "occurrence_count": 15234,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "Firewall ACCEPT TCP <IP> -> <IP>:<NUM>",
+        "occurrence_count": 8921,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "User <USER> logged in from <IP>",
+        "occurrence_count": 523,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "DNS query blocked: <DOMAIN> (AdBlock filter)",
+        "occurrence_count": 2341,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "Flow: <IP> -> <IP>:<NUM>, <NUM> bytes, <NUM>ms",
+        "occurrence_count": 45123,
+        "is_ignored": False,
+    },
+    # Medium frequency patterns
+    {
+        "normalized_pattern": "Process started: <PROCESS> (PID: <NUM>) by user <USER>",
+        "occurrence_count": 892,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "DHCP lease renewed for <MAC> at <IP>",
+        "occurrence_count": 234,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "NTP sync completed, offset: <NUM>ms",
+        "occurrence_count": 168,
+        "is_ignored": True,  # Ignored - benign
+    },
+    # Rare patterns (potential irregularities)
+    {
+        "normalized_pattern": "SSH connection from <IP> - authentication failed for user <USER>",
+        "occurrence_count": 12,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "Firewall DROP TCP <IP> -> <IP>:<NUM> (rule: suspicious-ports)",
+        "occurrence_count": 5,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "Unusual DNS query type: TXT for <DOMAIN>",
+        "occurrence_count": 3,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "Process <PROCESS> attempted to access <PATH> - permission denied",
+        "occurrence_count": 2,
+        "is_ignored": False,
+    },
+    {
+        "normalized_pattern": "Connection to <IP>:<NUM> on interface <IFACE> using protocol <PROTO>",
+        "occurrence_count": 1,
+        "is_ignored": False,
+    },
+]
+
+# Demo irregular logs with LLM analysis
+DEMO_IRREGULAR_LOGS = [
+    {
+        "reason": "Pattern seen only 2 times (below threshold of 3)",
+        "severity_score": 0.85,
+        "llm_reviewed": True,
+        "reviewed_by_user": False,
+        "llm_response": {
+            "summary": "This log indicates a potential privilege escalation attempt. The process attempted to access a sensitive system path without proper permissions.",
+            "concern": "Possible unauthorized access attempt to system files",
+            "recommendation": "Review the process behavior and check if this is expected. Consider adding monitoring for this specific process.",
+            "severity_assessment": "High - potential security concern",
+        },
+        "raw_message": "Process python.exe attempted to access C:\\Windows\\System32\\config\\SAM - permission denied",
+        "hours_ago": 4,
+    },
+    {
+        "reason": "New pattern not seen before",
+        "severity_score": 0.92,
+        "llm_reviewed": True,
+        "reviewed_by_user": False,
+        "llm_response": {
+            "summary": "Outbound connection to an unusual port commonly associated with remote administration tools and potentially malicious activity.",
+            "concern": "Connection to port 4444 which is often used by Metasploit and other penetration testing/exploitation tools",
+            "recommendation": "Immediately investigate the source device and consider quarantine if not authorized penetration testing.",
+            "severity_assessment": "Critical - potential C2 communication",
+        },
+        "raw_message": "Connection to 45.155.205.233:4444 on interface eth0 using protocol TCP",
+        "hours_ago": 6,
+    },
+    {
+        "reason": "Pattern seen only 3 times (at threshold)",
+        "severity_score": 0.65,
+        "llm_reviewed": True,
+        "reviewed_by_user": True,
+        "llm_response": {
+            "summary": "Multiple failed SSH authentication attempts from external IP address.",
+            "concern": "Potential brute force attack or credential stuffing attempt",
+            "recommendation": "Consider implementing rate limiting or fail2ban. Review if the source IP should be blocked.",
+            "severity_assessment": "Medium - brute force attempt",
+        },
+        "raw_message": "SSH connection from 203.0.113.45 - authentication failed for user root",
+        "hours_ago": 12,
+    },
+    {
+        "reason": "Unusual DNS query type detected",
+        "severity_score": 0.72,
+        "llm_reviewed": True,
+        "reviewed_by_user": False,
+        "llm_response": {
+            "summary": "TXT record queries can be used for legitimate purposes but also for DNS tunneling or data exfiltration.",
+            "concern": "High volume of TXT queries to unfamiliar domain could indicate DNS tunneling",
+            "recommendation": "Analyze the content of TXT responses and check for encoded data patterns.",
+            "severity_assessment": "Medium - potential data exfiltration channel",
+        },
+        "raw_message": "Unusual DNS query type: TXT for data.suspicious-tunnel.net",
+        "hours_ago": 8,
+    },
+    {
+        "reason": "Pattern seen only 1 time (significantly below threshold)",
+        "severity_score": 0.45,
+        "llm_reviewed": False,
+        "reviewed_by_user": False,
+        "llm_response": None,
+        "raw_message": "DHCP request from unknown MAC AA:BB:CC:DD:EE:FF requesting IP outside configured range",
+        "hours_ago": 2,
+    },
+    {
+        "reason": "Rare firewall drop event",
+        "severity_score": 0.78,
+        "llm_reviewed": True,
+        "reviewed_by_user": False,
+        "llm_response": {
+            "summary": "Connection attempt to a port commonly used by backdoors was blocked by firewall rules.",
+            "concern": "Device attempted outbound connection to suspicious port, blocked by security rule",
+            "recommendation": "The firewall correctly blocked this. Investigate why the device attempted this connection.",
+            "severity_assessment": "High - blocked malicious attempt",
+        },
+        "raw_message": "Firewall DROP TCP 192.168.1.203 -> 185.220.101.1:31337 (rule: suspicious-ports)",
+        "hours_ago": 18,
+    },
+]
+
+# Demo suggested rules from LLM analysis
+DEMO_SUGGESTED_RULES = [
+    {
+        "name": "Detect SAM File Access Attempts",
+        "description": "Alerts when any process attempts to access the Windows SAM file, which contains password hashes",
+        "reason": "Analysis detected a process attempting to access C:\\Windows\\System32\\config\\SAM, which could indicate credential theft attempts",
+        "benefit": "Early detection of credential dumping attacks like mimikatz or similar tools",
+        "rule_type": SuggestedRuleType.PATTERN_MATCH,
+        "rule_config": {
+            "pattern": r".*access.*SAM.*permission denied.*",
+            "fields": ["raw_message"],
+            "case_insensitive": True,
+        },
+        "status": SuggestedRuleStatus.PENDING,
+        "hours_ago": 4,
+    },
+    {
+        "name": "Block Known C2 Ports",
+        "description": "Detects and alerts on connections to ports commonly used by command and control infrastructure",
+        "reason": "Connection to port 4444 detected, which is a default Metasploit handler port",
+        "benefit": "Immediate detection of potential compromised hosts communicating with attack infrastructure",
+        "rule_type": SuggestedRuleType.PATTERN_MATCH,
+        "rule_config": {
+            "pattern": r".*Connection to.*:(4444|5555|6666|1337|31337).*",
+            "fields": ["raw_message"],
+        },
+        "status": SuggestedRuleStatus.APPROVED,
+        "hours_ago": 6,
+    },
+    {
+        "name": "SSH Brute Force Detection",
+        "description": "Alerts when multiple failed SSH login attempts occur from the same IP within a short time window",
+        "reason": "Multiple failed SSH authentication attempts from external IP detected",
+        "benefit": "Rapid identification of brute force attacks against SSH services",
+        "rule_type": SuggestedRuleType.THRESHOLD,
+        "rule_config": {
+            "field": "source_ip",
+            "threshold": 5,
+            "time_window_minutes": 10,
+            "pattern": r".*SSH.*authentication failed.*",
+        },
+        "status": SuggestedRuleStatus.IMPLEMENTED,
+        "hours_ago": 12,
+    },
+    {
+        "name": "DNS Tunneling via TXT Records",
+        "description": "Detects potential DNS tunneling by monitoring for unusual TXT record query patterns",
+        "reason": "High volume of TXT DNS queries to suspicious domain detected",
+        "benefit": "Detection of data exfiltration attempts via DNS tunneling",
+        "rule_type": SuggestedRuleType.THRESHOLD,
+        "rule_config": {
+            "field": "query_type",
+            "value": "TXT",
+            "threshold": 10,
+            "time_window_minutes": 5,
+        },
+        "status": SuggestedRuleStatus.PENDING,
+        "hours_ago": 8,
+    },
+    {
+        "name": "Tor Exit Node Connection Alert",
+        "description": "Alerts when devices connect to known Tor exit node IP addresses",
+        "reason": "Connection to known Tor exit node IP was blocked by firewall",
+        "benefit": "Detection of attempts to anonymize network traffic, which may indicate policy violations or malicious activity",
+        "rule_type": SuggestedRuleType.PATTERN_MATCH,
+        "rule_config": {
+            "pattern": r".*185\.220\.101\.\d+.*",
+            "fields": ["raw_message", "target_ip"],
+        },
+        "status": SuggestedRuleStatus.REJECTED,
+        "rejection_reason": "Would generate too many false positives with legitimate Tor usage",
+        "hours_ago": 18,
+    },
 ]
 
 
@@ -1123,54 +1446,78 @@ async def seed_baselines(session: AsyncSession, devices: dict[str, Device]) -> l
         if device.status != DeviceStatus.ACTIVE:
             continue
 
-        # DNS baseline
-        dns_baseline = DeviceBaseline(
-            id=uuid.uuid4(),
-            device_id=device.id,
-            baseline_type=BaselineType.DNS,
-            status=BaselineStatus.READY,
-            metrics={
-                "domains_daily": ["google.com", "cloudflare.com", "github.com"] if device.device_type == DeviceType.PC else ["nest.com", "google.com"],
-                "total_queries_daily_avg": 450 if device.device_type == DeviceType.PC else 120,
-                "total_queries_daily_std": 85 if device.device_type == DeviceType.PC else 30,
-                "query_rate_hourly": {str(h): 20 + (h % 12) * 3 for h in range(24)},
-                "peak_hours": [9, 10, 14, 15, 20, 21],
-                "unique_domains_daily_avg": 45 if device.device_type == DeviceType.PC else 8,
-                "blocked_ratio": 0.05,
-            },
-            sample_count=500,
-            min_samples=100,
-            baseline_window_days=7,
-            last_calculated=NOW - timedelta(hours=1),
-            created_at=NOW - timedelta(days=14),
-            updated_at=NOW,
+        # Check if DNS baseline already exists
+        result = await session.execute(
+            select(DeviceBaseline).where(
+                DeviceBaseline.device_id == device.id,
+                DeviceBaseline.baseline_type == BaselineType.DNS
+            )
         )
-        baselines.append(dns_baseline)
+        existing_dns = result.scalar_one_or_none()
 
-        # Traffic baseline for PCs and servers
-        if device.device_type in [DeviceType.PC, DeviceType.SERVER]:
-            traffic_baseline = DeviceBaseline(
+        if existing_dns:
+            baselines.append(existing_dns)
+        else:
+            # DNS baseline
+            dns_baseline = DeviceBaseline(
                 id=uuid.uuid4(),
                 device_id=device.id,
-                baseline_type=BaselineType.TRAFFIC,
+                baseline_type=BaselineType.DNS,
                 status=BaselineStatus.READY,
                 metrics={
-                    "bytes_daily_avg": 2500000000 if device.device_type == DeviceType.PC else 500000000,
-                    "bytes_daily_std": 500000000,
-                    "bytes_hourly_avg": {str(h): 100000000 + (h % 12) * 20000000 for h in range(24)},
-                    "peak_hours": [10, 11, 14, 15, 16],
-                    "active_hours": list(range(8, 23)),
+                    "domains_daily": ["google.com", "cloudflare.com", "github.com"] if device.device_type == DeviceType.PC else ["nest.com", "google.com"],
+                    "total_queries_daily_avg": 450 if device.device_type == DeviceType.PC else 120,
+                    "total_queries_daily_std": 85 if device.device_type == DeviceType.PC else 30,
+                    "query_rate_hourly": {str(h): 20 + (h % 12) * 3 for h in range(24)},
+                    "peak_hours": [9, 10, 14, 15, 20, 21],
+                    "unique_domains_daily_avg": 45 if device.device_type == DeviceType.PC else 8,
+                    "blocked_ratio": 0.05,
                 },
-                sample_count=350,
+                sample_count=500,
                 min_samples=100,
                 baseline_window_days=7,
-                last_calculated=NOW - timedelta(hours=2),
+                last_calculated=NOW - timedelta(hours=1),
                 created_at=NOW - timedelta(days=14),
                 updated_at=NOW,
             )
-            baselines.append(traffic_baseline)
+            session.add(dns_baseline)
+            baselines.append(dns_baseline)
 
-    session.add_all(baselines)
+        # Traffic baseline for PCs and servers
+        if device.device_type in [DeviceType.PC, DeviceType.SERVER]:
+            # Check if traffic baseline already exists
+            result = await session.execute(
+                select(DeviceBaseline).where(
+                    DeviceBaseline.device_id == device.id,
+                    DeviceBaseline.baseline_type == BaselineType.TRAFFIC
+                )
+            )
+            existing_traffic = result.scalar_one_or_none()
+
+            if existing_traffic:
+                baselines.append(existing_traffic)
+            else:
+                traffic_baseline = DeviceBaseline(
+                    id=uuid.uuid4(),
+                    device_id=device.id,
+                    baseline_type=BaselineType.TRAFFIC,
+                    status=BaselineStatus.READY,
+                    metrics={
+                        "bytes_daily_avg": 2500000000 if device.device_type == DeviceType.PC else 500000000,
+                        "bytes_daily_std": 500000000,
+                        "bytes_hourly_avg": {str(h): 100000000 + (h % 12) * 20000000 for h in range(24)},
+                        "peak_hours": [10, 11, 14, 15, 16],
+                        "active_hours": list(range(8, 23)),
+                    },
+                    sample_count=350,
+                    min_samples=100,
+                    baseline_window_days=7,
+                    last_calculated=NOW - timedelta(hours=2),
+                    created_at=NOW - timedelta(days=14),
+                    updated_at=NOW,
+                )
+                session.add(traffic_baseline)
+                baselines.append(traffic_baseline)
     await session.flush()
     print(f"  Created {len(baselines)} baselines")
     return baselines
@@ -1540,6 +1887,380 @@ async def seed_retention_policies(session: AsyncSession) -> list[RetentionPolicy
     return policies
 
 
+async def seed_additional_detection_rules(session: AsyncSession) -> list[DetectionRule]:
+    """Create additional detection rules."""
+    print("Creating additional detection rules...")
+    rules = []
+
+    for rule_data in DEMO_ADDITIONAL_RULES:
+        # Check if rule already exists
+        result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_data["id"]))
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            print(f"  Rule '{rule_data['name']}' already exists, skipping")
+            rules.append(existing)
+            continue
+
+        rule = DetectionRule(
+            id=rule_data["id"],
+            name=rule_data["name"],
+            description=rule_data["description"],
+            severity=rule_data["severity"],
+            enabled=True,
+            conditions=rule_data["conditions"],
+            response_actions=rule_data["response_actions"],
+            cooldown_minutes=rule_data["cooldown_minutes"],
+            created_at=NOW - timedelta(days=14),
+            updated_at=NOW,
+        )
+        session.add(rule)
+        rules.append(rule)
+        print(f"  Created rule: {rule_data['name']}")
+
+    await session.flush()
+    return rules
+
+
+async def seed_semantic_analysis_configs(session: AsyncSession, sources: dict[str, LogSource]) -> list[SemanticAnalysisConfig]:
+    """Create semantic analysis configurations for log sources."""
+    print("Creating semantic analysis configs...")
+    configs = []
+
+    config_settings = [
+        {"source_id": "adguard-home", "llm_provider": LLMProvider.CLAUDE, "rarity_threshold": 3, "batch_size": 50},
+        {"source_id": "unifi-firewall", "llm_provider": LLMProvider.CLAUDE, "rarity_threshold": 5, "batch_size": 30},
+        {"source_id": "endpoint-desktop", "llm_provider": LLMProvider.OLLAMA, "ollama_model": "llama3.2", "rarity_threshold": 3, "batch_size": 25},
+        {"source_id": "syslog-nas", "llm_provider": LLMProvider.CLAUDE, "rarity_threshold": 3, "batch_size": 50},
+    ]
+
+    for cfg in config_settings:
+        source = sources.get(cfg["source_id"])
+        if not source:
+            continue
+
+        # Check if config already exists
+        result = await session.execute(
+            select(SemanticAnalysisConfig).where(SemanticAnalysisConfig.source_id == cfg["source_id"])
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            print(f"  Config for '{cfg['source_id']}' already exists, skipping")
+            configs.append(existing)
+            continue
+
+        config = SemanticAnalysisConfig(
+            id=uuid.uuid4(),
+            source_id=cfg["source_id"],
+            enabled=True,
+            llm_provider=cfg["llm_provider"],
+            ollama_model=cfg.get("ollama_model"),
+            rarity_threshold=cfg["rarity_threshold"],
+            batch_size=cfg["batch_size"],
+            batch_interval_minutes=60,
+            last_run_at=NOW - timedelta(hours=1),
+            created_at=NOW - timedelta(days=7),
+            updated_at=NOW,
+        )
+        session.add(config)
+        configs.append(config)
+        print(f"  Created config for: {cfg['source_id']} ({cfg['llm_provider'].value})")
+
+    await session.flush()
+    return configs
+
+
+async def seed_log_patterns(session: AsyncSession, sources: dict[str, LogSource]) -> list[LogPattern]:
+    """Create demo log patterns."""
+    print("Creating demo log patterns...")
+    patterns = []
+
+    # Get a source to associate patterns with
+    adguard_source = sources.get("adguard-home")
+    firewall_source = sources.get("unifi-firewall")
+    endpoint_source = sources.get("endpoint-desktop")
+    syslog_source = sources.get("syslog-nas")
+
+    source_list = [s for s in [adguard_source, firewall_source, endpoint_source, syslog_source] if s]
+    if not source_list:
+        print("  No sources found, skipping patterns")
+        return patterns
+
+    import hashlib
+
+    for i, pattern_data in enumerate(DEMO_LOG_PATTERNS):
+        source = source_list[i % len(source_list)]
+
+        # Generate pattern hash
+        pattern_hash = hashlib.sha256(
+            f"{source.id}:{pattern_data['normalized_pattern']}".encode()
+        ).hexdigest()
+
+        # Check if pattern already exists
+        result = await session.execute(
+            select(LogPattern).where(LogPattern.pattern_hash == pattern_hash)
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            patterns.append(existing)
+            continue
+
+        first_seen = NOW - timedelta(days=14 + i)
+        last_seen = NOW - timedelta(hours=i * 2)
+
+        pattern = LogPattern(
+            id=uuid.uuid4(),
+            source_id=source.id,
+            normalized_pattern=pattern_data["normalized_pattern"],
+            pattern_hash=pattern_hash,
+            first_seen=first_seen,
+            last_seen=last_seen,
+            occurrence_count=pattern_data["occurrence_count"],
+            is_ignored=pattern_data["is_ignored"],
+            created_at=first_seen,
+            updated_at=last_seen,
+        )
+        session.add(pattern)
+        patterns.append(pattern)
+
+    await session.flush()
+    print(f"  Created {len(patterns)} log patterns")
+    return patterns
+
+
+async def seed_semantic_analysis_runs(
+    session: AsyncSession, sources: dict[str, LogSource]
+) -> list[SemanticAnalysisRun]:
+    """Create demo semantic analysis runs."""
+    print("Creating semantic analysis runs...")
+    runs = []
+
+    adguard_source = sources.get("adguard-home")
+    firewall_source = sources.get("unifi-firewall")
+
+    run_scenarios = [
+        {
+            "source": adguard_source,
+            "hours_ago": 1,
+            "status": AnalysisRunStatus.COMPLETED,
+            "events_scanned": 156,
+            "irregulars_found": 3,
+            "llm_provider": LLMProvider.CLAUDE,
+        },
+        {
+            "source": adguard_source,
+            "hours_ago": 62,
+            "status": AnalysisRunStatus.COMPLETED,
+            "events_scanned": 234,
+            "irregulars_found": 5,
+            "llm_provider": LLMProvider.CLAUDE,
+        },
+        {
+            "source": firewall_source,
+            "hours_ago": 2,
+            "status": AnalysisRunStatus.COMPLETED,
+            "events_scanned": 89,
+            "irregulars_found": 2,
+            "llm_provider": LLMProvider.CLAUDE,
+        },
+        {
+            "source": firewall_source,
+            "hours_ago": 26,
+            "status": AnalysisRunStatus.FAILED,
+            "events_scanned": 45,
+            "irregulars_found": 0,
+            "llm_provider": LLMProvider.CLAUDE,
+            "error_message": "LLM API timeout after 120 seconds",
+        },
+    ]
+
+    for scenario in run_scenarios:
+        if not scenario["source"]:
+            continue
+
+        started_at = NOW - timedelta(hours=scenario["hours_ago"])
+        completed_at = started_at + timedelta(minutes=2) if scenario["status"] != AnalysisRunStatus.FAILED else None
+
+        run = SemanticAnalysisRun(
+            id=uuid.uuid4(),
+            source_id=scenario["source"].id,
+            started_at=started_at,
+            completed_at=completed_at,
+            status=scenario["status"],
+            events_scanned=scenario["events_scanned"],
+            irregulars_found=scenario["irregulars_found"],
+            llm_provider=scenario["llm_provider"],
+            llm_response_summary=f"Analyzed {scenario['events_scanned']} events, found {scenario['irregulars_found']} irregularities"
+            if scenario["status"] == AnalysisRunStatus.COMPLETED else None,
+            error_message=scenario.get("error_message"),
+        )
+        session.add(run)
+        runs.append(run)
+        print(f"  Created analysis run for: {scenario['source'].id} ({scenario['status'].value})")
+
+    await session.flush()
+    return runs
+
+
+async def seed_irregular_logs(
+    session: AsyncSession,
+    sources: dict[str, LogSource],
+    events: list[RawEvent],
+    patterns: list[LogPattern],
+    runs: list[SemanticAnalysisRun],
+) -> list[IrregularLog]:
+    """Create demo irregular logs."""
+    print("Creating demo irregular logs...")
+    irregular_logs = []
+
+    import json
+
+    # Get recent events and patterns to link to
+    adguard_source = sources.get("adguard-home")
+    firewall_source = sources.get("unifi-firewall")
+
+    # Get rare patterns (those with low occurrence)
+    rare_patterns = [p for p in patterns if p.occurrence_count <= 5]
+
+    for i, log_data in enumerate(DEMO_IRREGULAR_LOGS):
+        # Assign to alternating sources
+        source = adguard_source if i % 2 == 0 else firewall_source
+        if not source:
+            source = list(sources.values())[0] if sources else None
+        if not source:
+            continue
+
+        # Get an event to link (or use first event)
+        event = events[i % len(events)] if events else None
+        if not event:
+            continue
+
+        # Get a pattern to link
+        pattern = rare_patterns[i % len(rare_patterns)] if rare_patterns else None
+
+        timestamp = NOW - timedelta(hours=log_data["hours_ago"])
+
+        # Convert llm_response dict to JSON string if present
+        llm_response_str = None
+        if log_data["llm_response"]:
+            llm_response_str = json.dumps(log_data["llm_response"])
+
+        irregular = IrregularLog(
+            id=uuid.uuid4(),
+            event_id=event.id,
+            event_timestamp=event.timestamp,
+            source_id=source.id,
+            pattern_id=pattern.id if pattern else None,
+            reason=log_data["reason"],
+            llm_reviewed=log_data["llm_reviewed"],
+            llm_response=llm_response_str,
+            severity_score=log_data["severity_score"],
+            reviewed_by_user=log_data["reviewed_by_user"],
+            reviewed_at=timestamp + timedelta(hours=1) if log_data["reviewed_by_user"] else None,
+        )
+        session.add(irregular)
+        irregular_logs.append(irregular)
+
+    await session.flush()
+    print(f"  Created {len(irregular_logs)} irregular logs")
+    return irregular_logs
+
+
+async def seed_suggested_rules(
+    session: AsyncSession,
+    sources: dict[str, LogSource],
+    users: dict[str, User],
+    irregular_logs: list[IrregularLog],
+    runs: list[SemanticAnalysisRun],
+) -> list[SuggestedRule]:
+    """Create demo suggested rules."""
+    print("Creating demo suggested rules...")
+    suggested_rules = []
+
+    admin_user = users.get("demo_admin")
+    adguard_source = sources.get("adguard-home")
+    firewall_source = sources.get("unifi-firewall")
+
+    # Get completed runs
+    completed_runs = [r for r in runs if r.status == AnalysisRunStatus.COMPLETED]
+
+    import hashlib
+    import json
+
+    for i, rule_data in enumerate(DEMO_SUGGESTED_RULES):
+        # Assign to alternating sources
+        source = adguard_source if i % 2 == 0 else firewall_source
+        if not source:
+            source = list(sources.values())[0] if sources else None
+
+        # Get run to link
+        run = completed_runs[i % len(completed_runs)] if completed_runs else None
+
+        # Get irregular log to link
+        irregular = irregular_logs[i % len(irregular_logs)] if irregular_logs else None
+
+        # Generate rule hash for deduplication
+        rule_hash = hashlib.sha256(
+            json.dumps(rule_data["rule_config"], sort_keys=True).encode()
+        ).hexdigest()
+
+        # Check if rule already exists
+        result = await session.execute(
+            select(SuggestedRule).where(SuggestedRule.rule_hash == rule_hash)
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            suggested_rules.append(existing)
+            continue
+
+        timestamp = NOW - timedelta(hours=rule_data["hours_ago"])
+
+        rule = SuggestedRule(
+            id=uuid.uuid4(),
+            source_id=source.id if source else None,
+            analysis_run_id=run.id if run else None,
+            irregular_log_id=irregular.id if irregular else None,
+            name=rule_data["name"],
+            description=rule_data["description"],
+            reason=rule_data["reason"],
+            benefit=rule_data["benefit"],
+            rule_type=rule_data["rule_type"],
+            rule_config=rule_data["rule_config"],
+            status=rule_data["status"],
+            enabled=rule_data["status"] == SuggestedRuleStatus.IMPLEMENTED,
+            rule_hash=rule_hash,
+            reviewed_by=admin_user.id if rule_data["status"] in [SuggestedRuleStatus.APPROVED, SuggestedRuleStatus.REJECTED, SuggestedRuleStatus.IMPLEMENTED] and admin_user else None,
+            reviewed_at=timestamp + timedelta(hours=2) if rule_data["status"] != SuggestedRuleStatus.PENDING else None,
+            rejection_reason=rule_data.get("rejection_reason"),
+            created_at=timestamp,
+            updated_at=NOW,
+        )
+        session.add(rule)
+        suggested_rules.append(rule)
+        print(f"  Created suggested rule: {rule_data['name']} ({rule_data['status'].value})")
+
+    await session.flush()
+
+    # Create history entries for non-pending rules
+    print("  Creating suggested rule history...")
+    for rule in suggested_rules:
+        if rule.status in [SuggestedRuleStatus.APPROVED, SuggestedRuleStatus.REJECTED, SuggestedRuleStatus.IMPLEMENTED]:
+            history = SuggestedRuleHistory(
+                id=uuid.uuid4(),
+                rule_hash=rule.rule_hash,
+                original_rule_id=rule.id,
+                status=rule.status,
+                created_at=rule.reviewed_at or NOW,
+            )
+            session.add(history)
+
+    await session.flush()
+    return suggested_rules
+
+
 # ============================================================================
 # Main Execution
 # ============================================================================
@@ -1576,11 +2297,19 @@ async def main():
             anomalies = await seed_anomalies(session, devices, alerts)
             baselines = await seed_baselines(session, devices)
             rules = await seed_detection_rules(session)
+            additional_rules = await seed_additional_detection_rules(session)
             playbooks = await seed_playbooks(session, users)
             feeds, indicators = await seed_threat_intel(session)
             audit_logs = await seed_audit_logs(session, users, devices)
             notification_prefs = await seed_notification_preferences(session, users)
             retention_policies = await seed_retention_policies(session)
+
+            # Seed semantic analysis data
+            semantic_configs = await seed_semantic_analysis_configs(session, sources)
+            log_patterns = await seed_log_patterns(session, sources)
+            analysis_runs = await seed_semantic_analysis_runs(session, sources)
+            irregular_logs = await seed_irregular_logs(session, sources, events, log_patterns, analysis_runs)
+            suggested_rules = await seed_suggested_rules(session, sources, users, irregular_logs, analysis_runs)
 
             # Commit all changes
             await session.commit()
@@ -1598,13 +2327,20 @@ async def main():
             print(f"  - Alerts: {len(alerts)}")
             print(f"  - Anomalies: {len(anomalies)}")
             print(f"  - Baselines: {len(baselines)}")
-            print(f"  - Detection Rules: {len(rules)}")
+            print(f"  - Detection Rules: {len(rules) + len(additional_rules)}")
             print(f"  - Playbooks: {len(playbooks)}")
             print(f"  - Threat Intel Feeds: {len(feeds)}")
             print(f"  - Threat Indicators: {len(indicators)}")
             print(f"  - Audit Logs: {len(audit_logs)}")
             print(f"  - Notification Preferences: {len(notification_prefs)}")
             print(f"  - Retention Policies: {len(retention_policies)}")
+            print()
+            print("Semantic Analysis:")
+            print(f"  - Semantic Configs: {len(semantic_configs)}")
+            print(f"  - Log Patterns: {len(log_patterns)}")
+            print(f"  - Analysis Runs: {len(analysis_runs)}")
+            print(f"  - Irregular Logs: {len(irregular_logs)}")
+            print(f"  - Suggested Rules: {len(suggested_rules)}")
             print()
             print("Demo Credentials:")
             print("  Admin:    demo_admin / DemoAdmin123!")

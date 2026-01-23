@@ -165,6 +165,21 @@ OLLAMA_POLL_INTERVAL_SECONDS=30
 OLLAMA_DETECTION_ENABLED=true
 ```
 
+**Semantic Log Analysis:**
+```bash
+# Enable AI-powered log analysis
+SEMANTIC_ANALYSIS_ENABLED=true
+SEMANTIC_DEFAULT_LLM_PROVIDER=claude  # or: ollama
+SEMANTIC_DEFAULT_RARITY_THRESHOLD=3
+SEMANTIC_DEFAULT_BATCH_SIZE=50
+SEMANTIC_DEFAULT_BATCH_INTERVAL_MINUTES=60
+
+# If using local Ollama for semantic analysis
+OLLAMA_URL=http://localhost:11434
+OLLAMA_DEFAULT_MODEL=llama3.2
+OLLAMA_TIMEOUT_SECONDS=120
+```
+
 ## Endpoint Agent Deployment
 
 The optional endpoint agent monitors workstations for process and network activity.

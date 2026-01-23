@@ -743,3 +743,69 @@ podman-compose up -d
 # Don't forget to run migrations!
 podman exec netguardian-backend alembic upgrade head
 ```
+
+---
+
+## API Data Format Mismatches
+
+### Detection Rules response_actions Format
+
+**Problem:** `/api/v1/rules` returning 500 Internal Server Error
+
+**Cause:** Seed data stores `response_actions` as a list of strings (`["create_alert", "notify_admin"]`) but the API `RuleResponse` model expects `List[Dict[str, Any]]` (`[{"type": "create_alert", "config": {}}]`).
+
+**Solution:** Added `_normalize_response_actions()` in `backend/app/api/v1/rules.py` that converts legacy string format to expected dict format:
+```python
+def _normalize_response_actions(actions: List[Any]) -> List[Dict[str, Any]]:
+    normalized = []
+    for action in actions:
+        if isinstance(action, str):
+            normalized.append({"type": action, "config": {}})
+        elif isinstance(action, dict):
+            if "config" not in action:
+                action["config"] = {}
+            normalized.append(action)
+    return normalized
+```
+
+**File:** `backend/app/api/v1/rules.py:152-168`
+
+---
+
+### ThreatIndicator metadata vs extra_data
+
+**Problem:** `/api/v1/threat-intel/indicators` returning 500 Internal Server Error
+
+**Cause:** The `ThreatIndicator` model has a column named `extra_data` (JSONB), but the API code was accessing `ind.metadata`. Since `metadata` is a reserved attribute name in SQLAlchemy (it refers to the table's MetaData object), accessing `ind.metadata` returned the wrong type.
+
+**Solution:** Changed `ind.metadata` to `ind.extra_data` in `backend/app/api/v1/threat_intel.py` (3 occurrences in `list_indicators`, `check_indicator` response building).
+
+**Lesson:** Avoid naming model columns `metadata` as it conflicts with SQLAlchemy's built-in attribute. Use names like `extra_data`, `meta`, or `additional_data` instead.
+
+**File:** `backend/app/api/v1/threat_intel.py`
+
+---
+
+### FastAPI Route Ordering - Dynamic vs Static Paths
+
+**Problem:** `/api/v1/devices/quarantined` returning 422 Unprocessable Entity
+
+**Cause:** FastAPI matches routes in definition order. The `/{device_id}` route was defined before `/quarantined`, so requests to `/quarantined` matched `/{device_id}` first. Since `device_id` is typed as `UUID`, FastAPI tried to parse "quarantined" as a UUID and failed validation.
+
+**Solution:** Reorder routes so static paths come before dynamic path parameters:
+
+```python
+# CORRECT ORDER:
+@router.get("")                    # /devices
+@router.get("/quarantined")        # /devices/quarantined (static)
+@router.get("/export/csv")         # /devices/export/csv (static)
+@router.get("/tags/all")           # /devices/tags/all (static)
+@router.post("/bulk-tag")          # /devices/bulk-tag (static)
+@router.get("/{device_id}")        # /devices/{uuid} (dynamic - LAST)
+@router.patch("/{device_id}")
+@router.put("/{device_id}/tags")
+```
+
+**Lesson:** In FastAPI, always define static routes before routes with path parameters. This applies to any route file with both patterns.
+
+**File:** `backend/app/api/v1/devices.py`

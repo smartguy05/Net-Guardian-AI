@@ -318,6 +318,108 @@ Passwords must:
 - Not be a common password
 - Not contain 3+ consecutive identical characters
 
+## Semantic Log Analysis
+
+### Overview
+
+Semantic Log Analysis uses AI to identify unusual log messages that differ from normal patterns. Unlike volume-based anomaly detection, this feature analyzes the *content* of logs to find security-relevant irregularities.
+
+**How It Works:**
+1. **Pattern Learning:** Logs are normalized into templates (replacing IPs, timestamps, UUIDs with placeholders)
+2. **Rarity Detection:** Patterns seen fewer than the threshold count are flagged as irregular
+3. **LLM Analysis:** Irregular logs are batched and sent to an LLM (Claude or Ollama) for security review
+4. **Rule Suggestions:** The LLM can suggest detection rules based on findings
+
+### Log Patterns Page
+
+Access via **Log Patterns** in the sidebar. This page shows learned patterns:
+
+| Column | Description |
+|--------|-------------|
+| Pattern | Normalized log template with placeholders |
+| Source | Log source this pattern belongs to |
+| Count | Number of times this pattern was seen |
+| First Seen | When the pattern was first observed |
+| Last Seen | Most recent occurrence |
+| Status | Normal or Ignored |
+
+**Managing Patterns:**
+- **Ignore Pattern:** Click the ignore toggle to exclude a pattern from irregularity detection. Use this for known benign patterns that appear rarely.
+- **Filter by Source:** Use the source dropdown to view patterns from specific log sources.
+- **Search:** Find patterns containing specific text.
+
+### Semantic Review Page
+
+Access via **Semantic Review** in the sidebar. This shows logs flagged as irregular:
+
+| Column | Description |
+|--------|-------------|
+| Timestamp | When the log was received |
+| Source | Log source |
+| Message | Original log message |
+| Reason | Why it was flagged as irregular |
+| Severity | LLM-assigned severity (0.0-1.0) |
+| Status | Pending review, Reviewed |
+
+**Reviewing Irregular Logs:**
+1. Click a row to expand the full log details
+2. Review the LLM analysis explaining why it's concerning
+3. Click **Mark Reviewed** to acknowledge the log
+4. If it's a false positive, consider ignoring the pattern
+
+**Filters:**
+- **Source:** Filter by log source
+- **Severity:** Show only high-severity items (≥0.7)
+- **Status:** Show pending or reviewed items
+- **Date Range:** Filter by time period
+
+### Suggested Rules Page
+
+Access via **Suggested Rules** in the sidebar. The LLM can suggest detection rules based on its analysis:
+
+**Pending Tab:**
+- Shows rules awaiting your review
+- Each rule displays:
+  - **Name:** Descriptive rule name
+  - **Description:** What the rule detects
+  - **Reason:** Why the LLM suggested it
+  - **Benefit:** How it improves security
+  - **Rule Type:** Pattern match, threshold, or sequence
+
+**Actions:**
+- **Approve:** Accept the rule and optionally enable it immediately
+- **Reject:** Decline with a reason (prevents re-suggestion)
+- **Edit:** Modify rule config before approving
+
+**History Tab:**
+- View previously approved/rejected rules
+- Filter by status, source, or date
+
+### Configuration
+
+Configure Semantic Analysis per log source in **Settings > Log Sources**:
+
+1. Select a log source
+2. Enable **Semantic Analysis**
+3. Configure:
+   - **LLM Provider:** Claude (cloud) or Ollama (local)
+   - **Ollama Model:** If using Ollama, select the model (llama3.2, mistral, etc.)
+   - **Rarity Threshold:** Patterns seen fewer than N times are irregular (default: 3)
+   - **Batch Size:** Maximum logs per LLM analysis batch (default: 50)
+   - **Batch Interval:** Minutes between analysis runs (default: 60)
+
+### Triggering Manual Analysis
+
+To run analysis immediately:
+1. Go to **Settings > Log Sources**
+2. Select the source
+3. Click **Trigger Analysis**
+
+Or use the API:
+```bash
+POST /api/v1/semantic/runs/{source_id}/trigger
+```
+
 ## Ollama Monitoring
 
 ### LLM Security Monitoring

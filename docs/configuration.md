@@ -15,6 +15,7 @@ NetGuardian AI is configured via environment variables. All settings can be set 
 - [AdGuard Home Integration](#adguard-home-integration)
 - [Router Integration](#router-integration)
 - [LLM Configuration](#llm-configuration)
+- [Semantic Log Analysis](#semantic-log-analysis)
 - [Ollama Monitoring](#ollama-monitoring)
 - [Email Notifications](#email-notifications)
 - [ntfy.sh Notifications](#ntfysh-notifications)
@@ -213,6 +214,55 @@ LLM_MODEL_DEFAULT=claude-sonnet-4-20250514
 
 ---
 
+## Semantic Log Analysis
+
+AI-powered analysis of log content to identify unusual patterns and suggest detection rules.
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `SEMANTIC_ANALYSIS_ENABLED` | bool | `true` | Enable semantic log analysis feature globally |
+| `SEMANTIC_DEFAULT_LLM_PROVIDER` | string | `claude` | Default LLM provider: `claude` or `ollama` |
+| `SEMANTIC_DEFAULT_RARITY_THRESHOLD` | int | `3` | Patterns seen fewer than N times are irregular |
+| `SEMANTIC_DEFAULT_BATCH_SIZE` | int | `50` | Maximum logs per LLM analysis batch |
+| `SEMANTIC_DEFAULT_BATCH_INTERVAL_MINUTES` | int | `60` | Minutes between automated analysis runs |
+| `SEMANTIC_SCHEDULER_ENABLED` | bool | `true` | Enable background scheduler for periodic analysis |
+| `OLLAMA_DEFAULT_MODEL` | string | `llama3.2` | Default Ollama model for semantic analysis |
+| `OLLAMA_TIMEOUT_SECONDS` | int | `120` | Timeout for Ollama API requests |
+
+### Example
+
+```env
+# Enable semantic analysis with Claude
+SEMANTIC_ANALYSIS_ENABLED=true
+SEMANTIC_DEFAULT_LLM_PROVIDER=claude
+SEMANTIC_DEFAULT_RARITY_THRESHOLD=3
+SEMANTIC_DEFAULT_BATCH_SIZE=50
+SEMANTIC_DEFAULT_BATCH_INTERVAL_MINUTES=60
+
+# Or use local Ollama
+SEMANTIC_DEFAULT_LLM_PROVIDER=ollama
+OLLAMA_URL=http://localhost:11434
+OLLAMA_DEFAULT_MODEL=llama3.2
+OLLAMA_TIMEOUT_SECONDS=120
+```
+
+### Per-Source Configuration
+
+Each log source can have its own semantic analysis settings configured via the API or UI:
+
+```json
+{
+  "enabled": true,
+  "llm_provider": "claude",
+  "ollama_model": "llama3.2",
+  "rarity_threshold": 5,
+  "batch_size": 100,
+  "batch_interval_minutes": 30
+}
+```
+
+---
+
 ## Ollama Monitoring
 
 Monitor local Ollama LLM instances for prompt injection attacks.
@@ -318,6 +368,11 @@ ROUTER_PASSWORD=securepassword
 # LLM
 ANTHROPIC_API_KEY=sk-ant-...
 LLM_ENABLED=true
+
+# Semantic Analysis
+SEMANTIC_ANALYSIS_ENABLED=true
+SEMANTIC_DEFAULT_LLM_PROVIDER=claude
+SEMANTIC_DEFAULT_BATCH_INTERVAL_MINUTES=60
 
 # Notifications
 SMTP_HOST=smtp.gmail.com

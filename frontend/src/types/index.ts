@@ -559,3 +559,149 @@ export interface TopologyData {
     time_window_hours: number;
   };
 }
+
+// Semantic Analysis types
+export type LLMProvider = 'claude' | 'ollama';
+export type SuggestedRuleStatus = 'pending' | 'approved' | 'rejected' | 'implemented';
+export type SuggestedRuleType = 'pattern_match' | 'threshold' | 'sequence';
+
+export interface SemanticAnalysisConfig {
+  id: string;
+  source_id: string;
+  enabled: boolean;
+  llm_provider: LLMProvider;
+  ollama_model: string | null;
+  rarity_threshold: number;
+  batch_size: number;
+  batch_interval_minutes: number;
+  last_run_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateSemanticConfigRequest {
+  enabled?: boolean;
+  llm_provider?: LLMProvider;
+  ollama_model?: string;
+  rarity_threshold?: number;
+  batch_size?: number;
+  batch_interval_minutes?: number;
+}
+
+export interface LogPattern {
+  id: string;
+  source_id: string;
+  normalized_pattern: string;
+  pattern_hash: string;
+  first_seen: string;
+  last_seen: string;
+  occurrence_count: number;
+  is_ignored: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LogPatternListResponse {
+  items: LogPattern[];
+  total: number;
+}
+
+export interface IrregularLog {
+  id: string;
+  event_id: string;
+  event_timestamp: string;
+  source_id: string;
+  pattern_id: string | null;
+  reason: string;
+  llm_reviewed: boolean;
+  llm_response: string | null;
+  severity_score: number | null;
+  reviewed_by_user: boolean;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface IrregularLogListResponse {
+  items: IrregularLog[];
+  total: number;
+}
+
+export interface SemanticAnalysisRun {
+  id: string;
+  source_id: string;
+  started_at: string;
+  completed_at: string | null;
+  status: 'running' | 'completed' | 'failed';
+  events_scanned: number;
+  irregulars_found: number;
+  llm_provider: LLMProvider;
+  llm_response_summary: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface SemanticAnalysisRunListResponse {
+  items: SemanticAnalysisRun[];
+}
+
+export interface TriggerAnalysisResponse {
+  run_id: string;
+  status: string;
+  message: string;
+}
+
+export interface SemanticStats {
+  total_patterns: number;
+  total_irregular_logs: number;
+  pending_review: number;
+  high_severity_count: number;
+  last_run_at: string | null;
+  last_run_status: string | null;
+}
+
+export interface SuggestedRule {
+  id: string;
+  source_id: string | null;
+  analysis_run_id: string;
+  irregular_log_id: string;
+  name: string;
+  description: string;
+  reason: string;
+  benefit: string;
+  rule_type: SuggestedRuleType;
+  rule_config: Record<string, unknown>;
+  status: SuggestedRuleStatus;
+  enabled: boolean;
+  rule_hash: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SuggestedRuleListResponse {
+  items: SuggestedRule[];
+  total: number;
+}
+
+export interface ApproveRuleRequest {
+  enable: boolean;
+  config_overrides?: Record<string, unknown>;
+}
+
+export interface RejectRuleRequest {
+  reason: string;
+}
+
+export interface SuggestedRuleHistory {
+  id: string;
+  rule_hash: string;
+  original_rule_id: string;
+  status: SuggestedRuleStatus;
+  created_at: string;
+}
+
+export interface SuggestedRuleHistoryListResponse {
+  items: SuggestedRuleHistory[];
+}

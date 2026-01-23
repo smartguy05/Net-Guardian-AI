@@ -2,7 +2,39 @@
 
 Remaining tasks organized by priority.
 
-**Status:** Phase 8 (Landing Page & Help System) COMPLETE
+**Status:** Phase 9 (Semantic Log Analysis) COMPLETE
+
+---
+
+## Phase 9: Semantic Log Analysis (COMPLETE)
+
+### Completed
+- [x] Database models (LogPattern, IrregularLog, SuggestedRule, etc.)
+- [x] Pattern normalizer service
+- [x] Pattern service (CRUD)
+- [x] LLM provider abstraction (Claude + Ollama)
+- [x] Semantic analysis service
+- [x] Rule suggestion service
+- [x] API endpoints (/semantic/*)
+- [x] Event pipeline integration
+- [x] Frontend pages (SemanticReviewPage, PatternsPage, SuggestedRulesPage)
+- [x] Navigation and routing
+- [x] Configuration settings
+- [x] Background scheduler
+
+### Tests - COMPLETE
+- [x] Unit tests for pattern normalizer (35+ tests)
+- [x] Unit tests for pattern service
+- [x] Unit tests for LLM providers
+- [x] Unit tests for semantic analysis service
+- [x] Unit tests for rule suggestion service
+- [x] API endpoint tests
+
+### Documentation - COMPLETE
+- [x] Updated docs/user-guide.md with Semantic Log Analysis section
+- [x] Updated docs/configuration.md with semantic analysis settings
+- [x] Updated docs/deployment-guide.md with semantic analysis config
+- [x] Updated frontend DocsPage.tsx with full Semantic Log Analysis documentation
 
 ---
 
@@ -82,6 +114,7 @@ Remaining tasks organized by priority.
 - [x] CONTRIBUTING.md - Contributing guidelines
 - [x] .memories/* - Project memory files
 - [x] API documentation (auto-generated at /docs)
+- [x] In-app documentation page (`/docs`) - Comprehensive user-facing documentation
 
 ---
 

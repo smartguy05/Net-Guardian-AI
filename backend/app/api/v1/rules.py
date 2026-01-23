@@ -149,6 +149,27 @@ class ConditionFieldInfo(BaseModel):
 # --- Helper Functions ---
 
 
+def _normalize_response_actions(actions: List[Any]) -> List[Dict[str, Any]]:
+    """Normalize response_actions to expected format.
+
+    Handles legacy format (list of strings) and new format (list of dicts).
+    """
+    normalized = []
+    for action in actions:
+        if isinstance(action, str):
+            # Legacy format: convert string to dict
+            normalized.append({"type": action, "config": {}})
+        elif isinstance(action, dict):
+            # Ensure config key exists
+            if "config" not in action:
+                action["config"] = {}
+            normalized.append(action)
+        else:
+            # Unknown format, skip
+            continue
+    return normalized
+
+
 def _rule_to_response(rule: DetectionRule) -> RuleResponse:
     """Convert DetectionRule to response model."""
     return RuleResponse(
@@ -158,7 +179,7 @@ def _rule_to_response(rule: DetectionRule) -> RuleResponse:
         severity=rule.severity,
         enabled=rule.enabled,
         conditions=rule.conditions,
-        response_actions=rule.response_actions,
+        response_actions=_normalize_response_actions(rule.response_actions),
         cooldown_minutes=rule.cooldown_minutes,
         created_at=rule.created_at.isoformat(),
         updated_at=rule.updated_at.isoformat(),

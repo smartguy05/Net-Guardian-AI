@@ -18,6 +18,9 @@ import {
   Settings,
   ListFilter,
   Network,
+  Hash,
+  Eye,
+  Lightbulb,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { useLogout } from '../api/hooks';
@@ -33,6 +36,9 @@ const navigation = [
   { name: 'Events', href: '/dashboard/events', icon: Activity, adminOnly: false },
   { name: 'Alerts', href: '/dashboard/alerts', icon: Bell, adminOnly: false },
   { name: 'Anomalies', href: '/dashboard/anomalies', icon: AlertTriangle, adminOnly: false },
+  { name: 'Log Patterns', href: '/dashboard/patterns', icon: Hash, adminOnly: false },
+  { name: 'Semantic Review', href: '/dashboard/semantic-review', icon: Eye, adminOnly: false },
+  { name: 'Suggested Rules', href: '/dashboard/suggested-rules', icon: Lightbulb, adminOnly: false },
   { name: 'Rules', href: '/dashboard/rules', icon: ListFilter, adminOnly: false },
   { name: 'Threat Intel', href: '/dashboard/threat-intel', icon: Shield, adminOnly: false },
   { name: 'Quarantine', href: '/dashboard/quarantine', icon: ShieldOff, adminOnly: false },

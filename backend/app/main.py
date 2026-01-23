@@ -19,6 +19,7 @@ from app.core.rate_limiter import RateLimitMiddleware
 from app.db.session import close_db, init_db
 from app.events.bus import close_event_bus, get_event_bus
 from app.services.init_service import initialize_application
+from app.services.semantic_scheduler import start_semantic_scheduler, stop_semantic_scheduler
 
 logger = get_logger(__name__)
 
@@ -52,12 +53,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize application (create admin user if needed, etc.)
     await initialize_application()
 
+    # Start semantic analysis scheduler
+    await start_semantic_scheduler()
+    logger.info("Semantic analysis scheduler started")
+
     logger.info("NetGuardian AI started successfully")
 
     yield
 
     # Shutdown
     logger.info("Shutting down NetGuardian AI")
+    await stop_semantic_scheduler()
+    logger.info("Semantic analysis scheduler stopped")
     await close_http_client_pool()
     logger.info("HTTP client pool closed")
     await close_event_bus()

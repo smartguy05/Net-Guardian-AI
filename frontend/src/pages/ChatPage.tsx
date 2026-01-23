@@ -11,14 +11,14 @@ import {
   Brain,
 } from 'lucide-react';
 import { useLLMStatus, useNetworkQuery } from '../api/hooks';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, LLMStatus } from '../types';
 import clsx from 'clsx';
 
-const modelOptions = [
-  { value: 'fast', label: 'Fast (Haiku)', icon: Zap, description: 'Quick responses' },
-  { value: 'default', label: 'Balanced (Sonnet)', icon: Sparkles, description: 'Best quality' },
-  { value: 'deep', label: 'Deep (Sonnet)', icon: Brain, description: 'Detailed analysis' },
-] as const;
+const getModelOptions = (llmStatus: LLMStatus | undefined) => [
+  { value: 'fast' as const, label: `Fast (${llmStatus?.model_fast || 'loading...'})`, icon: Zap, description: 'Quick responses' },
+  { value: 'default' as const, label: `Balanced (${llmStatus?.model_default || 'loading...'})`, icon: Sparkles, description: 'Best quality' },
+  { value: 'deep' as const, label: `Deep (${llmStatus?.model_deep || 'loading...'})`, icon: Brain, description: 'Detailed analysis' },
+];
 
 const suggestedQueries = [
   'What devices are most active right now?',
@@ -89,22 +89,22 @@ export default function ChatPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Assistant</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Assistant</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Chat with Claude about your network security
           </p>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-6 w-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="h-6 w-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-medium text-amber-800">LLM Service Not Configured</h3>
-              <p className="mt-1 text-sm text-amber-700">
+              <h3 className="font-medium text-amber-800 dark:text-amber-300">LLM Service Not Configured</h3>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
                 The AI assistant requires an Anthropic API key to function. Please add your
                 API key to the environment configuration:
               </p>
-              <pre className="mt-3 p-3 bg-amber-100 rounded text-sm text-amber-900 overflow-x-auto">
+              <pre className="mt-3 p-3 bg-amber-100 dark:bg-amber-900/30 rounded text-sm text-amber-900 dark:text-amber-200 overflow-x-auto">
                 ANTHROPIC_API_KEY=sk-ant-your-api-key
               </pre>
             </div>
@@ -119,25 +119,25 @@ export default function ChatPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Assistant</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Assistant</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Ask questions about your network security
           </p>
         </div>
 
         {/* Model selector */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Model:</span>
-          <div className="flex rounded-lg border border-gray-200 bg-white p-1">
-            {modelOptions.map((option) => (
+          <span className="text-sm text-gray-500 dark:text-gray-400">Model:</span>
+          <div className="flex rounded-lg border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-1">
+            {getModelOptions(llmStatus).map((option) => (
               <button
                 key={option.value}
                 onClick={() => setSelectedModel(option.value)}
                 className={clsx(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                   selectedModel === option.value
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-700'
                 )}
                 title={option.description}
               >
@@ -150,18 +150,18 @@ export default function ChatPage() {
       </div>
 
       {/* Chat container */}
-      <div className="flex-1 bg-white rounded-lg border border-gray-200 flex flex-col overflow-hidden">
+      <div className="flex-1 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 flex flex-col overflow-hidden">
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4">
-                <MessageSquare className="h-8 w-8 text-primary-600" />
+              <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-4">
+                <MessageSquare className="h-8 w-8 text-primary-600 dark:text-primary-400" />
               </div>
-              <h2 className="text-lg font-medium text-gray-900 mb-2">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 How can I help you today?
               </h2>
-              <p className="text-sm text-gray-500 max-w-md mb-6">
+              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-6">
                 Ask me anything about your network security, devices, alerts, or anomalies.
                 I have access to your current network state and can help you understand what's
                 happening.
@@ -169,7 +169,7 @@ export default function ChatPage() {
 
               {/* Suggested queries */}
               <div className="space-y-2 w-full max-w-lg">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Try asking
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -177,7 +177,7 @@ export default function ChatPage() {
                     <button
                       key={index}
                       onClick={() => handleSuggestedQuery(query)}
-                      className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700 transition-colors"
+                      className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 rounded-full text-gray-700 dark:text-gray-200 transition-colors"
                     >
                       {query}
                     </button>
@@ -195,8 +195,8 @@ export default function ChatPage() {
                 )}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                    <Bot className="h-5 w-5 text-primary-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                    <Bot className="h-5 w-5 text-primary-600 dark:text-primary-400" />
                   </div>
                 )}
                 <div
@@ -204,14 +204,14 @@ export default function ChatPage() {
                     'max-w-[70%] rounded-lg px-4 py-2',
                     message.role === 'user'
                       ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      : 'bg-gray-100 dark:bg-zinc-700 text-gray-900 dark:text-gray-100'
                   )}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
                 {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-gray-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-zinc-600 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                   </div>
                 )}
               </div>
@@ -220,12 +220,12 @@ export default function ChatPage() {
 
           {queryMutation.isPending && (
             <div className="flex gap-3 justify-start">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                <Bot className="h-5 w-5 text-primary-600" />
+              <div className="flex-shrink-0 w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                <Bot className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               </div>
-              <div className="bg-gray-100 rounded-lg px-4 py-2 flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                <span className="text-gray-500">Thinking...</span>
+              <div className="bg-gray-100 dark:bg-zinc-700 rounded-lg px-4 py-2 flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500 dark:text-gray-400" />
+                <span className="text-gray-500 dark:text-gray-400">Thinking...</span>
               </div>
             </div>
           )}
@@ -234,14 +234,14 @@ export default function ChatPage() {
         </div>
 
         {/* Input area */}
-        <div className="border-t border-gray-200 p-4">
+        <div className="border-t border-gray-200 dark:border-zinc-700 p-4">
           <form onSubmit={handleSubmit} className="flex gap-3">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about your network security..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="flex-1 rounded-lg border border-gray-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
               disabled={queryMutation.isPending}
             />
             <button
@@ -259,7 +259,7 @@ export default function ChatPage() {
           </form>
 
           {queryMutation.isError && (
-            <p className="mt-2 text-sm text-red-600">
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
               Failed to get response. Please try again.
             </p>
           )}

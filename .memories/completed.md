@@ -4,7 +4,234 @@ Tasks completed during implementation.
 
 ---
 
+## Bug Fixes (January 2026)
+
+### API Route Ordering Fix
+- [x] Fixed 422 error on `/api/v1/devices/quarantined` endpoint
+  - Cause: Static routes (`/quarantined`, `/export/csv`, `/tags/all`, `/bulk-tag`) were defined after dynamic `/{device_id}` route
+  - FastAPI matches routes in order, so "quarantined" was being parsed as a UUID
+  - Reordered routes in `backend/app/api/v1/devices.py` so static routes come first
+
+### API Data Format Fixes (earlier)
+- [x] Fixed 500 error on `/api/v1/rules` - response_actions format mismatch
+- [x] Fixed 500 error on `/api/v1/threat-intel/indicators` - metadata vs extra_data attribute conflict
+
+---
+
+## Phase 9: Semantic Log Analysis - COMPLETE (January 2026)
+
+### Database Models - COMPLETE
+- [x] Created `backend/app/models/semantic_analysis.py`
+  - LogPattern model (normalized patterns, occurrence tracking, ignore flag)
+  - SemanticAnalysisConfig model (per-source config, LLM provider selection)
+  - IrregularLog model (flagged logs, LLM review status, severity scores)
+  - SemanticAnalysisRun model (batch run audit trail)
+  - SuggestedRule model (LLM-generated rule suggestions)
+  - SuggestedRuleHistory model (deduplication tracking)
+  - Enums: LLMProvider, AnalysisRunStatus, SuggestedRuleStatus, SuggestedRuleType
+- [x] Created Alembic migration `009_add_semantic_analysis.py`
+  - 6 tables: log_patterns, semantic_analysis_configs, irregular_logs, semantic_analysis_runs, suggested_rules, suggested_rule_history
+  - 4 PostgreSQL enums with proper indexes
+
+### Pattern Normalizer Service - COMPLETE
+- [x] Created `backend/app/services/pattern_normalizer.py`
+  - PatternNormalizer class with regex-based normalization
+  - Replaces: IPs, timestamps, UUIDs, emails, URLs, paths, hex strings, numbers
+  - normalize() returns (pattern, hash) tuple
+  - extract_variables() for variable extraction
+  - is_similar() for pattern similarity comparison
+
+### Pattern Service - COMPLETE
+- [x] Created `backend/app/services/pattern_service.py`
+  - PatternService for pattern CRUD operations
+  - record_pattern() with PostgreSQL UPSERT for efficiency
+  - get_pattern_stats() for source statistics
+  - is_pattern_rare() based on config threshold
+  - mark_pattern_ignored() for user ignore toggle
+  - get_patterns_for_source() with filtering
+
+### LLM Provider Abstraction - COMPLETE
+- [x] Created `backend/app/services/llm_providers/` directory
+  - `base.py`: BaseLLMProvider ABC, LLMAnalysisResult dataclass, SEMANTIC_ANALYSIS_SYSTEM_PROMPT
+  - `claude_provider.py`: ClaudeLLMProvider using Anthropic API with prompt caching
+  - `ollama_provider.py`: OllamaLLMProvider using httpx for local Ollama
+  - `factory.py`: LLMProviderFactory with get_provider() and get_available_provider()
+
+### Semantic Analysis Service - COMPLETE
+- [x] Created `backend/app/services/semantic_analysis_service.py`
+  - SemanticAnalysisService orchestrating pattern learning and irregularity detection
+  - process_event() for real-time pattern recording
+  - run_analysis() for batch LLM analysis
+  - get_irregular_logs() with filtering
+  - mark_reviewed() for user review tracking
+  - get_stats() for dashboard statistics
+
+### Rule Suggestion Service - COMPLETE
+- [x] Created `backend/app/services/rule_suggestion_service.py`
+  - RuleSuggestionService for LLM-generated rule management
+  - create_from_llm_response() with hash-based deduplication
+  - approve_rule() creates actual DetectionRule when enabled
+  - reject_rule() with reason tracking
+  - get_pending_rules() and get_history() for UI
+
+### API Endpoints - COMPLETE
+- [x] Created `backend/app/api/v1/semantic.py`
+  - Configuration: GET/PUT /semantic/config/{source_id}
+  - Patterns: GET /semantic/patterns, PATCH /semantic/patterns/{id}
+  - Irregular logs: GET /semantic/irregular, PATCH /semantic/irregular/{id}/review
+  - Analysis runs: GET /semantic/runs, POST /semantic/runs/{source_id}/trigger
+  - Stats: GET /semantic/stats, GET /semantic/stats/{source_id}
+  - Suggested rules: GET /semantic/rules, POST /semantic/rules/{id}/approve, POST /semantic/rules/{id}/reject
+- [x] Registered router in `backend/app/api/v1/router.py`
+
+### Event Pipeline Integration - COMPLETE
+- [x] Updated `backend/app/services/collector_service.py`
+  - Added semantic analysis call in _handle_event() after commit
+  - Non-blocking integration (errors logged, not thrown)
+
+### Frontend Components - COMPLETE
+- [x] Added types to `frontend/src/types/index.ts`
+  - SemanticAnalysisConfig, LogPattern, IrregularLog, SemanticAnalysisRun
+  - SuggestedRule, SemanticStats, and related types
+- [x] Added hooks to `frontend/src/api/hooks.ts`
+  - useSemanticConfigs, useSemanticConfig, useUpdateSemanticConfig
+  - usePatterns, useUpdatePattern
+  - useIrregularLogs, useMarkIrregularReviewed
+  - useSuggestedRules, usePendingSuggestedRules, useApproveRule, useRejectRule
+  - useSemanticStats, useTriggerAnalysis
+- [x] Created `frontend/src/pages/SemanticReviewPage.tsx`
+  - Stats cards (patterns, irregular logs, pending review, high severity)
+  - Filters (source, reviewed status, severity)
+  - Paginated table with LLM analysis display
+  - Mark reviewed action
+- [x] Created `frontend/src/pages/PatternsPage.tsx`
+  - Stats summary (total patterns, irregular detected, last analysis)
+  - Filters (source, ignored status, rare only, search)
+  - Pattern table with occurrence counts and toggle ignore
+- [x] Created `frontend/src/pages/SuggestedRulesPage.tsx`
+  - Tabbed interface (Pending Review, All Rules)
+  - Rule cards with status, type, reason, benefit
+  - Approve (with enable toggle) and reject (with reason) actions
+- [x] Added routes to `frontend/src/App.tsx`
+  - /dashboard/semantic-review
+  - /dashboard/patterns
+  - /dashboard/suggested-rules
+- [x] Added navigation to `frontend/src/components/Layout.tsx`
+  - Log Patterns (Hash icon)
+  - Semantic Review (Eye icon)
+  - Suggested Rules (Lightbulb icon)
+
+### Configuration + Scheduler - COMPLETE
+- [x] Added settings to `backend/app/config.py`
+  - semantic_analysis_enabled, semantic_default_llm_provider
+  - semantic_default_rarity_threshold, semantic_default_batch_size
+  - semantic_default_batch_interval_minutes, semantic_scheduler_enabled
+  - ollama_default_model, ollama_timeout_seconds
+- [x] Created `backend/app/services/semantic_scheduler.py`
+  - SemanticAnalysisScheduler for periodic batch analysis
+  - Checks configs and runs analysis based on batch_interval_minutes
+  - Manual trigger support via trigger_source()
+- [x] Updated `backend/app/main.py`
+  - Start scheduler on application startup
+  - Stop scheduler on application shutdown
+
+### Tests - COMPLETE
+- [x] Created `backend/tests/services/test_pattern_normalizer.py`
+  - 35+ tests for IP, timestamp, UUID, email, URL, path, hex, number normalization
+  - Tests for hash generation, complex messages, variable extraction, similarity
+- [x] Created `backend/tests/services/test_pattern_service.py`
+  - Tests for PatternService initialization and factory
+  - Tests for PatternFilters and PatternStats dataclasses
+  - Tests for is_pattern_rare logic and edge cases
+- [x] Created `backend/tests/services/test_llm_providers.py`
+  - Tests for LogConcern, BenignExplanation, SuggestedRuleData dataclasses
+  - Tests for LLMAnalysisResult creation and from_dict/from_error parsing
+  - Tests for BaseLLMProvider prompt building and JSON parsing
+  - Tests for LLMProviderFactory with Claude and Ollama providers
+- [x] Created `backend/tests/services/test_semantic_analysis_service.py`
+  - Tests for SemanticAnalysisService initialization
+  - Tests for IrregularLogFilters and SemanticStats dataclasses
+  - Tests for process_event with mocked dependencies
+  - Tests for run_analysis error conditions and force bypass
+- [x] Created `backend/tests/services/test_rule_suggestion_service.py`
+  - Tests for RuleSuggestionService initialization
+  - Tests for RuleFilters and HistoryFilters dataclasses
+  - Tests for compute_rule_hash consistency and deduplication
+  - Tests for _map_rule_config_to_conditions for all rule types
+  - Tests for approve/reject rule error handling
+- [x] Created `backend/tests/api/test_semantic_api.py`
+  - Tests for request schemas (PatternUpdateRequest, ApproveRuleRequest, etc.)
+  - Tests for enum values (LLMProvider, SuggestedRuleStatus, SuggestedRuleType)
+  - Tests for API router configuration and endpoint paths
+  - Tests for HTTP method usage patterns
+
+### Documentation Updates - COMPLETE
+- [x] Updated `docs/user-guide.md`
+  - Added Semantic Log Analysis section covering Log Patterns, Semantic Review, Suggested Rules pages
+  - Configuration instructions for per-source settings and manual analysis triggers
+- [x] Updated `docs/configuration.md`
+  - Added Semantic Log Analysis section to table of contents
+  - Added environment variables: SEMANTIC_ANALYSIS_ENABLED, SEMANTIC_DEFAULT_LLM_PROVIDER, etc.
+  - Added per-source configuration JSON example
+  - Updated complete example with semantic analysis settings
+- [x] Updated `docs/deployment-guide.md`
+  - Added Semantic Log Analysis configuration section under Integration Configuration
+- [x] Updated `frontend/src/pages/DocsPage.tsx`
+  - Added Semantic Log Analysis section to navigation (icon: Scan)
+  - Added 5 subsections: Overview, Log Patterns, Semantic Review, Suggested Rules, Configuration
+  - Full documentation with code examples for environment variables and API usage
+  - Added Hash, Lightbulb, Scan icons for new section
+- [x] Updated `frontend/src/content/helpContent.ts`
+  - Added help slide-out for `/dashboard/patterns` (Log Patterns)
+  - Added help slide-out for `/dashboard/semantic-review` (Semantic Review)
+  - Added help slide-out for `/dashboard/suggested-rules` (Suggested Rules)
+  - Each includes overview, 3 sections with tips
+
+### Demo Data - COMPLETE
+- [x] Updated `backend/scripts/seed_demo_data.py`
+  - Added imports for semantic analysis models
+  - Added 6 additional detection rules (failed auth, DNS tunneling, unusual ports, IoT monitoring, crypto mining, after hours)
+  - Added 13 demo log patterns with varying occurrence counts (common, medium, rare)
+  - Added 6 demo irregular logs with LLM analysis (different severity scores, some reviewed)
+  - Added 5 demo suggested rules (pending, approved, implemented, rejected statuses)
+  - Added 4 semantic analysis configs (for different sources)
+  - Added 4 analysis runs (completed and failed)
+  - Added seed functions: seed_semantic_analysis_configs, seed_log_patterns, seed_semantic_analysis_runs, seed_irregular_logs, seed_suggested_rules, seed_additional_detection_rules
+  - Updated main() to call new seed functions and include in summary
+
+---
+
 ## Phase 8: Landing Page & Help System - COMPLETE (January 2026)
+
+### Comprehensive Documentation Page - COMPLETE
+- [x] Created `frontend/src/pages/DocsPage.tsx`
+  - Full documentation page covering all features
+  - Table of contents with section navigation
+  - 19 main sections with subsections:
+    - Overview (intro, architecture, features)
+    - Getting Started (requirements, installation, first login)
+    - Dashboard
+    - Device Management (inventory, details, tagging, baselines)
+    - Event Monitoring
+    - Alert Management (overview, lifecycle, AI analysis)
+    - Anomaly Detection (types, algorithm, review)
+    - Detection Rules (creating, conditions, actions)
+    - Device Quarantine (overview, integrations, actions)
+    - AI Assistant (chat, models, queries)
+    - Network Topology
+    - Threat Intelligence (feeds, indicators, lookup)
+    - Log Sources (types, parsers, API push)
+    - Automation Playbooks (triggers, actions, examples)
+    - User Management (roles, 2FA)
+    - Notifications (email, push)
+    - Integrations (AdGuard, router, Ollama)
+    - Configuration (env vars, retention)
+    - API Reference (auth, endpoints, rate limiting)
+  - Code blocks with copy functionality
+  - Dark mode support throughout
+  - Responsive design with sticky sidebar
+- [x] Added `/docs` route to `App.tsx`
+- [x] Updated landing page "View Full Documentation" link to use `/docs` internal route instead of external GitHub URL
 
 ### Landing Page - COMPLETE
 - [x] Created public landing page at `/` route
@@ -954,6 +1181,9 @@ Tasks completed during implementation.
 - [x] Fixed login response to include user object
 - [x] Fixed collector/parser registration by updating `__init__.py` imports
 - [x] Fixed frontend login to use URLSearchParams instead of FormData (FormData sends multipart, but OAuth2 expects x-www-form-urlencoded)
+- [x] Fixed FastAPI route ordering in `semantic.py` - moved `/rules/history` endpoint before `/rules/{rule_id}` to prevent "history" being matched as a UUID parameter
+- [x] Fixed `/api/v1/rules` 500 error - Added `_normalize_response_actions()` in `rules.py` to handle legacy `response_actions` format (strings like `["create_alert"]` vs expected dict format `[{"type": "create_alert", "config": {}}]`)
+- [x] Fixed `/api/v1/threat-intel/indicators` 500 error - Changed `ind.metadata` to `ind.extra_data` in `threat_intel.py` (3 occurrences) since model column is named `extra_data` but code was accessing SQLAlchemy's built-in `metadata` attribute
 
 ---
 

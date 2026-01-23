@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
 from app.models.alert import Alert, AlertStatus, AlertSeverity
-from app.models.anomaly import AnomalyDetection
+from app.models.anomaly import AnomalyDetection, AnomalyStatus
 from app.models.device import Device, DeviceStatus
 from app.models.raw_event import RawEvent, EventType
 from app.models.user import User
@@ -164,7 +164,7 @@ async def _build_network_context(session: AsyncSession) -> Dict[str, Any]:
     # Recent anomalies
     anomalies_result = await session.execute(
         select(AnomalyDetection)
-        .where(AnomalyDetection.resolved == False)
+        .where(AnomalyDetection.status == AnomalyStatus.ACTIVE)
         .order_by(AnomalyDetection.detected_at.desc())
         .limit(10)
     )

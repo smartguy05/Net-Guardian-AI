@@ -18,6 +18,18 @@ from app.models.playbook import (
     PlaybookStatus,
     ExecutionStatus,
 )
+from app.models.semantic_analysis import (
+    LogPattern,
+    SemanticAnalysisConfig,
+    IrregularLog,
+    SemanticAnalysisRun,
+    SuggestedRule,
+    SuggestedRuleHistory,
+    LLMProvider,
+    AnalysisRunStatus,
+    SuggestedRuleStatus,
+    SuggestedRuleType,
+)
 
 __all__ = [
     "Base",
@@ -50,4 +62,15 @@ __all__ = [
     "PlaybookActionType",
     "PlaybookStatus",
     "ExecutionStatus",
+    # Semantic Analysis
+    "LogPattern",
+    "SemanticAnalysisConfig",
+    "IrregularLog",
+    "SemanticAnalysisRun",
+    "SuggestedRule",
+    "SuggestedRuleHistory",
+    "LLMProvider",
+    "AnalysisRunStatus",
+    "SuggestedRuleStatus",
+    "SuggestedRuleType",
 ]

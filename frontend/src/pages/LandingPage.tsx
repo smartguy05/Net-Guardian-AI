@@ -10,7 +10,6 @@ import {
   MessageSquare,
   Activity,
   Github,
-  ExternalLink,
   Sun,
   Moon,
   ChevronRight,
@@ -512,15 +511,13 @@ docker logs netguardian-backend | grep "Initial admin"`}</code>
 
           {/* CTA */}
           <div className="mt-12 text-center">
-            <a
-              href="https://github.com/netguardian-ai/netguardian#readme"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/docs"
               className="btn-primary text-base px-6 py-3 inline-flex items-center gap-2"
             >
               View Full Documentation
-              <ExternalLink className="h-4 w-4" />
-            </a>
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>

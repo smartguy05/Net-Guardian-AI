@@ -18,6 +18,10 @@ import SettingsPage from './pages/SettingsPage';
 import RulesPage from './pages/RulesPage';
 import ThreatIntelPage from './pages/ThreatIntelPage';
 import TopologyPage from './pages/TopologyPage';
+import DocsPage from './pages/DocsPage';
+import SemanticReviewPage from './pages/SemanticReviewPage';
+import PatternsPage from './pages/PatternsPage';
+import SuggestedRulesPage from './pages/SuggestedRulesPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -36,6 +40,9 @@ function App() {
     <Routes>
       {/* Public landing page */}
       <Route path="/" element={<LandingPage />} />
+
+      {/* Public documentation page */}
+      <Route path="/docs" element={<DocsPage />} />
 
       {/* Login route */}
       <Route
@@ -68,6 +75,9 @@ function App() {
         <Route path="rules" element={<RulesPage />} />
         <Route path="threat-intel" element={<ThreatIntelPage />} />
         <Route path="topology" element={<TopologyPage />} />
+        <Route path="semantic-review" element={<SemanticReviewPage />} />
+        <Route path="patterns" element={<PatternsPage />} />
+        <Route path="suggested-rules" element={<SuggestedRulesPage />} />
       </Route>
     </Routes>
   );

@@ -7,6 +7,7 @@ import type {
   AnomalyDetection,
   AnomalyListResponse,
   AnomalyStats,
+  ApproveRuleRequest,
   BaselineListResponse,
   BaselineStats,
   BulkDetectionResponse,
@@ -19,14 +20,28 @@ import type {
   EventListResponse,
   IncidentSummaryRequest,
   IncidentSummaryResponse,
+  IrregularLog,
+  IrregularLogListResponse,
   LLMStatus,
   LoginRequest,
   LoginResponse,
+  LogPattern,
+  LogPatternListResponse,
   LogSourceListResponse,
   OverviewStats,
   PasswordResetResponse,
   QueryResponse,
+  RejectRuleRequest,
+  SemanticAnalysisConfig,
+  SemanticAnalysisRun,
+  SemanticAnalysisRunListResponse,
+  SemanticStats,
+  SuggestedRule,
+  SuggestedRuleHistoryListResponse,
+  SuggestedRuleListResponse,
   TopDomain,
+  TriggerAnalysisResponse,
+  UpdateSemanticConfigRequest,
   UpdateUserRequest,
   User,
   UserListResponse,
@@ -1850,5 +1865,285 @@ export function useDeviceConnections(deviceId: string, params?: {
       return response.data;
     },
     enabled: !!deviceId,
+  });
+}
+
+// Semantic Analysis hooks
+
+// Config hooks
+export function useSemanticConfigs() {
+  return useQuery({
+    queryKey: ['semantic', 'configs'],
+    queryFn: async (): Promise<SemanticAnalysisConfig[]> => {
+      const response = await apiClient.get('/semantic/config');
+      return response.data;
+    },
+  });
+}
+
+export function useSemanticConfig(sourceId: string) {
+  return useQuery({
+    queryKey: ['semantic', 'config', sourceId],
+    queryFn: async (): Promise<SemanticAnalysisConfig> => {
+      const response = await apiClient.get(`/semantic/config/${sourceId}`);
+      return response.data;
+    },
+    enabled: !!sourceId,
+  });
+}
+
+export function useUpdateSemanticConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      sourceId,
+      config,
+    }: {
+      sourceId: string;
+      config: UpdateSemanticConfigRequest;
+    }): Promise<SemanticAnalysisConfig> => {
+      const response = await apiClient.put(`/semantic/config/${sourceId}`, config);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'configs'] });
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'config', variables.sourceId] });
+    },
+  });
+}
+
+// Pattern hooks
+export function usePatterns(params?: {
+  source_id?: string;
+  is_ignored?: boolean;
+  rare_only?: boolean;
+  rarity_threshold?: number;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  return useQuery({
+    queryKey: ['semantic', 'patterns', params],
+    queryFn: async (): Promise<LogPatternListResponse> => {
+      const response = await apiClient.get('/semantic/patterns', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useUpdatePattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      patternId,
+      is_ignored,
+    }: {
+      patternId: string;
+      is_ignored: boolean;
+    }): Promise<LogPattern> => {
+      const response = await apiClient.patch(`/semantic/patterns/${patternId}`, { is_ignored });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'patterns'] });
+    },
+  });
+}
+
+// Irregular log hooks
+export function useIrregularLogs(params?: {
+  source_id?: string;
+  llm_reviewed?: boolean;
+  reviewed_by_user?: boolean;
+  min_severity?: number;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  return useQuery({
+    queryKey: ['semantic', 'irregular', params],
+    queryFn: async (): Promise<IrregularLogListResponse> => {
+      const response = await apiClient.get('/semantic/irregular', { params });
+      return response.data;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
+
+export function useIrregularLog(irregularId: string) {
+  return useQuery({
+    queryKey: ['semantic', 'irregular', irregularId],
+    queryFn: async (): Promise<IrregularLog> => {
+      const response = await apiClient.get(`/semantic/irregular/${irregularId}`);
+      return response.data;
+    },
+    enabled: !!irregularId,
+  });
+}
+
+export function useMarkIrregularReviewed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (irregularId: string): Promise<IrregularLog> => {
+      const response = await apiClient.patch(`/semantic/irregular/${irregularId}/review`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'irregular'] });
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'stats'] });
+    },
+  });
+}
+
+// Analysis run hooks
+export function useAnalysisRuns(params?: {
+  source_id?: string;
+  limit?: number;
+}) {
+  return useQuery({
+    queryKey: ['semantic', 'runs', params],
+    queryFn: async (): Promise<SemanticAnalysisRunListResponse> => {
+      const response = await apiClient.get('/semantic/runs', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useTriggerAnalysis() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      sourceId,
+      force,
+    }: {
+      sourceId: string;
+      force?: boolean;
+    }): Promise<TriggerAnalysisResponse> => {
+      const response = await apiClient.post(`/semantic/runs/${sourceId}/trigger`, null, {
+        params: { force },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'runs'] });
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'irregular'] });
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'stats'] });
+    },
+  });
+}
+
+// Stats hooks
+export function useSemanticStats(sourceId?: string) {
+  return useQuery({
+    queryKey: ['semantic', 'stats', sourceId],
+    queryFn: async (): Promise<SemanticStats> => {
+      const url = sourceId ? `/semantic/stats/${sourceId}` : '/semantic/stats';
+      const response = await apiClient.get(url);
+      return response.data;
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
+
+// Suggested rules hooks
+export function useSuggestedRules(params?: {
+  source_id?: string;
+  status?: string;
+  rule_type?: string;
+  search?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  return useQuery({
+    queryKey: ['semantic', 'rules', params],
+    queryFn: async (): Promise<SuggestedRuleListResponse> => {
+      const response = await apiClient.get('/semantic/rules', { params });
+      return response.data;
+    },
+  });
+}
+
+export function usePendingSuggestedRules(params?: {
+  page?: number;
+  page_size?: number;
+}) {
+  return useQuery({
+    queryKey: ['semantic', 'rules', 'pending', params],
+    queryFn: async (): Promise<SuggestedRuleListResponse> => {
+      const response = await apiClient.get('/semantic/rules/pending', { params });
+      return response.data;
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useSuggestedRule(ruleId: string) {
+  return useQuery({
+    queryKey: ['semantic', 'rules', ruleId],
+    queryFn: async (): Promise<SuggestedRule> => {
+      const response = await apiClient.get(`/semantic/rules/${ruleId}`);
+      return response.data;
+    },
+    enabled: !!ruleId,
+  });
+}
+
+export function useApproveRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      ruleId,
+      request,
+    }: {
+      ruleId: string;
+      request: ApproveRuleRequest;
+    }): Promise<SuggestedRule> => {
+      const response = await apiClient.post(`/semantic/rules/${ruleId}/approve`, request);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'rules'] });
+      queryClient.invalidateQueries({ queryKey: ['rules'] }); // Invalidate detection rules too
+    },
+  });
+}
+
+export function useRejectRule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      ruleId,
+      request,
+    }: {
+      ruleId: string;
+      request: RejectRuleRequest;
+    }): Promise<SuggestedRule> => {
+      const response = await apiClient.post(`/semantic/rules/${ruleId}/reject`, request);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['semantic', 'rules'] });
+    },
+  });
+}
+
+export function useRuleHistory(params?: {
+  status?: string;
+  page?: number;
+  page_size?: number;
+}) {
+  return useQuery({
+    queryKey: ['semantic', 'rules', 'history', params],
+    queryFn: async (): Promise<SuggestedRuleHistoryListResponse> => {
+      const response = await apiClient.get('/semantic/rules/history', { params });
+      return response.data;
+    },
   });
 }

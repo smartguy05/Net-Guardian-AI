@@ -73,15 +73,51 @@ npm run build
 npm run lint
 ```
 
-### Local Development (Windows with Podman/WSL)
+### Quick Start with Scripts (Recommended)
 
-The backend requires PostgreSQL (TimescaleDB) and Redis. On Windows, use Podman with WSL:
+Use the startup scripts in `scripts/` to automate the entire development environment setup:
+
+```powershell
+# Start everything (containers, migrations, backend, frontend)
+.\scripts\start-dev.ps1
+
+# Start with demo data loaded
+.\scripts\start-dev.ps1 -SeedData
+
+# Start only backend/frontend (containers already running)
+.\scripts\start-dev.ps1 -SkipContainers
+
+# Stop all servers
+.\scripts\stop-dev.ps1
+
+# Stop servers and containers
+.\scripts\stop-dev.ps1 -StopContainers
+
+# Stop everything and clean up port forwarding
+.\scripts\stop-dev.ps1 -StopContainers -CleanPortForwarding
+```
+
+**Demo Credentials** (when using `-SeedData`):
+- Admin: `demo_admin` / `DemoAdmin123!`
+- Operator: `demo_operator` / `DemoOp123!`
+- Viewer: `demo_viewer` / `DemoView123!`
+
+**What the scripts do:**
+1. Start Podman machine and containers (TimescaleDB, Redis)
+2. Configure Windows port forwarding for WSL
+3. Create `backend/.env` if missing
+4. Run database migrations
+5. Start backend (uvicorn) and frontend (vite) servers
+
+### Manual Local Development (Windows with Podman/WSL)
+
+If you need manual control, the backend requires PostgreSQL (TimescaleDB) and Redis. On Windows, use Podman with WSL:
 
 ```bash
 # 1. Start Podman machine (if not already running)
 podman machine start
 
-# 2. If Podman SSH fails (common issue), run containers directly via WSL as root:
+# 2. Run containers via WSL as root:
 wsl -d podman-machine-default -u root -- podman run -d --name netguardian-db \
   -e POSTGRES_USER=netguardian \
   -e POSTGRES_PASSWORD=netguardian-dev-password \
@@ -91,39 +127,20 @@ wsl -d podman-machine-default -u root -- podman run -d --name netguardian-db \
 wsl -d podman-machine-default -u root -- podman run -d --name netguardian-redis \
   -p 6379:6379 redis:7-alpine
 
-# 3. Get WSL IP address
-wsl -d podman-machine-default -- ip addr show eth0 | grep "inet " | awk '{print $2}' | cut -d/ -f1
-# Example output: 172.27.3.179
+# 3. Get WSL IP and set up port forwarding (run as Administrator)
+$wslIp = wsl -d podman-machine-default -- ip addr show eth0 | Select-String "inet " | ForEach-Object { ($_ -split '\s+')[2] -replace '/.*', '' }
+netsh interface portproxy add v4tov4 listenport=5432 listenaddress=127.0.0.1 connectport=5432 connectaddress=$wslIp
+netsh interface portproxy add v4tov4 listenport=6379 listenaddress=127.0.0.1 connectport=6379 connectaddress=$wslIp
 
-# 4. Set up Windows port forwarding (run as Administrator)
-netsh interface portproxy add v4tov4 listenport=5432 listenaddress=127.0.0.1 connectport=5432 connectaddress=<WSL_IP>
-netsh interface portproxy add v4tov4 listenaddress=127.0.0.1 listenport=6379 connectport=6379 connectaddress=<WSL_IP>
-
-# 5. Verify port forwarding
-netsh interface portproxy show all
-
-# 6. Create backend/.env for local development
-cat > backend/.env << 'EOF'
-DATABASE_URL=postgresql+asyncpg://netguardian:netguardian-dev-password@localhost:5432/netguardian
-REDIS_URL=redis://localhost:6379/0
-SECRET_KEY=dev-secret-key-change-in-production-must-be-64-chars-hex
-DEBUG=true
-LOG_LEVEL=DEBUG
-EOF
-
-# 7. Run migrations and start servers
+# 4. Run migrations and start servers
 cd backend && alembic upgrade head
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
-cd ../frontend && npm run dev &
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# In another terminal:
+cd frontend && npm run dev
 ```
 
-**Note:** The WSL IP address can change on reboot. If connections fail, get the new IP and update port forwarding.
-
-To clean up port forwarding:
-```bash
-netsh interface portproxy delete v4tov4 listenport=5432 listenaddress=127.0.0.1
-netsh interface portproxy delete v4tov4 listenport=6379 listenaddress=127.0.0.1
-```
+**Note:** The WSL IP address can change on reboot. Use `.\scripts\start-dev.ps1` which handles this automatically.
 
 ### Docker/Podman Deployment (Production)
 

@@ -25,6 +25,7 @@ from app.api.v1 import (
     threat_intel,
     metrics,
     topology,
+    semantic,
 )
 
 api_router = APIRouter()
@@ -94,3 +95,6 @@ api_router.include_router(metrics.router, tags=["Metrics"])
 
 # Network topology endpoints
 api_router.include_router(topology.router, tags=["Network Topology"])
+
+# Semantic analysis endpoints
+api_router.include_router(semantic.router, prefix="/semantic", tags=["Semantic Analysis"])

@@ -87,15 +87,15 @@ class Settings(BaseSettings):
 
     # LLM Configuration (Phase 3)
     anthropic_api_key: str = ""
-    llm_model_default: str = "claude-sonnet-4-20250514"  # For general analysis
-    llm_model_fast: str = "claude-haiku-4-20250514"  # For quick triage
-    llm_model_deep: str = "claude-sonnet-4-20250514"  # For detailed analysis
+    llm_model_default: str = "claude-sonnet-4-latest"  # For general analysis
+    llm_model_fast: str = "claude-3-5-haiku-latest"  # For quick triage
+    llm_model_deep: str = "claude-sonnet-4-latest"  # For detailed analysis
     llm_enabled: bool = True
     llm_max_tokens: int = 4096
     llm_temperature: float = 0.3
     llm_cache_enabled: bool = True  # Enable Anthropic prompt caching
 
-    # Ollama Monitoring (Phase 5 - LLM Security)
+    # Ollama Configuration (Local LLM)
     ollama_enabled: bool = False
     ollama_url: str = "http://localhost:11434"
     ollama_poll_interval_seconds: int = 30
@@ -104,6 +104,16 @@ class Settings(BaseSettings):
     ollama_prompt_analysis_enabled: bool = True  # Use Claude to analyze prompts
     ollama_alert_on_injection: bool = True  # Create alerts for detected attacks
     ollama_injection_severity: str = "high"  # Alert severity for injections
+    ollama_default_model: str = "llama3.2"  # Default model for semantic analysis
+    ollama_timeout_seconds: int = 120  # Timeout for Ollama requests
+
+    # Semantic Log Analysis
+    semantic_analysis_enabled: bool = True
+    semantic_default_llm_provider: str = "claude"  # "claude" or "ollama"
+    semantic_default_rarity_threshold: int = 3  # Patterns < N occurrences are rare
+    semantic_default_batch_size: int = 50  # Max logs per LLM batch
+    semantic_default_batch_interval_minutes: int = 60  # Minutes between batch runs
+    semantic_scheduler_enabled: bool = True  # Enable automatic scheduling
 
     # Email Notifications (SMTP)
     smtp_host: str = ""

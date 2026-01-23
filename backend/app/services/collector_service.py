@@ -17,6 +17,7 @@ from app.models.device import Device
 from app.models.log_source import LogSource
 from app.models.raw_event import RawEvent
 from app.parsers.base import ParseResult
+from app.services.semantic_analysis_service import get_semantic_analysis_service
 
 logger = structlog.get_logger()
 
@@ -202,6 +203,26 @@ class CollectorService:
                 source.last_error = None
 
             await session.commit()
+
+            # Process for semantic analysis (pattern learning + irregularity detection)
+            try:
+                semantic_service = get_semantic_analysis_service(session)
+                irregular_log = await semantic_service.process_event(raw_event)
+                if irregular_log:
+                    logger.debug(
+                        "irregular_log_flagged",
+                        event_id=str(raw_event.id),
+                        source_id=source_id,
+                        reason=irregular_log.reason,
+                    )
+            except Exception as e:
+                # Log but don't fail event processing for semantic analysis errors
+                logger.warning(
+                    "semantic_analysis_error",
+                    event_id=str(raw_event.id),
+                    source_id=source_id,
+                    error=str(e),
+                )
 
             # Publish event to Redis
             if self._event_bus:
