@@ -90,7 +90,7 @@ function QuarantinedDeviceRow({
   return (
     <tr className="hover:bg-gray-50 dark:hover:bg-zinc-700/50">
       <td className="px-6 py-4 whitespace-nowrap">
-        <Link to={`/devices/${device.device_id}`} className="flex items-center gap-3">
+        <Link to={`/dashboard/devices/${device.device_id}`} className="flex items-center gap-3">
           <div className="flex-shrink-0 w-10 h-10 bg-danger-100 dark:bg-danger-900/30 rounded-lg flex items-center justify-center">
             <Monitor className="w-5 h-5 text-danger-500 dark:text-danger-400" />
           </div>

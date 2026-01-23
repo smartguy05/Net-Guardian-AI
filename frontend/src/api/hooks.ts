@@ -33,7 +33,6 @@ import type {
   QueryResponse,
   RejectRuleRequest,
   SemanticAnalysisConfig,
-  SemanticAnalysisRun,
   SemanticAnalysisRunListResponse,
   SemanticStats,
   SuggestedRule,
@@ -443,7 +442,35 @@ export function useUpdateSource() {
       const response = await apiClient.put(`/sources/${id}`, data);
       return response.data;
     },
-    onSuccess: () => {
+    // Optimistically update the cache for instant UI feedback
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['sources'] });
+
+      // Snapshot the previous value
+      const previousSources = queryClient.getQueryData<LogSourceListResponse>(['sources']);
+
+      // Optimistically update the cache
+      if (previousSources) {
+        queryClient.setQueryData<LogSourceListResponse>(['sources'], {
+          ...previousSources,
+          items: previousSources.items.map((source) =>
+            source.id === variables.id ? { ...source, ...variables } : source
+          ),
+        });
+      }
+
+      // Return context with the previous value for rollback
+      return { previousSources };
+    },
+    onError: (_err, _variables, context) => {
+      // Roll back to the previous value on error
+      if (context?.previousSources) {
+        queryClient.setQueryData(['sources'], context.previousSources);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure cache is in sync
       queryClient.invalidateQueries({ queryKey: ['sources'] });
     },
   });

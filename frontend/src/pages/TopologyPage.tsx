@@ -299,6 +299,9 @@ export default function TopologyPage() {
       setCanvasSize({ width, height });
     };
 
+    // Small delay to ensure canvas is rendered after loading completes
+    const timeoutId = setTimeout(handleResize, 50);
+
     handleResize();
     window.addEventListener('resize', handleResize);
 
@@ -309,10 +312,11 @@ export default function TopologyPage() {
     }
 
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener('resize', handleResize);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [isLoading]); // Re-run when loading state changes so canvas can be measured after it renders
 
   // Mouse handlers
   const getMousePos = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -619,7 +623,7 @@ export default function TopologyPage() {
 
               {selectedNode.id !== 'internet' && selectedNode.id !== 'router' && (
                 <a
-                  href={`/devices/${selectedNode.id}`}
+                  href={`/dashboard/devices/${selectedNode.id}`}
                   className="btn-primary w-full text-center"
                 >
                   View Device Details

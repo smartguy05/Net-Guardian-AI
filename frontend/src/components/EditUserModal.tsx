@@ -95,14 +95,14 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
           onClick={handleClose}
         />
 
-        <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="relative w-full max-w-md bg-white dark:bg-zinc-800 rounded-xl shadow-xl">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Edit User: {user.username}
             </h2>
             <button
               onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700"
             >
               <X className="w-5 h-5" />
             </button>
@@ -110,26 +110,26 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
 
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {errors.submit && (
-              <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg">
-                <p className="text-sm text-danger-700">{errors.submit}</p>
+              <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+                <p className="text-sm text-danger-700 dark:text-danger-300">{errors.submit}</p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Username
               </label>
               <input
                 type="text"
                 value={user.username}
                 disabled
-                className="input w-full bg-gray-50 text-gray-500 cursor-not-allowed"
+                className="input w-full bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 cursor-not-allowed"
               />
-              <p className="mt-1 text-xs text-gray-500">Username cannot be changed</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Username cannot be changed</p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email
               </label>
               <input
@@ -139,12 +139,12 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
                 className={clsx('input w-full', errors.email && 'border-danger-500')}
               />
               {errors.email && (
-                <p className="mt-1 text-xs text-danger-600">{errors.email}</p>
+                <p className="mt-1 text-xs text-danger-600 dark:text-danger-400">{errors.email}</p>
               )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Role
               </label>
               <div className="space-y-2">
@@ -156,8 +156,8 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
                       className={clsx(
                         'flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors',
                         role === option.value
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-zinc-500'
                       )}
                     >
                       <input
@@ -171,19 +171,19 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
                       <Icon
                         className={clsx(
                           'w-5 h-5',
-                          role === option.value ? 'text-primary-600' : 'text-gray-400'
+                          role === option.value ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'
                         )}
                       />
                       <div>
                         <p
                           className={clsx(
                             'font-medium',
-                            role === option.value ? 'text-primary-900' : 'text-gray-900'
+                            role === option.value ? 'text-primary-900 dark:text-primary-300' : 'text-gray-900 dark:text-white'
                           )}
                         >
                           {option.label}
                         </p>
-                        <p className="text-xs text-gray-500">{option.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{option.description}</p>
                       </div>
                     </label>
                   );
@@ -197,11 +197,11 @@ export default function EditUserModal({ user, isOpen, onClose }: EditUserModalPr
                   type="checkbox"
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  className="w-4 h-4 rounded border-gray-300 dark:border-zinc-600 text-primary-600 focus:ring-primary-500 dark:bg-zinc-700"
                 />
                 <div>
-                  <span className="font-medium text-gray-900">Active</span>
-                  <p className="text-xs text-gray-500">
+                  <span className="font-medium text-gray-900 dark:text-white">Active</span>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Inactive users cannot log in
                   </p>
                 </div>

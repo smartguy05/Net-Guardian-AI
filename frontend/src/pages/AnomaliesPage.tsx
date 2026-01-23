@@ -32,10 +32,10 @@ const severityColors = {
 };
 
 const statusColors = {
-  active: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-  reviewed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  false_positive: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  confirmed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  active: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
+  reviewed: 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800',
+  false_positive: 'bg-gray-100 text-gray-700 border border-gray-300 dark:bg-zinc-700 dark:text-gray-300 dark:border-zinc-600',
+  confirmed: 'bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800',
 };
 
 const anomalyTypeLabels: Record<AnomalyType, string> = {
@@ -298,7 +298,7 @@ export default function AnomaliesPage() {
                       </td>
                       <td className="px-4 py-4">
                         <Link
-                          to={`/devices/${anomaly.device_id}`}
+                          to={`/dashboard/devices/${anomaly.device_id}`}
                           className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1"
                         >
                           View Device
@@ -318,7 +318,7 @@ export default function AnomaliesPage() {
                       <td className="px-4 py-4">
                         <span
                           className={clsx(
-                            'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium',
+                            'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap',
                             statusColors[anomaly.status]
                           )}
                         >

@@ -32,14 +32,84 @@ interface EditRuleModalProps {
   onClose: () => void;
 }
 
+// Convert legacy conditions format to new structured format
+function convertLegacyConditions(conditions: unknown): { logic: 'and' | 'or'; conditions: RuleCondition[] } {
+  // Check if already in new format
+  if (
+    conditions &&
+    typeof conditions === 'object' &&
+    'logic' in conditions &&
+    'conditions' in conditions &&
+    Array.isArray((conditions as { conditions: unknown }).conditions)
+  ) {
+    const cond = conditions as { logic: string; conditions: RuleCondition[] };
+    return {
+      logic: cond.logic === 'or' ? 'or' : 'and',
+      conditions: cond.conditions || [],
+    };
+  }
+
+  // Convert legacy format (flat object with field-value pairs)
+  if (conditions && typeof conditions === 'object' && !Array.isArray(conditions)) {
+    const legacyConditions = conditions as Record<string, unknown>;
+    const converted: RuleCondition[] = [];
+
+    for (const [field, value] of Object.entries(legacyConditions)) {
+      // Skip meta fields
+      if (field === 'count_threshold' || field === 'time_window_minutes' || field === 'trigger') {
+        continue;
+      }
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // Handle operator objects like { "$gt": 3.5 }
+        const opObj = value as Record<string, unknown>;
+        for (const [op, opValue] of Object.entries(opObj)) {
+          const operatorMap: Record<string, string> = {
+            '$eq': 'eq',
+            '$ne': 'ne',
+            '$gt': 'gt',
+            '$lt': 'lt',
+            '$gte': 'gte',
+            '$lte': 'lte',
+            '$in': 'in',
+            '$nin': 'not_in',
+            '$contains': 'contains',
+            '$regex': 'regex',
+          };
+          converted.push({
+            field,
+            operator: operatorMap[op] || 'eq',
+            value: opValue,
+          });
+        }
+      } else {
+        // Simple equality
+        converted.push({
+          field,
+          operator: 'eq',
+          value,
+        });
+      }
+    }
+
+    return { logic: 'and', conditions: converted };
+  }
+
+  // Fallback to empty
+  return { logic: 'and', conditions: [] };
+}
+
 export default function EditRuleModal({ rule, onClose }: EditRuleModalProps) {
+  // Convert conditions from legacy format if needed
+  const initialConditions = convertLegacyConditions(rule.conditions);
+
   const [name, setName] = useState(rule.name);
   const [description, setDescription] = useState(rule.description || '');
   const [severity, setSeverity] = useState<AlertSeverity>(rule.severity);
-  const [cooldownMinutes, setCooldownMinutes] = useState(rule.cooldown_minutes);
-  const [logic, setLogic] = useState<'and' | 'or'>(rule.conditions.logic);
-  const [conditions, setConditions] = useState<RuleCondition[]>(rule.conditions.conditions);
-  const [actions, setActions] = useState<RuleAction[]>(rule.response_actions);
+  const [cooldownMinutes, setCooldownMinutes] = useState(rule.cooldown_minutes || 0);
+  const [logic, setLogic] = useState<'and' | 'or'>(initialConditions.logic);
+  const [conditions, setConditions] = useState<RuleCondition[]>(initialConditions.conditions);
+  const [actions, setActions] = useState<RuleAction[]>(rule.response_actions || []);
 
   const { data: fieldsData } = useRuleFields();
   const updateRule = useUpdateRule();

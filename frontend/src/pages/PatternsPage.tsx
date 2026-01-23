@@ -1,17 +1,265 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import {
   AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Copy,
   Eye,
   EyeOff,
   Filter,
   Hash,
   RefreshCw,
   Search,
+  Check,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { usePatterns, useUpdatePattern, useSources, useSemanticStats } from '../api/hooks';
 import Pagination from '../components/Pagination';
+import type { LogPattern, LogSource } from '../types';
+
+interface PatternRowProps {
+  pattern: LogPattern;
+  sources: LogSource[];
+  onToggleIgnore: (patternId: string, currentIgnored: boolean) => void;
+  isUpdating: boolean;
+}
+
+function PatternRow({ pattern, sources, onToggleIgnore, isUpdating }: PatternRowProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const source = sources.find((s) => s.id === pattern.source_id);
+  const sourceName = source?.name || pattern.source_id;
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(pattern.normalized_pattern);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <>
+      <tr
+        className={clsx(
+          'hover:bg-gray-50 dark:hover:bg-zinc-800/50 cursor-pointer',
+          pattern.is_ignored && 'opacity-60'
+        )}
+        onClick={() => setExpanded(!expanded)}
+      >
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            {expanded ? (
+              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+            )}
+            <div className="max-w-md">
+              <code className="text-xs text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded block truncate">
+                {pattern.normalized_pattern}
+              </code>
+            </div>
+          </div>
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+          <span className="truncate max-w-[120px]" title={sourceName}>
+            {sourceName}
+          </span>
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span
+            className={clsx(
+              'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+              pattern.occurrence_count < 3
+                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+            )}
+          >
+            {pattern.occurrence_count.toLocaleString()}
+            {pattern.occurrence_count < 3 && (
+              <AlertTriangle className="h-3 w-3 ml-1" />
+            )}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
+          {format(new Date(pattern.first_seen), 'MMM d, yyyy')}
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
+          {format(new Date(pattern.last_seen), 'MMM d, HH:mm')}
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          {pattern.is_ignored ? (
+            <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
+              <EyeOff className="h-4 w-4" />
+              Ignored
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+              <Eye className="h-4 w-4" />
+              Active
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-3 whitespace-nowrap">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleIgnore(pattern.id, pattern.is_ignored);
+            }}
+            disabled={isUpdating}
+            className={clsx(
+              'btn px-2 py-1 text-xs flex items-center gap-1',
+              pattern.is_ignored ? 'btn-primary' : 'btn-secondary'
+            )}
+          >
+            {pattern.is_ignored ? (
+              <>
+                <Eye className="h-3 w-3" />
+                Unignore
+              </>
+            ) : (
+              <>
+                <EyeOff className="h-3 w-3" />
+                Ignore
+              </>
+            )}
+          </button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr>
+          <td colSpan={7} className="px-4 py-4 bg-gray-50 dark:bg-zinc-800">
+            <div className="space-y-4">
+              {/* Full Pattern */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-primary-500" />
+                    Normalized Pattern
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    className="btn btn-secondary px-2 py-1 text-xs flex items-center gap-1"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-3 w-3" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3 w-3" />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+                <pre className="p-3 bg-gray-900 text-gray-100 rounded-lg overflow-x-auto text-xs whitespace-pre-wrap break-all">
+                  {pattern.normalized_pattern}
+                </pre>
+              </div>
+
+              {/* Metadata */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Source:</span>
+                  <span className="ml-2 text-gray-900 dark:text-white">{sourceName}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Pattern Hash:</span>
+                  <span className="ml-2 font-mono text-xs text-gray-900 dark:text-white">
+                    {pattern.pattern_hash.substring(0, 12)}...
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Occurrences:</span>
+                  <span className="ml-2 text-gray-900 dark:text-white">
+                    {pattern.occurrence_count.toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                  <span className={clsx(
+                    'ml-2',
+                    pattern.is_ignored ? 'text-gray-500' : 'text-green-600 dark:text-green-400'
+                  )}>
+                    {pattern.is_ignored ? 'Ignored' : 'Active'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Timestamps */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">First Seen:</span>
+                  <span className="ml-2 text-gray-900 dark:text-white">
+                    {format(new Date(pattern.first_seen), 'MMM d, yyyy HH:mm:ss')}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Last Seen:</span>
+                  <span className="ml-2 text-gray-900 dark:text-white">
+                    {format(new Date(pattern.last_seen), 'MMM d, yyyy HH:mm:ss')}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Last Activity:</span>
+                  <span className="ml-2 text-gray-900 dark:text-white">
+                    {formatDistanceToNow(new Date(pattern.last_seen), { addSuffix: true })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">Pattern ID:</span>
+                  <span className="ml-2 font-mono text-xs text-gray-900 dark:text-white">
+                    {pattern.id.substring(0, 8)}...
+                  </span>
+                </div>
+              </div>
+
+              {/* Rare Pattern Warning */}
+              {pattern.occurrence_count < 3 && (
+                <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-yellow-800 dark:text-yellow-200 text-sm">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  <span>
+                    This is a rare pattern (seen only {pattern.occurrence_count} time{pattern.occurrence_count !== 1 ? 's' : ''}).
+                    Rare patterns may indicate unusual or suspicious activity.
+                  </span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-2 border-t border-gray-200 dark:border-zinc-700">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleIgnore(pattern.id, pattern.is_ignored);
+                  }}
+                  disabled={isUpdating}
+                  className={clsx(
+                    'btn flex items-center gap-2',
+                    pattern.is_ignored ? 'btn-primary' : 'btn-secondary'
+                  )}
+                >
+                  {pattern.is_ignored ? (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Unignore Pattern
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      Ignore Pattern
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
 
 export default function PatternsPage() {
   const [page, setPage] = useState(1);
@@ -231,80 +479,13 @@ export default function PatternsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-zinc-700">
                 {patterns?.items.map((pattern) => (
-                  <tr
+                  <PatternRow
                     key={pattern.id}
-                    className={clsx(
-                      'hover:bg-gray-50 dark:hover:bg-zinc-800/50',
-                      pattern.is_ignored && 'opacity-60'
-                    )}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="max-w-md">
-                        <code className="text-xs text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-zinc-800 px-2 py-1 rounded block truncate">
-                          {pattern.normalized_pattern}
-                        </code>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                      {pattern.source_id}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span
-                        className={clsx(
-                          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                          pattern.occurrence_count < 3
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                        )}
-                      >
-                        {pattern.occurrence_count.toLocaleString()}
-                        {pattern.occurrence_count < 3 && (
-                          <AlertTriangle className="h-3 w-3 ml-1" />
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                      {format(new Date(pattern.first_seen), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                      {format(new Date(pattern.last_seen), 'MMM d, HH:mm')}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {pattern.is_ignored ? (
-                        <span className="inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                          <EyeOff className="h-4 w-4" />
-                          Ignored
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400">
-                          <Eye className="h-4 w-4" />
-                          Active
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <button
-                        onClick={() => handleToggleIgnore(pattern.id, pattern.is_ignored)}
-                        disabled={updatePattern.isPending}
-                        className={clsx(
-                          'btn px-2 py-1 text-xs flex items-center gap-1',
-                          pattern.is_ignored ? 'btn-primary' : 'btn-secondary'
-                        )}
-                      >
-                        {pattern.is_ignored ? (
-                          <>
-                            <Eye className="h-3 w-3" />
-                            Unignore
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="h-3 w-3" />
-                            Ignore
-                          </>
-                        )}
-                      </button>
-                    </td>
-                  </tr>
+                    pattern={pattern}
+                    sources={sources?.items || []}
+                    onToggleIgnore={handleToggleIgnore}
+                    isUpdating={updatePattern.isPending}
+                  />
                 ))}
               </tbody>
             </table>
@@ -317,6 +498,8 @@ export default function PatternsPage() {
             <Pagination
               currentPage={page}
               totalPages={totalPages}
+              totalItems={patterns.total}
+              pageSize={pageSize}
               onPageChange={setPage}
             />
           </div>

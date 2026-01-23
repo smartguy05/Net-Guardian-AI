@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import {
-  AlertTriangle,
   Check,
   CheckCircle2,
   Clock,
@@ -389,6 +388,8 @@ export default function SuggestedRulesPage() {
           <Pagination
             currentPage={page}
             totalPages={totalPages}
+            totalItems={rules.total}
+            pageSize={pageSize}
             onPageChange={setPage}
           />
         </div>

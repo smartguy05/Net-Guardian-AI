@@ -809,3 +809,34 @@ def _normalize_response_actions(actions: List[Any]) -> List[Dict[str, Any]]:
 **Lesson:** In FastAPI, always define static routes before routes with path parameters. This applies to any route file with both patterns.
 
 **File:** `backend/app/api/v1/devices.py`
+
+---
+
+### TestRuleModal 422 Validation Error
+
+**Problem:** Clicking "Test Rule" button returned 422 Unprocessable Entity error
+
+**Cause:** The backend's Pydantic validator requires each condition to have non-empty `field`, valid `operator`, and `value` fields. Rules loaded from the database could have:
+- Empty string values for `field` or `operator`
+- Undefined `value` properties
+- Whitespace-only strings
+
+**Solution:** Added validation and sanitization in `TestRuleModal.tsx`:
+1. Filter out conditions with empty/whitespace `field` or `operator`
+2. Trim whitespace from all string values
+3. Use nullish coalescing (`??`) to ensure `value` is never undefined
+4. Show user-friendly error if no valid conditions exist
+
+```typescript
+const validConditions = rawConditions.filter(
+  (c) => c.field && c.field.trim() !== '' && c.operator && c.operator.trim() !== ''
+);
+
+const sanitizedConditions = validConditions.map((c) => ({
+  field: c.field.trim(),
+  operator: c.operator.trim(),
+  value: c.value ?? '',
+}));
+```
+
+**File:** `frontend/src/components/TestRuleModal.tsx`

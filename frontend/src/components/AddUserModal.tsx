@@ -114,14 +114,14 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           onClick={handleClose}
         />
 
-        <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+        <div className="relative w-full max-w-md bg-white dark:bg-zinc-800 rounded-xl shadow-xl">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {createdUser ? 'User Created' : 'Add New User'}
             </h2>
             <button
               onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700"
             >
               <X className="w-5 h-5" />
             </button>
@@ -130,34 +130,34 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           {createdUser ? (
             <div className="p-6">
               <div className="text-center mb-6">
-                <div className="mx-auto w-12 h-12 bg-success-100 rounded-full flex items-center justify-center mb-3">
-                  <Check className="w-6 h-6 text-success-600" />
+                <div className="mx-auto w-12 h-12 bg-success-100 dark:bg-success-900/30 rounded-full flex items-center justify-center mb-3">
+                  <Check className="w-6 h-6 text-success-600 dark:text-success-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   User "{createdUser.username}" created successfully
                 </h3>
               </div>
 
-              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-warning-800 mb-2">
+              <div className="bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg p-4">
+                <p className="text-sm font-medium text-warning-800 dark:text-warning-300 mb-2">
                   Temporary Password
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-white px-3 py-2 rounded border border-warning-200 text-sm font-mono">
+                  <code className="flex-1 bg-white dark:bg-zinc-900 px-3 py-2 rounded border border-warning-200 dark:border-warning-700 text-sm font-mono text-gray-900 dark:text-gray-100">
                     {createdUser.tempPassword}
                   </code>
                   <button
                     onClick={copyPassword}
-                    className="p-2 text-warning-600 hover:text-warning-800 hover:bg-warning-100 rounded-lg"
+                    className="p-2 text-warning-600 dark:text-warning-400 hover:text-warning-800 dark:hover:text-warning-300 hover:bg-warning-100 dark:hover:bg-warning-900/30 rounded-lg"
                   >
                     {copied ? (
-                      <Check className="w-5 h-5 text-success-600" />
+                      <Check className="w-5 h-5 text-success-600 dark:text-success-400" />
                     ) : (
                       <Copy className="w-5 h-5" />
                     )}
                   </button>
                 </div>
-                <p className="text-xs text-warning-600 mt-2">
+                <p className="text-xs text-warning-600 dark:text-warning-400 mt-2">
                   The user must change this password on first login.
                   Check backend logs for the actual temporary password.
                 </p>
@@ -173,13 +173,13 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
           ) : (
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {errors.submit && (
-                <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg">
-                  <p className="text-sm text-danger-700">{errors.submit}</p>
+                <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+                  <p className="text-sm text-danger-700 dark:text-danger-300">{errors.submit}</p>
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Username
                 </label>
                 <input
@@ -190,12 +190,12 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                   placeholder="johndoe"
                 />
                 {errors.username && (
-                  <p className="mt-1 text-xs text-danger-600">{errors.username}</p>
+                  <p className="mt-1 text-xs text-danger-600 dark:text-danger-400">{errors.username}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
                 </label>
                 <input
@@ -206,12 +206,12 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                   placeholder="john@example.com"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-danger-600">{errors.email}</p>
+                  <p className="mt-1 text-xs text-danger-600 dark:text-danger-400">{errors.email}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Role
                 </label>
                 <div className="space-y-2">
@@ -223,8 +223,8 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                         className={clsx(
                           'flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors',
                           role === option.value
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                            : 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-zinc-500'
                         )}
                       >
                         <input
@@ -238,19 +238,19 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
                         <Icon
                           className={clsx(
                             'w-5 h-5',
-                            role === option.value ? 'text-primary-600' : 'text-gray-400'
+                            role === option.value ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'
                           )}
                         />
                         <div>
                           <p
                             className={clsx(
                               'font-medium',
-                              role === option.value ? 'text-primary-900' : 'text-gray-900'
+                              role === option.value ? 'text-primary-900 dark:text-primary-300' : 'text-gray-900 dark:text-white'
                             )}
                           >
                             {option.label}
                           </p>
-                          <p className="text-xs text-gray-500">{option.description}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{option.description}</p>
                         </div>
                       </label>
                     );

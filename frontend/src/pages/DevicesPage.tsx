@@ -69,7 +69,7 @@ function DeviceRow({ device, isSelected, onSelectChange, showCheckbox }: DeviceR
         </td>
       )}
       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-        <Link to={`/devices/${device.id}`} className="flex items-center gap-2 sm:gap-3">
+        <Link to={`/dashboard/devices/${device.id}`} className="flex items-center gap-2 sm:gap-3">
           <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-gray-100 dark:bg-zinc-700 rounded-lg flex items-center justify-center">
             <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 dark:text-gray-400" />
           </div>

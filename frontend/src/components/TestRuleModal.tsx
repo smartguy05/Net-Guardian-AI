@@ -71,20 +71,65 @@ export default function TestRuleModal({ rule, onClose }: TestRuleModalProps) {
     setError(null);
   };
 
+  // Check if conditions are in the new structured format
+  const isNewConditionsFormat = (conditions: unknown): conditions is { logic: string; conditions: Array<{ field: string; operator: string; value: unknown }> } => {
+    if (!conditions || typeof conditions !== 'object') return false;
+    const cond = conditions as Record<string, unknown>;
+    return Array.isArray(cond.conditions) && typeof cond.logic === 'string';
+  };
+
   const handleTest = async () => {
     setError(null);
     setResult(null);
 
     try {
       const event = JSON.parse(eventJson);
+
+      // Check if rule uses the new structured conditions format
+      if (!isNewConditionsFormat(rule.conditions)) {
+        setError(
+          'This rule uses a legacy conditions format. Please edit the rule to update its conditions before testing.'
+        );
+        return;
+      }
+
+      // Get raw conditions from rule
+      const rawConditions = rule.conditions.conditions || [];
+
+      // Filter out invalid conditions and validate each one
+      const validConditions = rawConditions.filter(
+        (c) => c.field && c.field.trim() !== '' && c.operator && c.operator.trim() !== ''
+      );
+
+      if (validConditions.length === 0) {
+        setError('Rule has no valid conditions to test. Each condition needs a field and operator.');
+        return;
+      }
+
+      // Ensure each condition has the required structure
+      const sanitizedConditions = validConditions.map((c) => ({
+        field: c.field.trim(),
+        operator: c.operator.trim(),
+        value: c.value ?? '',
+      }));
+
+      const conditions = {
+        logic: rule.conditions.logic || 'and',
+        conditions: sanitizedConditions,
+      };
+
       const response = await testRule.mutateAsync({
-        conditions: rule.conditions,
+        conditions,
         event,
       });
       setResult(response);
     } catch (err) {
       if (err instanceof SyntaxError) {
         setError('Invalid JSON format');
+      } else if (err instanceof Error) {
+        // Extract more helpful error message from API response
+        const message = err.message || 'Failed to test rule';
+        setError(message.includes('422') ? 'Invalid rule conditions. Please check the rule configuration.' : message);
       } else {
         setError('Failed to test rule');
       }
@@ -156,18 +201,30 @@ export default function TestRuleModal({ rule, onClose }: TestRuleModalProps) {
             {/* Rule Conditions Preview */}
             <div className="p-3 bg-gray-50 dark:bg-zinc-700/50 rounded-lg">
               <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-2">
-                Rule Conditions ({rule.conditions.logic.toUpperCase()})
+                Rule Conditions {isNewConditionsFormat(rule.conditions) ? `(${rule.conditions.logic.toUpperCase()})` : '(Legacy Format)'}
               </h4>
               <div className="space-y-1">
-                {rule.conditions.conditions.map((cond, idx) => (
-                  <div key={idx} className="text-sm">
-                    <code className="text-primary-600 dark:text-primary-400">{cond.field}</code>
-                    <span className="text-gray-500 dark:text-gray-400 mx-2">{cond.operator}</span>
-                    <code className="text-gray-900 dark:text-white">
-                      {typeof cond.value === 'object' ? JSON.stringify(cond.value) : String(cond.value)}
-                    </code>
+                {isNewConditionsFormat(rule.conditions) ? (
+                  rule.conditions.conditions.map((cond, idx) => (
+                    <div key={idx} className="text-sm">
+                      <code className="text-primary-600 dark:text-primary-400">{cond.field}</code>
+                      <span className="text-gray-500 dark:text-gray-400 mx-2">{cond.operator}</span>
+                      <code className="text-gray-900 dark:text-white">
+                        {typeof cond.value === 'object' ? JSON.stringify(cond.value) : String(cond.value)}
+                      </code>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-warning-600 dark:text-warning-400">
+                    <p>This rule uses a legacy conditions format:</p>
+                    <pre className="mt-1 p-2 bg-gray-100 dark:bg-zinc-800 rounded text-xs overflow-auto">
+                      {JSON.stringify(rule.conditions, null, 2)}
+                    </pre>
+                    <p className="mt-2 text-gray-600 dark:text-gray-400">
+                      Edit the rule to convert to the new format for testing.
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
