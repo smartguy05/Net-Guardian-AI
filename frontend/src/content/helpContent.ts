@@ -22,16 +22,36 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard': {
     title: 'Dashboard',
     overview:
-      'The Dashboard provides a real-time overview of your network security status, including key metrics, recent alerts, and system health indicators.',
+      'The Dashboard provides a real-time overview of your network security status, including key metrics, recent alerts, and top queried domains.',
     sections: [
       {
         title: 'Key Metrics',
         description:
-          'Monitor critical security indicators at a glance including total devices, active alerts, events processed, and threat detection counts.',
+          'Monitor critical security indicators at a glance including active devices, events (24h), active alerts, and log source counts.',
         tips: [
-          'Click on any metric card to navigate to its detailed view',
-          'Metrics update automatically every 30 seconds',
-          'Red indicators require immediate attention',
+          'Active devices shows devices seen recently vs total discovered',
+          'Events card shows DNS query counts alongside total events',
+          'Critical alert count is highlighted when alerts need attention',
+        ],
+      },
+      {
+        title: 'DNS Block Rate',
+        description:
+          'Visual indicator showing the percentage of DNS queries that were blocked in the last 24 hours.',
+        tips: [
+          'Shows blocked queries out of total DNS queries',
+          'Higher block rates may indicate active threat blocking',
+          'Review blocked domains on the Events page for details',
+        ],
+      },
+      {
+        title: 'Top Queried Domains',
+        description:
+          'Ranked list of the most frequently queried domains across your network in the last 24 hours.',
+        tips: [
+          'Useful for identifying high-traffic services',
+          'Unexpected domains may warrant investigation',
+          'Bar charts show relative query volumes',
         ],
       },
       {
@@ -39,19 +59,9 @@ export const helpContent: Record<string, HelpContent> = {
         description:
           'View the most recent security alerts detected across your network with severity levels and timestamps.',
         tips: [
-          'Critical alerts are highlighted in red',
-          'Click "View All" to see the complete alert history',
-          'Alerts can be acknowledged or dismissed from the Alerts page',
-        ],
-      },
-      {
-        title: 'Activity Feed',
-        description:
-          'Real-time stream of network events including device connections, DNS queries, and security events.',
-        tips: [
-          'The feed updates in real-time via WebSocket connection',
-          'Filter the feed by event type using the dropdown',
-          'Suspicious activities are automatically flagged',
+          'Critical and high severity alerts appear with colored badges',
+          'Click on the Alerts page link to see the complete alert history',
+          'Alerts can be acknowledged or resolved from the Alerts page',
         ],
       },
     ],
@@ -60,36 +70,47 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/devices': {
     title: 'Devices',
     overview:
-      'View and manage all devices detected on your network. Monitor device status, network activity, and apply security policies.',
+      'View and manage all devices detected on your network. Monitor device status, apply tags, export device lists, and manage quarantine status.',
     sections: [
       {
         title: 'Device Inventory',
         description:
-          'Complete list of all devices that have been detected on your network, with status and metadata.',
+          'Complete list of all devices discovered on your network with status, IP, MAC, manufacturer, and last seen time.',
         tips: [
           'Use the search bar to find devices by name, IP, or MAC address',
-          'Sort by any column by clicking the column header',
-          'Filter by device status using the status dropdown',
+          'Filter by device status (Active, Inactive, Quarantined) using the dropdown',
+          'Filter by tags to find devices with specific labels',
+          'Click a device row to view detailed information',
         ],
       },
       {
-        title: 'Device Status',
+        title: 'Tagging and Bulk Actions',
         description:
-          'Each device shows its current status: Online (active in last 5 minutes), Idle (no recent activity), or Offline.',
+          'Organize devices with tags and apply bulk actions to multiple devices at once.',
         tips: [
-          'Green dot indicates online devices',
-          'Gray dot indicates idle or offline devices',
-          'Click a device row to view detailed information',
+          'Select multiple devices using checkboxes to manage tags in bulk',
+          'Use the Tag Filter dropdown to view only devices with specific tags',
+          'Tags help categorize devices (e.g., "trusted", "family", "work")',
+        ],
+      },
+      {
+        title: 'Export',
+        description:
+          'Export your device list for reporting or external analysis.',
+        tips: [
+          'Click the Export button to download devices as CSV or PDF',
+          'Exports respect your current filters',
+          'Use CSV for data analysis, PDF for reports',
         ],
       },
       {
         title: 'Device Actions',
         description:
-          'Perform actions on devices including renaming, adding notes, or initiating quarantine.',
+          'Quarantine suspicious devices or release them when cleared.',
         tips: [
-          'Right-click a device for quick actions',
-          'Quarantined devices are blocked at the network level',
-          'Device names can be customized for easier identification',
+          'Click Quarantine to block a device at the network level',
+          'Click Release to restore network access for quarantined devices',
+          'Requires Operator or Admin role to manage quarantine',
         ],
       },
     ],
@@ -98,36 +119,46 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/devices/': {
     title: 'Device Details',
     overview:
-      'View detailed information about a specific device including network activity, event history, and security assessments.',
+      'View detailed information about a specific device including metadata, events, alerts, baselines, and anomalies across multiple tabs.',
     sections: [
       {
         title: 'Device Information',
         description:
-          'View device metadata including MAC address, IP address, hostname, manufacturer, and first/last seen timestamps.',
+          'View and edit device metadata including hostname, MAC address, IP addresses, manufacturer, device type, and tags.',
         tips: [
-          'Edit the device name or add notes using the edit button',
-          'MAC address can help identify the device manufacturer',
-          'First seen date shows when the device joined the network',
+          'Click Edit to modify the device name, type, or tags',
+          'Tags can be comma-separated (e.g., "trusted, family, work")',
+          'First seen and last seen times show device network history',
         ],
       },
       {
-        title: 'Activity Timeline',
+        title: 'Events Tab',
         description:
-          'Chronological view of all network events associated with this device.',
+          'Browse paginated network events (DNS, firewall, etc.) for this device with timestamps and actions.',
         tips: [
-          'Filter by event type to focus on specific activities',
-          'Zoom in on time ranges for detailed analysis',
-          'Export activity data for external analysis',
+          'Events show domain/target, event type, and action (allowed/blocked)',
+          'Use pagination to navigate through event history',
+          'Useful for investigating specific device activity',
         ],
       },
       {
-        title: 'Security Status',
+        title: 'Baselines Tab',
         description:
-          'AI-powered security assessment based on device behavior patterns.',
+          'View learned behavioral baselines for DNS activity, traffic patterns, and connections.',
         tips: [
-          'Risk score is calculated from behavioral analysis',
-          'Anomalies are highlighted with explanations',
-          'Historical trends show device behavior over time',
+          'Baselines have status: Learning (building), Ready (usable), or Stale',
+          'Admins can click Recalculate to update baselines',
+          'Sample count shows how much data informed the baseline',
+        ],
+      },
+      {
+        title: 'Anomalies Tab',
+        description:
+          'View anomalies detected for this device that deviate from its established baseline.',
+        tips: [
+          'Anomaly types include New Domain, Volume Spike, Time Anomaly, etc.',
+          'Severity and score indicate how unusual the behavior is',
+          'Click "View all anomalies" to see the full list',
         ],
       },
     ],
@@ -136,36 +167,36 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/events': {
     title: 'Events',
     overview:
-      'Browse and search all raw network events collected from your log sources. Events are the foundation for alert generation and anomaly detection.',
+      'Browse and search all raw network events collected from your log sources. Filter by source, type, and severity, and export data for analysis.',
     sections: [
       {
         title: 'Event Browser',
         description:
-          'Paginated view of all collected events with filtering and search capabilities.',
+          'Paginated table of all collected events showing time, source, type, severity, client IP, domain, and action.',
         tips: [
-          'Use the search box to filter by any field',
-          'Select a date range to narrow results',
-          'Click any event to view full details',
+          'Search by domain using the search box',
+          'Click any event row to expand and see full details',
+          'Expanded view shows raw message and parsed fields',
         ],
       },
       {
-        title: 'Event Types',
+        title: 'Filtering',
         description:
-          'Events are categorized by type: DNS queries, network connections, authentication attempts, and more.',
+          'Filter events by source, event type, and severity level.',
         tips: [
-          'DNS events show domain resolution requests',
-          'Connection events track network flows',
-          'Authentication events monitor login attempts',
+          'Use the Source dropdown to see events from specific log sources',
+          'Event types include DNS, Firewall, Auth, HTTP, System, Flow, Endpoint, LLM',
+          'Severity levels: Critical, Error, Warning, Info, Debug',
         ],
       },
       {
-        title: 'Source Filtering',
+        title: 'Export',
         description:
-          'Filter events by the log source they originated from.',
+          'Export filtered events to CSV or PDF for reporting and analysis.',
         tips: [
-          'Each source has a unique identifier',
-          'Sources can be enabled/disabled from the Sources page',
-          'Event counts per source help identify high-volume sources',
+          'Click the Export button and choose CSV or PDF format',
+          'Exports respect your current filter settings',
+          'Use CSV for data analysis, PDF for documentation',
         ],
       },
     ],
@@ -174,79 +205,94 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/alerts': {
     title: 'Alerts',
     overview:
-      'Manage security alerts generated by detection rules and anomaly detection. Investigate, acknowledge, and resolve alerts.',
+      'Manage security alerts generated by detection rules and anomaly detection. Acknowledge, resolve, or mark alerts as false positives.',
     sections: [
       {
         title: 'Alert Management',
         description:
-          'View all alerts with severity levels, timestamps, and current status.',
+          'View all alerts as cards with severity levels, timestamps, descriptions, and current status.',
         tips: [
-          'Critical and high severity alerts appear at the top',
-          'Acknowledge alerts to indicate you are investigating',
-          'Resolve alerts once the issue is addressed',
-        ],
-      },
-      {
-        title: 'Alert Details',
-        description:
-          'Each alert includes the triggering event, detection rule, and affected device.',
-        tips: [
-          'Click an alert to see the full context',
-          'Related events are linked for investigation',
-          'AI analysis provides threat assessment when available',
+          'Filter alerts by status (New, Acknowledged, Resolved, False Positive)',
+          'Filter by severity (Critical, High, Medium, Low)',
+          'Search alerts by title or description',
         ],
       },
       {
         title: 'Alert Actions',
         description:
-          'Take action on alerts including quarantine, creating rules, or dismissing false positives.',
+          'Take action on alerts to update their status.',
         tips: [
-          'Quarantine immediately isolates the device',
-          'Dismissed alerts update the AI model to reduce false positives',
-          'Create rules from alerts to automate future responses',
+          'Click Acknowledge to indicate you are investigating',
+          'Click Resolve once the issue is addressed',
+          'Click False Positive to dismiss and improve detection accuracy',
         ],
       },
-    ],
-    shortcuts: [
-      { key: 'a', action: 'Acknowledge selected alert' },
-      { key: 'r', action: 'Resolve selected alert' },
-      { key: 'q', action: 'Quarantine associated device' },
+      {
+        title: 'AI Analysis',
+        description:
+          'When available, alerts include AI-generated analysis for context.',
+        tips: [
+          'AI Analysis appears in a highlighted box on the alert card',
+          'Analysis provides threat assessment and context',
+          'Not all alerts have AI analysis - depends on configuration',
+        ],
+      },
+      {
+        title: 'Export',
+        description:
+          'Export alerts to CSV or PDF for reporting.',
+        tips: [
+          'Click the Export button to download filtered alerts',
+          'Exports respect your current filter settings',
+        ],
+      },
     ],
   },
 
   '/dashboard/anomalies': {
     title: 'Anomalies',
     overview:
-      'View behavioral anomalies detected by the AI engine. Anomalies represent deviations from established baseline patterns.',
+      'View behavioral anomalies detected by comparing device activity to established baselines. Review, confirm, or dismiss anomalies.',
     sections: [
       {
-        title: 'Anomaly Detection',
+        title: 'Stats Overview',
         description:
-          'AI-powered analysis identifies unusual patterns in device behavior and network traffic.',
+          'Quick stats cards show active anomalies, high/critical count, reviewed count, and total anomalies.',
         tips: [
-          'Anomaly scores indicate deviation severity',
-          'Baseline is established over the first 7 days',
-          'New devices have limited anomaly detection until baseline is built',
+          'Active anomalies require attention',
+          'High/Critical count shows urgent items',
+          'Reviewed count tracks your investigation progress',
         ],
       },
       {
-        title: 'Anomaly Types',
+        title: 'Filtering',
         description:
-          'Different anomaly categories including traffic volume, timing, destination, and protocol anomalies.',
+          'Filter anomalies by status, type, and severity.',
         tips: [
-          'Volume anomalies indicate unusual data transfer amounts',
-          'Timing anomalies flag activity at unusual hours',
-          'Destination anomalies show connections to new hosts',
+          'Status options: Active, Reviewed, Confirmed, False Positive',
+          'Types: New Domain, Volume Spike, Time Anomaly, New Connection, New Port, Blocked Spike, Pattern Change',
+          'Severity levels: Critical, High, Medium, Low, Info',
         ],
       },
       {
-        title: 'Investigation',
+        title: 'Anomaly Actions',
         description:
-          'Tools to investigate and understand anomaly context.',
+          'Review anomalies and update their status based on investigation.',
         tips: [
-          'View the specific events that triggered the anomaly',
-          'Compare current behavior to historical baseline',
-          'Mark anomalies as expected to train the model',
+          'Click the eye icon to view full anomaly details',
+          'Click checkmark to mark as Reviewed',
+          'Click X to mark as False Positive',
+          'Use Confirm Threat for confirmed security issues',
+        ],
+      },
+      {
+        title: 'Run Detection',
+        description:
+          'Admins can manually trigger anomaly detection for all devices.',
+        tips: [
+          'Click "Run Detection" to analyze all devices with ready baselines',
+          'Detection compares current behavior to learned patterns',
+          'New anomalies will appear after detection completes',
         ],
       },
     ],
@@ -255,36 +301,47 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/rules': {
     title: 'Detection Rules',
     overview:
-      'Create and manage custom detection rules. Rules define conditions that trigger alerts when matched.',
+      'Create and manage custom detection rules that trigger alerts when conditions are matched. Test rules before enabling.',
     sections: [
       {
         title: 'Rule Management',
         description:
-          'View, enable, disable, and edit detection rules.',
+          'View, create, edit, enable/disable, and delete detection rules.',
         tips: [
-          'Disabled rules stop generating alerts but are preserved',
-          'Rule priority determines which rule fires first on match',
-          'Test rules against historical data before enabling',
+          'Click Create Rule to define a new detection rule',
+          'Toggle the power icon to enable or disable a rule',
+          'Click the chevron to expand and see rule details',
+          'Filter by enabled status or severity',
         ],
       },
       {
         title: 'Rule Conditions',
         description:
-          'Rules match events based on field conditions, thresholds, and patterns.',
+          'Rules match events based on field conditions combined with AND/OR logic.',
         tips: [
-          'Use regex patterns for flexible matching',
-          'Threshold rules count events over time windows',
-          'Combine multiple conditions with AND/OR logic',
+          'Each condition specifies a field, operator, and value',
+          'View conditions in expanded rule details',
+          'Cooldown minutes prevent repeated alerts for the same event',
+        ],
+      },
+      {
+        title: 'Test Rules',
+        description:
+          'Test rules against historical data before enabling in production.',
+        tips: [
+          'Click the play icon to open the Test Rule modal',
+          'Testing shows what events would have matched',
+          'Useful for validating rule logic before enabling',
         ],
       },
       {
         title: 'Rule Actions',
         description:
-          'Configure what happens when a rule matches: create alert, execute playbook, or notify.',
+          'Configure response actions that execute when a rule triggers.',
         tips: [
-          'Severity determines alert priority',
-          'Playbooks can automate response actions',
-          'Notifications can be sent via email, webhook, or ntfy',
+          'Actions can include creating alerts, sending notifications, or quarantining devices',
+          'Multiple actions can be configured per rule',
+          'View configured actions in expanded rule details',
         ],
       },
     ],
@@ -293,155 +350,202 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/threat-intel': {
     title: 'Threat Intelligence',
     overview:
-      'Manage threat intelligence feeds and indicators of compromise (IOCs). Correlate network activity with known threats.',
+      'Manage threat intelligence feeds, look up indicators, and maintain local indicator lists for detection.',
     sections: [
       {
-        title: 'Threat Feeds',
+        title: 'Feeds Tab',
         description:
-          'Subscribe to and manage external threat intelligence feeds.',
+          'Manage external threat intelligence feed subscriptions.',
         tips: [
-          'Feeds update automatically on configured intervals',
-          'Enable/disable feeds based on relevance',
-          'Custom feeds can be added via URL',
+          'Click Add Feed to subscribe to a new threat intelligence source',
+          'Toggle feeds to enable/disable indicator matching',
+          'Sync button manually refreshes feed data',
+          'Delete feeds you no longer need',
         ],
       },
       {
-        title: 'IOC Matching',
+        title: 'Lookup Tab',
         description:
-          'Automatic correlation of network events with threat indicators.',
+          'Query threat intelligence sources to check if an indicator is known malicious.',
         tips: [
-          'Matches generate alerts with threat context',
-          'IOC types include domains, IPs, hashes, and URLs',
-          'Confidence scores indicate match reliability',
+          'Enter a domain, IP address, or hash to lookup',
+          'Select indicator type (domain, ip, hash)',
+          'Results show matches from enabled feeds',
+          'Useful for ad-hoc investigation of suspicious indicators',
         ],
       },
       {
-        title: 'Manual IOCs',
+        title: 'Local Indicators Tab',
         description:
-          'Add custom indicators from your own intelligence sources.',
+          'Create and manage your own indicator lists for organization-specific threats.',
         tips: [
-          'Import IOCs from CSV or STIX format',
-          'Set expiration dates for time-limited threats',
-          'Tag IOCs for organization and filtering',
+          'Add indicators manually based on incident investigations',
+          'Local indicators have highest priority in matching',
+          'Edit or delete indicators as threats evolve',
         ],
       },
     ],
   },
 
   '/dashboard/quarantine': {
-    title: 'Quarantine',
+    title: 'Quarantine Management',
     overview:
-      'Manage quarantined devices that have been isolated from the network due to security concerns.',
+      'Manage quarantined devices, view integration status, and monitor quarantine activity.',
     sections: [
       {
-        title: 'Quarantined Devices',
+        title: 'Stats Overview',
         description:
-          'List of devices currently blocked from network access.',
+          'Quick stats showing quarantined device count and recent activity.',
         tips: [
-          'Quarantine blocks device at the router/firewall level',
-          'AdGuard integration blocks DNS resolution',
-          'Devices can be released when threat is resolved',
-        ],
-      },
-      {
-        title: 'Quarantine Actions',
-        description:
-          'Manage quarantine status and investigate blocked devices.',
-        tips: [
-          'Release removes network blocks immediately',
-          'View the alert that triggered quarantine',
-          'Extend quarantine duration if needed',
+          'Quarantined Devices shows current blocked count',
+          'Quarantines (24h) shows recent isolation actions',
+          'Releases (24h) shows devices restored to network',
+          'Total Actions (24h) combines both metrics',
         ],
       },
       {
         title: 'Integration Status',
         description:
-          'View which integrations are active for quarantine enforcement.',
+          'View the status of AdGuard Home and router integrations.',
         tips: [
-          'Green checkmarks show active integrations',
-          'Multiple integrations provide defense in depth',
-          'Test integrations before relying on them',
+          'Green "Active" indicates integration is working',
+          'Yellow "Disabled" means configured but not enabled',
+          'Gray "Not configured" requires setup in environment variables',
+        ],
+      },
+      {
+        title: 'Quarantined Devices Table',
+        description:
+          'List of all quarantined devices with blocking status.',
+        tips: [
+          'Click device name to view device details page',
+          'AdGuard column shows if DNS blocking is active',
+          'Router column shows if network blocking is active',
+          'Click Release to restore network access (Operator/Admin only)',
+        ],
+      },
+      {
+        title: 'Recent Activity',
+        description:
+          'Log of recent quarantine and release actions.',
+        tips: [
+          'Shows timestamp, action type, device, and user',
+          'Red badge indicates quarantine action',
+          'Green badge indicates release action',
+          'Click "View all audit logs" for complete history',
+        ],
+      },
+      {
+        title: 'Sync Status',
+        description:
+          'Admins can manually sync quarantine state with integrations.',
+        tips: [
+          'Click Sync Status to check all integrations',
+          'Results show devices checked, synced, and any errors',
+          'Useful when integrations may be out of sync',
         ],
       },
     ],
   },
 
   '/dashboard/chat': {
-    title: 'AI Chat',
+    title: 'AI Assistant',
     overview:
-      'Interact with the AI assistant to investigate threats, query your data, and get security recommendations.',
+      'Chat with Claude AI about your network security. Ask questions in plain English and get intelligent analysis.',
     sections: [
       {
-        title: 'Natural Language Queries',
+        title: 'Model Selection',
         description:
-          'Ask questions about your network in plain English.',
+          'Choose the AI model based on your needs.',
         tips: [
-          'Ask "What devices connected in the last hour?"',
-          'Ask "Show me all DNS queries to .ru domains"',
-          'Ask "Explain the recent critical alert"',
+          'Fast: Quick responses for simple queries (Haiku)',
+          'Balanced: Best quality for most questions (Sonnet)',
+          'Deep: Detailed analysis for complex investigations (Opus)',
+          'Model names are shown next to each option',
         ],
       },
       {
-        title: 'Threat Investigation',
+        title: 'Suggested Queries',
         description:
-          'Get AI assistance investigating security incidents.',
+          'Click suggested queries to quickly ask common questions.',
         tips: [
-          'Provide alert IDs for focused analysis',
-          'Ask for remediation recommendations',
-          'Request threat intel correlation',
+          'Suggested queries appear when chat is empty',
+          'Click any suggestion to use it as your query',
+          'Questions cover devices, security, domains, and activity',
         ],
       },
       {
-        title: 'Chat History',
+        title: 'Asking Questions',
         description:
-          'Previous conversations are saved for reference.',
+          'Type natural language questions about your network.',
         tips: [
-          'Start a new chat for unrelated topics',
-          'Reference previous messages for context',
-          'Export chat history for documentation',
+          'Ask "What devices are most active right now?"',
+          'Ask "Are there any security concerns I should know about?"',
+          'Ask "Which devices have anomalies?"',
+          'The AI has access to your current network state',
+        ],
+      },
+      {
+        title: 'LLM Configuration',
+        description:
+          'The AI requires Anthropic API key configuration.',
+        tips: [
+          'Set ANTHROPIC_API_KEY environment variable to enable',
+          'Without API key, a configuration message is shown',
+          'Contact your admin if the feature is not available',
         ],
       },
     ],
     shortcuts: [
       { key: 'Enter', action: 'Send message' },
-      { key: 'Shift+Enter', action: 'New line' },
-      { key: 'Ctrl+/', action: 'Focus chat input' },
     ],
   },
 
   '/dashboard/sources': {
     title: 'Log Sources',
     overview:
-      'Configure and manage log collection sources. Sources feed data into NetGuardian for analysis.',
+      'Configure and manage log collection sources. Only admins can add, modify, or delete sources.',
     sections: [
+      {
+        title: 'Source Cards',
+        description:
+          'Each source displays its configuration, event count, and last activity.',
+        tips: [
+          'Active/Disabled badge shows current status',
+          'Type shows API Pull, File Watch, or API Push',
+          'Parser shows which format parser is used',
+          'Events shows total count; Last Event shows recency',
+        ],
+      },
       {
         title: 'Source Types',
         description:
-          'Different methods for collecting logs: API pull, file watch, and API push.',
+          'Different methods for collecting logs.',
         tips: [
-          'API Pull polls external systems on an interval',
-          'File Watch monitors mounted log files',
-          'API Push receives logs from external senders',
+          'API Pull: NetGuardian polls an external API on an interval',
+          'File Watch: Monitors a log file for new entries',
+          'API Push: External systems send logs to NetGuardian',
         ],
       },
       {
-        title: 'Parser Configuration',
+        title: 'API Push Sources',
         description:
-          'Each source uses a parser to normalize log formats.',
+          'API Push sources generate an API key for authentication.',
         tips: [
-          'Built-in parsers support common formats',
-          'Custom parsers use regex patterns',
-          'Test parsers with sample data before deployment',
+          'API key is displayed in the source card',
+          'Click the copy icon to copy the key to clipboard',
+          'Use this key when configuring external log senders',
         ],
       },
       {
-        title: 'Source Health',
+        title: 'Source Management',
         description:
-          'Monitor collection status and error rates.',
+          'Add, enable/disable, or delete sources (Admin only).',
         tips: [
-          'Green status indicates healthy collection',
-          'Red status shows collection failures',
-          'Click a source to see detailed error logs',
+          'Click Add Source to create a new log source',
+          'Click Enable/Disable to toggle collection',
+          'Click Delete to remove a source (cannot be undone)',
+          'Error messages appear if source has collection issues',
         ],
       },
     ],
@@ -488,36 +592,50 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/settings': {
     title: 'Settings',
     overview:
-      'Configure system settings, integrations, and personal preferences.',
+      'Configure your account settings across four tabs: General, Notifications, Security, and Data Retention (admin only).',
     sections: [
       {
-        title: 'General Settings',
+        title: 'General Tab',
         description:
-          'System-wide configuration options.',
+          'View account information and real-time connection status.',
         tips: [
-          'Set data retention period for events',
-          'Configure timezone for consistent timestamps',
-          'Enable/disable specific features',
+          'Shows your username and role',
+          'Connection status indicates if real-time updates are active',
+          'Green dot means connected, gray means disconnected',
         ],
       },
       {
-        title: 'Integrations',
+        title: 'Notifications Tab',
         description:
-          'Connect NetGuardian to external services.',
+          'Configure email and ntfy.sh push notification preferences.',
         tips: [
-          'AdGuard integration enables DNS-level blocking',
-          'Router integration enables network quarantine',
-          'Notification services send alerts externally',
+          'Email requires SMTP configuration in environment variables',
+          'Toggle severity levels to control which alerts notify you',
+          'Toggle event types (Anomalies, Quarantine Actions)',
+          'Use Send Test buttons to verify configuration',
         ],
       },
       {
-        title: 'Personal Preferences',
+        title: 'Security Tab',
         description:
-          'Customize your own experience.',
+          'Manage Two-Factor Authentication (2FA) for your account.',
         tips: [
-          'Theme preference: light, dark, or system',
-          'Notification preferences for alert types',
-          'Dashboard layout customization',
+          'Click Set Up 2FA to enable authenticator app protection',
+          'Scan the QR code with Google Authenticator or Authy',
+          'Save backup codes in a secure location',
+          'View/regenerate backup codes after enabling',
+        ],
+      },
+      {
+        title: 'Data Retention Tab (Admin)',
+        description:
+          'Configure how long data is kept before automatic cleanup.',
+        tips: [
+          'Only visible to administrators',
+          'Storage Overview shows table sizes and row counts',
+          'Edit retention days for each data type (0 = keep forever)',
+          'Preview Cleanup to see what would be deleted',
+          'Run Cleanup to permanently delete old data',
         ],
       },
     ],
@@ -526,79 +644,104 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/topology': {
     title: 'Network Topology',
     overview:
-      'Visualize your network structure and device relationships. Interactive graph showing connections between devices.',
+      'Visual map of your network devices and connections. Interactive canvas with force-directed layout.',
     sections: [
       {
-        title: 'Topology View',
+        title: 'Stats Overview',
         description:
-          'Interactive network graph showing devices and connections.',
+          'Summary cards showing device and event counts.',
         tips: [
-          'Drag nodes to rearrange the layout',
-          'Scroll to zoom in/out',
-          'Click a device to see details',
+          'Total Devices shows all discovered devices',
+          'Active shows recently seen devices',
+          'Quarantined shows isolated devices',
+          'Events shows total for selected time range',
         ],
       },
       {
-        title: 'Connection Analysis',
+        title: 'Network Map',
         description:
-          'View traffic flows between devices.',
+          'Interactive canvas visualization of your network topology.',
         tips: [
+          'Internet node at top, router in center, devices around it',
+          'Node colors indicate device type (see legend)',
+          'Red nodes are quarantined devices',
           'Line thickness indicates traffic volume',
-          'Hover over connections to see details',
-          'Red lines indicate suspicious connections',
+          'Red dashed lines indicate blocked connections',
         ],
       },
       {
-        title: 'Filtering',
+        title: 'Controls',
         description:
-          'Filter the topology view to focus on specific devices or connections.',
+          'Time range, zoom, and pan controls.',
         tips: [
-          'Filter by device type or status',
-          'Show only devices with anomalies',
-          'Highlight specific traffic patterns',
+          'Select time range (1h, 6h, 24h, 3d, 7d) for event data',
+          'Toggle "Inactive" to include offline devices',
+          'Use zoom +/- buttons or mouse wheel to zoom',
+          'Click and drag empty space to pan the view',
+          'Click Reset button to restore default view',
         ],
       },
-    ],
-    shortcuts: [
-      { key: 'r', action: 'Reset view' },
-      { key: '+/-', action: 'Zoom in/out' },
-      { key: 'f', action: 'Fit to screen' },
+      {
+        title: 'Node Interaction',
+        description:
+          'Click and drag nodes to view details.',
+        tips: [
+          'Click a node to select it and view details panel',
+          'Drag a node to reposition it (releases when dropped)',
+          'Details panel shows IP, MAC, manufacturer, status, tags',
+          'Click "View Device Details" to go to device page',
+        ],
+      },
     ],
   },
 
   '/dashboard/patterns': {
     title: 'Log Patterns',
     overview:
-      'View and manage learned log patterns. Patterns are normalized templates extracted from your log messages to identify irregular activity.',
+      'View and manage learned log patterns from semantic analysis. Control which patterns trigger irregular log detection.',
     sections: [
       {
-        title: 'Pattern Learning',
+        title: 'Stats Overview',
         description:
-          'NetGuardian automatically learns patterns from your logs by normalizing variables like IPs, timestamps, and UUIDs into placeholders.',
+          'Summary cards show total patterns, irregular logs detected, and last analysis time.',
         tips: [
-          'Patterns with <IP>, <TIMESTAMP>, <UUID> show where variables were extracted',
-          'Occurrence count shows how often a pattern appears',
-          'Rare patterns (below threshold) may indicate unusual activity',
+          'Total Patterns shows all learned log templates',
+          'Irregular Detected shows logs flagged for review',
+          'Last Analysis shows when semantic analysis last ran',
         ],
       },
       {
-        title: 'Pattern Management',
+        title: 'Filtering and Search',
         description:
-          'Control which patterns are monitored for irregularities.',
+          'Filter patterns by source, ignored status, and rarity.',
         tips: [
-          'Toggle "Ignore" to exclude known benign rare patterns',
-          'Ignored patterns won\'t trigger semantic analysis',
           'Filter by source to focus on specific log sources',
+          'Active Only shows patterns that trigger analysis',
+          'Ignored Only shows patterns you have excluded',
+          'Check "Rare patterns only" to see uncommon patterns',
+          'Search by pattern text to find specific templates',
         ],
       },
       {
-        title: 'Rarity Detection',
+        title: 'Pattern Table',
         description:
-          'Patterns seen fewer times than the rarity threshold are flagged as irregular.',
+          'View pattern details including occurrences and timestamps.',
         tips: [
-          'Default threshold is 3 occurrences',
-          'Adjust threshold per-source in Settings',
-          'New patterns are automatically flagged until they become common',
+          'Click a row to expand and see full pattern details',
+          'Yellow badge with warning icon indicates rare patterns (<3 occurrences)',
+          'Green badge indicates common, normal patterns',
+          'Copy button lets you copy the normalized pattern',
+        ],
+      },
+      {
+        title: 'Ignore/Unignore',
+        description:
+          'Control whether a pattern triggers irregular log detection.',
+        tips: [
+          'Click Ignore to exclude a pattern from semantic analysis',
+          'Ignored patterns show "Ignored" status and appear dimmed',
+          'Click Unignore to re-enable analysis for a pattern',
+          'Use ignore for known-benign rare patterns (e.g., startup messages)',
         ],
       },
     ],
@@ -607,36 +750,46 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/semantic-review': {
     title: 'Semantic Review',
     overview:
-      'Review logs flagged as irregular by the semantic analysis system. AI-powered analysis helps identify potential security concerns in unusual log messages.',
+      'Review irregular log patterns detected by semantic analysis. AI provides severity scores and analysis to help prioritize investigation.',
     sections: [
       {
-        title: 'Irregular Logs',
+        title: 'Stats Overview',
         description:
-          'Logs that match rare or new patterns are queued for review with AI-generated analysis.',
+          'Summary cards show total patterns, irregular logs, pending review count, and high severity count.',
         tips: [
-          'Severity score (0.0-1.0) indicates AI-assessed risk level',
-          'Click a row to expand and see the full LLM analysis',
-          'High severity items (≥0.7) require priority attention',
+          'Pending Review shows items needing your attention',
+          'High Severity highlights critical issues (score 0.8+)',
+          'Use these stats to prioritize your review workflow',
         ],
       },
       {
-        title: 'LLM Analysis',
+        title: 'Filtering',
         description:
-          'Each irregular log is analyzed by an AI (Claude or Ollama) to assess security relevance.',
+          'Filter irregular logs by source, review status, and severity.',
         tips: [
-          'Analysis includes threat assessment and recommendations',
-          'Context from similar patterns helps identify false positives',
-          'Analysis runs in batches based on configured interval',
+          'Source dropdown filters by log source',
+          'Status: Unreviewed (default), Reviewed, or All',
+          'Severity: Critical (0.8+), High (0.6+), Medium (0.4+), or All',
+        ],
+      },
+      {
+        title: 'Irregular Log Table',
+        description:
+          'Table showing timestamp, source, severity, reason, LLM analysis, and status.',
+        tips: [
+          'Click a row to expand and see full details',
+          'Severity shows percentage score with label (Critical/High/Medium/Low)',
+          '"Pending analysis" means LLM has not yet processed this log',
         ],
       },
       {
         title: 'Review Actions',
         description:
-          'Mark logs as reviewed after investigation.',
+          'Mark logs as reviewed and research issues.',
         tips: [
-          'Mark Reviewed acknowledges you\'ve investigated the log',
-          'If a pattern is consistently benign, ignore it on the Patterns page',
-          'Filter by "Pending" to see items needing review',
+          'Click "Mark Reviewed" to acknowledge you investigated the log',
+          'Click "Research this issue" to open a Google search with AI-generated query',
+          'Reviewed logs show green checkmark with review timestamp',
         ],
       },
     ],
@@ -645,36 +798,58 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/suggested-rules': {
     title: 'Suggested Rules',
     overview:
-      'Review and approve detection rules suggested by AI analysis. The LLM can identify patterns worth monitoring and propose rules to catch similar issues.',
+      'Review and approve AI-suggested detection rules. The system proposes rules based on patterns detected in your logs.',
     sections: [
       {
-        title: 'Pending Rules',
+        title: 'Pending vs All Rules Tabs',
         description:
-          'Rules awaiting your review, suggested based on irregular log analysis.',
+          'Switch between pending rules needing review and complete history.',
         tips: [
-          'Each rule shows the reason it was suggested',
-          'Review the linked irregular log for context',
-          'Rule types include pattern match, threshold, and sequence',
+          'Pending Review shows rules awaiting your decision',
+          'Badge shows count of pending rules',
+          'All Rules tab shows complete history with filters',
         ],
       },
       {
-        title: 'Rule Approval',
+        title: 'Rule Cards',
         description:
-          'Approve rules to add them to your detection rule set.',
+          'Each rule shows name, status, type, description, and reasoning.',
         tips: [
-          'Approved rules can be enabled immediately or kept disabled',
-          'Edit rule configuration before approving if needed',
-          'Approved rules appear in the Detection Rules page',
+          'Status badges: Pending (yellow), Approved (blue), Implemented (green), Rejected (red)',
+          'Rule types: Pattern Match, Threshold, Sequence',
+          '"Why suggested" explains the AI reasoning',
+          '"Security benefit" describes what the rule protects against',
         ],
       },
       {
-        title: 'Rule Rejection',
+        title: 'Approval Workflow',
         description:
-          'Reject rules that aren\'t applicable to your environment.',
+          'Review and approve rules to add them to detection.',
         tips: [
-          'Provide a reason when rejecting for future reference',
-          'Rejected rule patterns won\'t be suggested again',
-          'View rejection history in the History tab',
+          'Click Review to expand the approval panel',
+          'Check "Enable rule immediately" to activate on approval',
+          'Click Approve to add the rule to Detection Rules',
+          'Approved rules appear on the Rules page',
+        ],
+      },
+      {
+        title: 'Rejection Workflow',
+        description:
+          'Reject rules that are not applicable.',
+        tips: [
+          'Enter a rejection reason in the text area',
+          'Click Reject to decline the suggested rule',
+          'Rejection reason is saved for reference',
+          'Rejected rules can be viewed in All Rules tab',
+        ],
+      },
+      {
+        title: 'Filtering (All Rules Tab)',
+        description:
+          'Filter the complete rule history.',
+        tips: [
+          'Filter by source to see rules from specific log sources',
+          'Filter by status to see Pending, Approved, Implemented, or Rejected',
         ],
       },
     ],

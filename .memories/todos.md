@@ -92,6 +92,19 @@ Remaining tasks organized by priority.
 
 ---
 
+## Dark Theme Fixes (Ongoing)
+
+### Completed Modal Theming
+- [x] EditUserModal - dark theme contrast fixed
+- [x] AddUserModal - dark theme contrast fixed
+- [x] TestRuleModal - legacy conditions format handling
+
+### Remaining UI Polish
+- [ ] Review all modals for dark theme consistency (if any missed)
+- [ ] Verify all dropdown menus have proper dark theme styling
+
+---
+
 ## Future Enhancements (Nice to Have)
 
 - [ ] Dashboard customization (drag-and-drop widgets)

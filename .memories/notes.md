@@ -840,3 +840,112 @@ const sanitizedConditions = validConditions.map((c) => ({
 ```
 
 **File:** `frontend/src/components/TestRuleModal.tsx`
+
+---
+
+### Legacy Conditions Format Detection Pattern
+
+**Problem:** Rules created with older code or seeded data use a flat `conditions` array, but the UI expects `condition_groups` with logical operators.
+
+**Legacy Format:**
+```json
+{
+  "conditions": [
+    { "field": "event_type", "operator": "eq", "value": "dns" },
+    { "field": "severity", "operator": "gte", "value": "medium" }
+  ]
+}
+```
+
+**New Format:**
+```json
+{
+  "condition_groups": [
+    {
+      "logical_operator": "AND",
+      "conditions": [
+        { "field": "event_type", "operator": "eq", "value": "dns" },
+        { "field": "severity", "operator": "gte", "value": "medium" }
+      ]
+    }
+  ]
+}
+```
+
+**Detection Pattern:**
+```typescript
+const hasLegacyConditions =
+  rule.conditions &&
+  Array.isArray(rule.conditions) &&
+  rule.conditions.length > 0 &&
+  (!rule.condition_groups || rule.condition_groups.length === 0);
+```
+
+**Conversion Pattern:**
+```typescript
+if (hasLegacyConditions) {
+  const converted = [{
+    logical_operator: 'AND' as const,
+    conditions: rule.conditions.map(c => ({
+      field: c.field || '',
+      operator: c.operator || 'eq',
+      value: c.value ?? ''
+    }))
+  }];
+  // Use converted format
+}
+```
+
+**Files affected:** `TestRuleModal.tsx`, `EditRuleModal.tsx`
+
+---
+
+### Optimistic UI Updates Pattern
+
+**Problem:** Enable/disable toggles feel sluggish when waiting for API response.
+
+**Solution:** Update UI immediately, then rollback on error.
+
+```typescript
+const handleToggle = async (source: Source) => {
+  // Store previous state for rollback
+  const previousEnabled = source.enabled;
+
+  // Optimistically update UI
+  queryClient.setQueryData(['sources'], (old: Source[] | undefined) =>
+    old?.map(s => s.id === source.id ? { ...s, enabled: !s.enabled } : s)
+  );
+
+  try {
+    await toggleMutation.mutateAsync({ id: source.id, enabled: !previousEnabled });
+  } catch (error) {
+    // Rollback on error
+    queryClient.setQueryData(['sources'], (old: Source[] | undefined) =>
+      old?.map(s => s.id === source.id ? { ...s, enabled: previousEnabled } : s)
+    );
+    toast.error('Failed to update source');
+  }
+};
+```
+
+**File:** `frontend/src/pages/SourcesPage.tsx`
+
+---
+
+### Dark Theme Modal Styling Checklist
+
+When fixing dark theme for modals, ensure these elements have proper styling:
+
+1. **Container:** `dark:bg-zinc-800` or `dark:bg-zinc-900`
+2. **Header text:** `dark:text-white`
+3. **Labels:** `dark:text-gray-300`
+4. **Input fields:** `dark:bg-zinc-700 dark:border-zinc-600 dark:text-white`
+5. **Select/dropdowns:** Same as inputs, plus `dark:text-white` for options
+6. **Checkboxes:** `dark:bg-zinc-700 dark:border-zinc-500`
+7. **Primary buttons:** Usually fine, check hover states
+8. **Secondary buttons:** `dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:text-gray-300`
+9. **Close/X button:** `dark:text-gray-400 dark:hover:text-gray-200`
+10. **Error messages:** `dark:text-red-400`
+11. **Placeholder text:** `dark:placeholder-gray-500`
+
+**Common mistake:** Forgetting `dark:text-white` on select options, making them invisible on dark backgrounds.

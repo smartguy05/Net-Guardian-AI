@@ -133,8 +133,8 @@ docker-compose exec backend python scripts/seed_demo_data.py
 |----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | (none) | Anthropic API key for LLM features |
 | `LLM_ENABLED` | `true` | Enable/disable LLM features |
-| `LLM_MODEL_DEFAULT` | `claude-sonnet-4-20250514` | Default model for analysis |
-| `LLM_MODEL_FAST` | `claude-haiku-4-20250514` | Fast model for quick triage |
+| `LLM_MODEL_DEFAULT` | `claude-sonnet-4-latest` | Default model for analysis |
+| `LLM_MODEL_FAST` | `claude-3-5-haiku-latest` | Fast model for quick triage |
 
 ### Integration Configuration
 

@@ -4,6 +4,104 @@ Tasks completed during implementation.
 
 ---
 
+## Help Content Accuracy Review (January 2026)
+
+### Help System Content Update - COMPLETE
+- [x] Reviewed all 19 frontend pages against helpContent.ts
+- [x] Updated Dashboard help content with accurate Key Metrics, DNS Block Rate, Top Queried Domains sections
+- [x] Updated Devices help content with tagging, bulk actions, export, and quarantine features
+- [x] Updated Device Details help content with tabs (Events, Baselines, Anomalies)
+- [x] Updated Events help content with source filtering and export functionality
+- [x] Updated Alerts help content with AI Analysis section and export
+- [x] Updated Anomalies help content with stats overview, filtering, and Run Detection
+- [x] Updated Rules help content with Test Rules feature and rule actions
+- [x] Updated Threat Intel help content with Feeds, Lookup, and Local Indicators tabs
+- [x] Updated Quarantine help content with stats, integration status, recent activity, sync
+- [x] Updated Chat help content with model selection (Fast/Balanced/Deep)
+- [x] Updated Sources help content with API Push sources and API key display
+- [x] Updated Settings help content with four tabs (General, Notifications, Security, Data Retention)
+- [x] Updated Topology help content with stats, network map, controls, and node interaction
+- [x] Updated Patterns help content with stats, filtering/search, pattern table, ignore/unignore
+- [x] Updated Semantic Review help content with stats, filtering, irregular log table, review actions
+- [x] Updated Suggested Rules help content with tabs, rule cards, approval/rejection workflows
+- [x] Removed outdated keyboard shortcuts that don't exist in actual pages
+- [x] All help content now matches actual page functionality
+
+---
+
+## CLAUDE.md Comprehensive Update (January 2026)
+
+### Documentation Accuracy Audit - COMPLETE
+- [x] Updated test count from 256 to 488 tests
+- [x] Added Loki parser to parsers list
+- [x] Added Database layer (app/db/) to architecture section
+- [x] Added LLM Provider Architecture section with factory pattern documentation
+- [x] Added llm_providers/ and integrations/ subdirectories to services description
+- [x] Expanded Integration Points with file paths
+- [x] Expanded Configuration section with all environment variable categories:
+  - Core Settings
+  - Database Pool Settings
+  - LLM Configuration
+  - Ollama Configuration
+  - Semantic Analysis
+  - Rate Limiting
+  - Integrations
+- [x] Expanded Important Files section with:
+  - Additional core modules (security.py, validation.py, http_client.py, rate_limit.py)
+  - Full list of key API endpoints (15 endpoints)
+  - Key Services list (11 services)
+  - Database Models list (8 models)
+- [x] Added Frontend Structure section documenting:
+  - Pages, Components, API, Stores, Hooks, Types directories
+  - Key frontend patterns (React Query, Zustand, Tailwind, WebSocket)
+- [x] Added additional test directories (api/, integration/, factories/)
+
+---
+
+## docs/ Folder Accuracy Review (January 2026)
+
+### Documentation Updates - COMPLETE
+- [x] Updated LLM model names in `docs/configuration.md`:
+  - Changed `claude-sonnet-4-20250514` to `claude-sonnet-4-latest`
+  - Changed `claude-haiku-4-20250514` to `claude-3-5-haiku-latest`
+- [x] Updated LLM model names in `docs/deployment-guide.md` to match
+- [x] Updated `docs/implementation-status.md`:
+  - Changed phase status from "Phase 5 IN PROGRESS" to "Phase 9 COMPLETE"
+  - Updated LLM model references to latest versions
+  - Added Phase 6-9 feature summaries
+  - Added 80+ missing API endpoints across 11 categories:
+    - Detection Rules, Threat Intelligence, Semantic Analysis
+    - Network Topology, Notifications, Admin
+    - Metrics, Audit, Integrations, Playbooks
+  - Updated test coverage table (added Loki parser, semantic analysis tests)
+  - Updated total test count from 256 to 380+
+- [x] Added missing Ollama config settings to `docs/configuration.md`:
+  - `OLLAMA_DEFAULT_MODEL` (default: llama3.2)
+  - `OLLAMA_TIMEOUT_SECONDS` (default: 120)
+
+---
+
+## README.md Update (January 2026)
+
+### Documentation Accuracy Review - COMPLETE
+- [x] Updated Current Status to Phase 9 (Semantic Log Analysis)
+- [x] Added new AI Features section with:
+  - AI Chat Assistant with model selection
+  - AI Alert Analysis
+  - AI Research Queries
+  - AI Rule Suggestions
+- [x] Added Semantic Log Analysis to Detection & Analysis section
+- [x] Added In-App Documentation to Core Features
+- [x] Added Phase 8 (Landing Page & Help System) to Roadmap
+- [x] Added Phase 9 (Semantic Log Analysis) to Roadmap
+- [x] Added UI Pages table documenting all 19 frontend pages
+- [x] Added Supported Source Types section (api_pull, file_watch, api_push, udp_listen)
+- [x] Added Supported Parsers table (11 parsers)
+- [x] Updated Project Structure with accurate counts (25+ routers, 11 parsers, 250+ tests, 20 pages)
+- [x] Updated feature list to include Grafana Loki
+
+---
+
 ## Log Source Additions (January 2026)
 
 ### Grafana Loki Parser - COMPLETE
@@ -77,6 +175,43 @@ Tasks completed during implementation.
 ---
 
 ## Bug Fixes (January 2026)
+
+### TestRuleModal Legacy Conditions Fix
+- [x] Fixed 422 validation error when testing rules with legacy conditions format
+  - Added detection for legacy `conditions` format (flat array of condition objects)
+  - Auto-converts legacy format to new structured `condition_groups` format on modal open
+  - Filters out conditions with empty/whitespace `field` or `operator`
+  - Trims whitespace from all string values
+  - Uses nullish coalescing to ensure `value` is never undefined
+  - Shows user-friendly error if no valid conditions exist after filtering
+
+### EditRuleModal Legacy Conditions Auto-Conversion
+- [x] Added auto-conversion of legacy conditions format to new structured format
+  - Detects when rule has legacy `conditions` array without `condition_groups`
+  - Automatically wraps legacy conditions in a single AND group on modal open
+  - Ensures conditions are editable in the new UI without manual migration
+
+### Sources Page Optimistic Updates
+- [x] Added optimistic UI updates for enable/disable toggle
+  - Toggle immediately reflects state change in UI
+  - Rolls back on error with toast notification
+  - Improves perceived responsiveness
+
+### EditUserModal Dark Theme Fixes
+- [x] Fixed poor contrast in dark mode for EditUserModal component
+  - Modal background (`dark:bg-zinc-800`)
+  - Form labels and input fields
+  - Role dropdown and active status checkbox
+  - Button hover states and focus rings
+  - Error messages
+
+### AddUserModal Dark Theme Fixes (In Progress)
+- [x] Fixed poor contrast in dark mode for AddUserModal component
+  - Modal background and header text
+  - Form labels and input fields
+  - Role selection dropdown
+  - Password field styling
+  - Button states (primary/secondary)
 
 ### API Route Ordering Fix
 - [x] Fixed 422 error on `/api/v1/devices/quarantined` endpoint

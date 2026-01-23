@@ -190,12 +190,15 @@ alembic downgrade -1
 The backend uses a layered architecture:
 
 1. **API Layer** (`app/api/v1/`): REST endpoints with FastAPI routers
-2. **Services** (`app/services/`): Business logic (LLM, anomaly detection, playbooks, quarantine)
+2. **Services** (`app/services/`): Business logic (LLM, anomaly detection, playbooks, quarantine, semantic analysis)
+   - `llm_providers/`: Modular LLM provider implementations (Claude, Ollama)
+   - `integrations/`: Router integrations (AdGuard, UniFi, pfSense)
 3. **Models** (`app/models/`): SQLAlchemy models with TimescaleDB hypertables for events
 4. **Collectors** (`app/collectors/`): Data collection from various sources (API pull, file watch, UDP listener)
-5. **Parsers** (`app/parsers/`): Log format parsers (AdGuard, syslog, JSON, Custom, NetFlow, sFlow, endpoint, Ollama)
+5. **Parsers** (`app/parsers/`): Log format parsers (AdGuard, syslog, JSON, Custom, NetFlow, sFlow, endpoint, Ollama, Loki)
 6. **Events** (`app/events/`): Redis Streams event bus for async communication
 7. **Core** (`app/core/`): Security, caching, rate limiting, validation, middleware utilities
+8. **Database** (`app/db/`): Session management and repositories
 
 ### Key Patterns
 
@@ -249,30 +252,80 @@ async def expensive_endpoint(request: Request):
 
 ### Integration Points
 
-- **AdGuard Home**: DNS-level device blocking
-- **Router Integration**: UniFi, pfSense, OPNsense device quarantine
-- **Anthropic Claude**: LLM-powered alert analysis and natural language queries
-- **Ollama**: Local LLM monitoring for prompt injection/jailbreak detection
+- **AdGuard Home**: DNS-level device blocking (`app/services/integrations/adguard.py`)
+- **Router Integration**: UniFi, pfSense, OPNsense device quarantine (`app/services/integrations/`)
+- **Anthropic Claude**: LLM-powered alert analysis and natural language queries (`app/services/llm_providers/claude_provider.py`)
+- **Ollama**: Local LLM monitoring for prompt injection/jailbreak detection (`app/services/llm_providers/ollama_provider.py`)
+
+### LLM Provider Architecture
+
+The LLM system uses a factory pattern for provider abstraction (`app/services/llm_providers/`):
+- `base.py`: Abstract base class defining the LLM interface
+- `claude_provider.py`: Anthropic Claude implementation
+- `ollama_provider.py`: Local Ollama implementation
+- `factory.py`: Provider instantiation based on configuration
 
 ## Testing
 
-Tests are in `backend/tests/`. The test suite uses pytest with async support (`asyncio_mode = "auto"`). Current coverage: 256 tests.
+Tests are in `backend/tests/`. The test suite uses pytest with async support (`asyncio_mode = "auto"`). Current coverage: 488 tests.
 
 Test organization mirrors the app structure:
 - `tests/parsers/` - Parser unit tests
 - `tests/collectors/` - Collector unit tests
 - `tests/services/` - Service layer tests
+- `tests/api/` - API endpoint tests
+- `tests/integration/` - Integration tests
+- `tests/factories/` - Test data factories
 
 ## Configuration
 
-Environment variables are defined in `deploy/.env`. Key settings:
+Environment variables are defined in `deploy/.env` and `backend/.env`. Key settings:
+
+### Core Settings
 - `SECRET_KEY`: JWT signing key (generate with `openssl rand -hex 32`)
 - `DATABASE_URL`: PostgreSQL connection string
 - `REDIS_URL`: Redis connection string
-- `ANTHROPIC_API_KEY`: For LLM features
-- `ADGUARD_*` / `ROUTER_*`: Integration settings
-- `RATE_LIMIT_*`: API rate limiting settings
-- `SMTP_*` / `NTFY_*`: Notification settings
+- `DEBUG`: Enable debug mode (default: false)
+- `LOG_LEVEL`: Logging level (default: INFO)
+
+### Database Pool Settings
+- `DB_POOL_SIZE`: Persistent connections (default: 20)
+- `DB_MAX_OVERFLOW`: Extra connections (default: 30)
+- `DB_POOL_TIMEOUT`: Wait time in seconds (default: 30)
+- `DB_POOL_RECYCLE`: Recycle after N seconds (default: 1800)
+
+### LLM Configuration
+- `ANTHROPIC_API_KEY`: For Claude-based LLM features
+- `LLM_MODEL_DEFAULT`: Default model for analysis (default: claude-sonnet-4-latest)
+- `LLM_MODEL_FAST`: Fast model for triage (default: claude-3-5-haiku-latest)
+- `LLM_MODEL_DEEP`: Deep analysis model (default: claude-sonnet-4-latest)
+- `LLM_ENABLED`: Enable LLM features (default: true)
+- `LLM_CACHE_ENABLED`: Enable Anthropic prompt caching (default: true)
+
+### Ollama Configuration
+- `OLLAMA_ENABLED`: Enable local Ollama (default: false)
+- `OLLAMA_URL`: Ollama API URL (default: http://localhost:11434)
+- `OLLAMA_DEFAULT_MODEL`: Model for semantic analysis (default: llama3.2)
+- `OLLAMA_DETECTION_ENABLED`: Enable injection detection (default: true)
+
+### Semantic Analysis
+- `SEMANTIC_ANALYSIS_ENABLED`: Enable semantic log analysis (default: true)
+- `SEMANTIC_DEFAULT_LLM_PROVIDER`: "claude" or "ollama" (default: claude)
+- `SEMANTIC_DEFAULT_RARITY_THRESHOLD`: Patterns < N are rare (default: 3)
+- `SEMANTIC_SCHEDULER_ENABLED`: Enable automatic scheduling (default: true)
+
+### Rate Limiting
+- `RATE_LIMIT_ENABLED`: Enable rate limiting (default: true)
+- `RATE_LIMIT_DEFAULT_RPM`: Default requests/minute (default: 60)
+- `RATE_LIMIT_AUTH_RPM`: Auth endpoint limit (default: 10)
+- `RATE_LIMIT_CHAT_RPM`: Chat endpoint limit (default: 20)
+- `RATE_LIMIT_EXPORT_RPM`: Export endpoint limit (default: 5)
+
+### Integrations
+- `ADGUARD_*`: AdGuard Home integration (url, username, password, verify_ssl)
+- `ROUTER_*`: Router integration (type, url, credentials, site)
+- `SMTP_*`: Email notifications (host, port, username, password, use_tls)
+- `NTFY_*`: Push notifications (server_url, topic, auth_token)
 
 See `docs/configuration.md` for complete reference.
 
@@ -281,15 +334,67 @@ See `docs/configuration.md` for complete reference.
 ### Core Modules
 - `app/core/middleware.py` - MetricsMiddleware, RequestLoggingMiddleware
 - `app/core/rate_limiter.py` - Token bucket rate limiting
+- `app/core/rate_limit.py` - Rate limiting utilities
 - `app/core/cache.py` - Redis caching layer
+- `app/core/security.py` - Authentication, password hashing, JWT handling
+- `app/core/validation.py` - Input validation and sanitization
+- `app/core/http_client.py` - Shared HTTP client pool
 - `app/collectors/error_handler.py` - Retry logic, circuit breaker
 
 ### Key API Endpoints
-- `app/api/v1/metrics.py` - Prometheus metrics (`/api/v1/metrics`)
+- `app/api/v1/router.py` - Main router aggregating all endpoints
+- `app/api/v1/auth.py` - Authentication (login, refresh, password reset)
+- `app/api/v1/devices.py` - Device management and quarantine
+- `app/api/v1/events.py` - Event queries and filtering
+- `app/api/v1/alerts.py` - Alert management
+- `app/api/v1/rules.py` - Custom detection rules
+- `app/api/v1/semantic.py` - Semantic log analysis
+- `app/api/v1/chat.py` - LLM chat interface
 - `app/api/v1/topology.py` - Network topology visualization
 - `app/api/v1/threat_intel.py` - Threat intelligence feeds
-- `app/api/v1/rules.py` - Custom detection rules
+- `app/api/v1/metrics.py` - Prometheus metrics (`/api/v1/metrics`)
+- `app/api/v1/websocket.py` - Real-time WebSocket updates
+- `app/api/v1/playbooks.py` - Automated response playbooks
+- `app/api/v1/admin.py` - Admin functions (retention, system config)
+
+### Key Services
+- `app/services/llm_service.py` - LLM orchestration and analysis
+- `app/services/anomaly_service.py` - Anomaly detection engine
+- `app/services/baseline_service.py` - Device behavior baselines
+- `app/services/semantic_analysis_service.py` - Semantic log analysis
+- `app/services/semantic_scheduler.py` - Scheduled analysis jobs
+- `app/services/rule_suggestion_service.py` - AI-powered rule suggestions
+- `app/services/pattern_service.py` - Log pattern extraction
+- `app/services/playbook_engine.py` - Automated response execution
+- `app/services/quarantine_service.py` - Device quarantine management
+- `app/services/threat_intel_service.py` - Threat intelligence processing
+- `app/services/metrics_service.py` - Prometheus metrics collection
+
+### Database Models
+- `app/models/device.py` - Network devices
+- `app/models/raw_event.py` - Event hypertable (TimescaleDB)
+- `app/models/alert.py` - Security alerts
+- `app/models/anomaly.py` - Detected anomalies
+- `app/models/detection_rule.py` - Custom detection rules
+- `app/models/semantic_analysis.py` - Semantic analysis results
+- `app/models/playbook.py` - Response playbooks
+- `app/models/user.py` - Users and authentication
 
 ### CI/CD
 - `.github/workflows/ci.yml` - Continuous integration
 - `.github/workflows/release.yml` - Release automation
+
+### Frontend Structure
+The React frontend (`frontend/src/`) uses:
+- **Pages** (`pages/`): Route components (Dashboard, Devices, Events, Alerts, Rules, etc.)
+- **Components** (`components/`): Reusable UI components (modals, tables, forms)
+- **API** (`api/`): API client and React Query hooks
+- **Stores** (`stores/`): Zustand state management (auth, theme, help)
+- **Hooks** (`hooks/`): Custom hooks (useWebSocket for real-time updates)
+- **Types** (`types/`): TypeScript type definitions
+
+Key frontend patterns:
+- React Query for server state management
+- Zustand for client state (auth persistence, theme)
+- Tailwind CSS with dark mode support
+- WebSocket for real-time event updates

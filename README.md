@@ -2,18 +2,20 @@
 
 AI-powered home network security monitoring system with multi-source log collection, device inventory, anomaly detection, LLM-assisted threat analysis, and automated response capabilities.
 
-## Current Status: Phase 7 (Technical Debt & DevOps) - COMPLETE
+## Current Status: Phase 9 (Semantic Log Analysis) - COMPLETE
 
 All phases complete! The system provides comprehensive network security monitoring with:
-- Multi-source log collection (API, file, push, UDP flow data)
+- Multi-source log collection (API, file, push, UDP flow data, Grafana Loki)
 - Device inventory with auto-discovery and network topology visualization
 - Anomaly detection with behavioral baselines
 - LLM-powered threat analysis (Claude integration)
+- Semantic log analysis with AI-suggested detection rules
 - Active response (device quarantine via AdGuard/router)
 - Two-factor authentication (TOTP) and dark mode
 - Real-time WebSocket updates and push notifications
 - Threat intelligence feed integration
 - Prometheus metrics and CI/CD pipeline
+- In-app documentation and context-sensitive help
 
 ## Features
 
@@ -25,13 +27,21 @@ All phases complete! The system provides comprehensive network security monitori
 - **Dashboard** - Device list, event feed, alerts, stats overview
 - **TimescaleDB** - Time-series optimized storage for events
 - **Dark Mode** - Full dark theme support
+- **In-App Documentation** - Comprehensive docs page with help panel system
 
 ### Detection & Analysis
 - **Anomaly Detection** - Behavioral baselines with statistical detection
 - **LLM Integration** - Claude-powered alert analysis and natural language queries
+- **Semantic Log Analysis** - Pattern learning, irregular log detection, AI-suggested rules
 - **Threat Intelligence** - Feed integration for IP/domain/URL indicators
 - **Custom Detection Rules** - Visual rule builder for custom alerts
 - **Ollama LLM Monitoring** - Detect prompt injection, jailbreaks, LLM-malware
+
+### AI Features
+- **AI Chat Assistant** - Natural language queries about your network with model selection (Fast/Balanced/Deep)
+- **AI Alert Analysis** - Automated threat assessment with context-aware recommendations
+- **AI Research Queries** - LLM-generated Google search queries for investigating security issues
+- **AI Rule Suggestions** - Automatically suggest detection rules from learned patterns
 
 ### Response & Automation
 - **Active Response** - AdGuard Home and router-level device quarantine
@@ -150,22 +160,27 @@ docker exec netguardian-backend alembic upgrade head
 net-guardian-ai/
 ├── backend/
 │   ├── app/
-│   │   ├── api/v1/          # REST endpoints
+│   │   ├── api/v1/          # REST endpoints (25+ routers)
 │   │   ├── collectors/      # Log collectors (API, file, UDP)
-│   │   ├── parsers/         # Log format parsers
+│   │   ├── parsers/         # Log format parsers (11 types)
 │   │   ├── models/          # SQLAlchemy models
 │   │   ├── events/          # Redis event bus
 │   │   ├── services/        # Business logic services
+│   │   │   └── llm_providers/  # LLM abstraction (Claude, Ollama)
 │   │   └── core/            # Security, caching, rate limiting, middleware
 │   ├── alembic/             # Database migrations
-│   └── tests/               # Backend tests
+│   ├── scripts/             # Utility scripts
+│   │   └── seed_demo_data.py   # Demo data seeder
+│   └── tests/               # Backend tests (250+ tests)
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      # React components
-│   │   ├── pages/           # Page components
+│   │   ├── pages/           # Page components (20 pages)
 │   │   ├── stores/          # Zustand state stores
+│   │   ├── content/         # Help content
 │   │   └── api/             # API client and hooks
 │   └── public/
+│       └── screenshots/     # Landing page screenshots
 ├── agent/                   # Optional endpoint agent
 │   ├── netguardian_agent.py # Standalone monitoring agent
 │   ├── agent_config.yaml.example
@@ -174,8 +189,7 @@ net-guardian-ai/
 │   ├── start-dev.sh          # Linux/macOS startup script
 │   ├── start-dev.ps1         # Windows startup script
 │   ├── stop-dev.sh           # Linux/macOS stop script
-│   ├── stop-dev.ps1          # Windows stop script
-│   └── seed_demo_data.py     # Demo data seeder (in backend/scripts/)
+│   └── stop-dev.ps1          # Windows stop script
 ├── deploy/
 │   ├── docker-compose.yml
 │   ├── Dockerfile.backend
@@ -239,6 +253,32 @@ NTFY_DEFAULT_TOPIC=my-netguardian
 
 See [Configuration Reference](docs/configuration.md) for full documentation.
 
+## UI Pages
+
+The web interface includes the following pages:
+
+| Page | Description |
+|------|-------------|
+| Landing | Public homepage with feature overview and quick start guide |
+| Dashboard | Stats overview, recent alerts, device summary, event feed |
+| Devices | Device inventory with tagging, filtering, and bulk actions |
+| Device Detail | Per-device view with events, baselines, and anomalies |
+| Events | Event log with filtering by type, severity, source, and time |
+| Alerts | Alert management with AI analysis and status workflow |
+| Anomalies | Behavioral anomaly detection results and status management |
+| Rules | Custom detection rule builder with visual condition editor |
+| Threat Intel | Threat intelligence feeds and indicator lookup |
+| Quarantine | Device isolation management and integration status |
+| Topology | Interactive network topology visualization |
+| AI Chat | Natural language queries with model selection |
+| Sources | Log source configuration and management |
+| Log Patterns | Learned log patterns from semantic analysis |
+| Semantic Review | Irregular log review with LLM analysis |
+| Suggested Rules | AI-generated rule suggestions for approval |
+| Users | User management (admin only) |
+| Settings | Notifications, 2FA, data retention, preferences |
+| Docs | Comprehensive in-app documentation |
+
 ## Adding Log Sources
 
 ### Via UI
@@ -266,6 +306,27 @@ curl -X POST http://localhost:8000/api/v1/sources \
     }
   }'
 ```
+
+### Supported Source Types
+- **api_pull** - Poll remote APIs on a schedule
+- **file_watch** - Watch local log files for changes
+- **api_push** - Receive logs via HTTP POST with API key
+- **udp_listen** - Receive UDP packets (NetFlow, sFlow)
+
+### Supported Parsers
+| Parser | Description |
+|--------|-------------|
+| adguard | AdGuard Home DNS query logs |
+| unifi | UniFi Controller logs |
+| pfsense | pfSense/OPNsense firewall logs |
+| loki | Grafana Loki log aggregation |
+| ollama | Ollama LLM server (prompt/response monitoring) |
+| endpoint | NetGuardian endpoint agent data |
+| netflow | NetFlow v5/v9/IPFIX flow data |
+| sflow | sFlow v5 flow data |
+| json | Generic JSON with field mapping |
+| syslog | Standard syslog format (RFC 3164/5424) |
+| custom | Regex-based custom format |
 
 ## Development
 
@@ -406,6 +467,17 @@ All planned phases are complete!
   - API rate limiting
   - CI/CD pipeline (GitHub Actions)
   - Configuration and contributing documentation
+- **Phase 8** (Complete): Landing Page & Help System
+  - Public landing page with feature showcase
+  - Comprehensive in-app documentation
+  - Context-sensitive help panel system
+  - Screenshot gallery with theme toggle
+- **Phase 9** (Complete): Semantic Log Analysis
+  - Pattern learning and normalization
+  - Irregular log detection with LLM review
+  - AI-suggested detection rules
+  - Research query generation for security investigations
+  - Grafana Loki log source support
 
 ## Monitoring
 

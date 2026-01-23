@@ -1,7 +1,7 @@
 # NetGuardian AI - Implementation Status
 
 **Last Updated:** January 2026
-**Current Phase:** Phase 5 (Polish & Extensions) - COMPLETE
+**Current Phase:** Phase 9 (Semantic Log Analysis) - COMPLETE
 
 ---
 
@@ -14,8 +14,13 @@ This document tracks the implementation status of NetGuardian AI against the Pro
 - Phase 2: Anomaly Detection
 - Phase 3: LLM Integration
 - Phase 4: Active Response
+- Phase 5: Polish & Extensions
+- Phase 6: Feature Enhancements
+- Phase 7: Technical Debt & DevOps
+- Phase 8: Landing Page & Help System
+- Phase 9: Semantic Log Analysis
 
-**Current Phase:** Phase 5 - Polish & Extensions
+**Current Status:** All planned phases complete
 
 ---
 
@@ -140,9 +145,9 @@ All core models implemented with Alembic migrations:
 **Configuration (`config.py`):**
 ```python
 anthropic_api_key: str = ""
-llm_model_default: str = "claude-sonnet-4-20250514"
-llm_model_fast: str = "claude-haiku-4-20250514"
-llm_model_deep: str = "claude-sonnet-4-20250514"
+llm_model_default: str = "claude-sonnet-4-latest"
+llm_model_fast: str = "claude-3-5-haiku-latest"
+llm_model_deep: str = "claude-sonnet-4-latest"
 llm_enabled: bool = True
 llm_cache_enabled: bool = True
 ```
@@ -232,7 +237,7 @@ llm_cache_enabled: bool = True
 
 ---
 
-## Phase 5: Polish & Extensions - IN PROGRESS
+## Phase 5: Polish & Extensions - COMPLETE
 
 ### Ollama LLM Monitoring - COMPLETE
 
@@ -392,6 +397,73 @@ HTTP_KEEPALIVE_EXPIRY=30           # Idle connection keepalive
 
 ---
 
+## Phase 6: Feature Enhancements - COMPLETE
+
+### Completed Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Dark Mode | Complete | Full dark theme with system preference detection |
+| WebSocket Real-time | Complete | Live updates for alerts, events, device status |
+| Email Notifications | Complete | SMTP-based alert notifications |
+| ntfy.sh Push | Complete | Push notifications via ntfy.sh |
+| Two-Factor Auth | Complete | TOTP-based 2FA with backup codes |
+| Data Retention | Complete | Configurable auto-cleanup policies |
+| CSV/PDF Export | Complete | Export events, alerts, devices, audit logs |
+| Device Tagging | Complete | Bulk tagging, tag filtering |
+| Detection Rules UI | Complete | Visual rule builder with conditions |
+| Mobile Responsive | Complete | Touch-friendly mobile UI |
+| Threat Intelligence | Complete | External feed integration, indicator lookup |
+
+---
+
+## Phase 7: Technical Debt & DevOps - COMPLETE
+
+### Completed Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Prometheus Metrics | Complete | `/api/v1/metrics` endpoint |
+| Network Topology | Complete | Interactive force-directed graph |
+| Collector Error Handling | Complete | Retry logic, circuit breaker |
+| API Rate Limiting | Complete | Token bucket algorithm |
+| CI/CD Pipeline | Complete | GitHub Actions for lint, test, build |
+| Configuration Docs | Complete | Full environment variable reference |
+
+---
+
+## Phase 8: Landing Page & Help System - COMPLETE
+
+### Completed Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Public Landing Page | Complete | Feature showcase, screenshots |
+| Dashboard Routes | Complete | All dashboard routes under `/dashboard/*` |
+| Help Panel System | Complete | Context-sensitive help per page |
+| Keyboard Shortcuts | Complete | `?` to toggle help, `Esc` to close |
+| In-App Documentation | Complete | Full docs at `/docs` route |
+
+---
+
+## Phase 9: Semantic Log Analysis - COMPLETE
+
+### Completed Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Log Pattern Learning | Complete | Automatic pattern normalization |
+| Rarity Detection | Complete | Flag patterns below threshold |
+| LLM Analysis | Complete | Claude/Ollama for security review |
+| Rule Suggestions | Complete | AI-generated detection rules |
+| Pattern Management | Complete | View, ignore, search patterns |
+| Irregular Log Review | Complete | Review flagged logs with severity |
+| Research Query Generation | Complete | AI-powered search query generation |
+| Background Scheduler | Complete | Periodic automatic analysis |
+| Grafana Loki Parser | Complete | Full Loki query/push API support |
+
+---
+
 ## REST API Endpoints Summary
 
 ### Authentication (`/api/v1/auth`)
@@ -467,6 +539,102 @@ HTTP_KEEPALIVE_EXPIRY=30           # Idle connection keepalive
 - `POST /start` - Start monitoring (admin)
 - `POST /stop` - Stop monitoring (admin)
 
+### Detection Rules (`/api/v1/rules`)
+- `GET /` - List detection rules
+- `GET /fields` - Available condition fields
+- `GET /{id}` - Get rule
+- `POST /` - Create rule (admin)
+- `PATCH /{id}` - Update rule (admin)
+- `DELETE /{id}` - Delete rule (admin)
+- `POST /{id}/enable` - Enable rule (admin)
+- `POST /{id}/disable` - Disable rule (admin)
+- `POST /test` - Test rule against sample event
+
+### Threat Intelligence (`/api/v1/threat-intel`)
+- `GET /feeds` - List threat feeds
+- `GET /feeds/{id}` - Get feed
+- `POST /feeds` - Create feed (admin)
+- `PATCH /feeds/{id}` - Update feed (admin)
+- `DELETE /feeds/{id}` - Delete feed (admin)
+- `POST /feeds/{id}/fetch` - Trigger feed fetch
+- `POST /feeds/{id}/enable` - Enable feed
+- `POST /feeds/{id}/disable` - Disable feed
+- `GET /indicators` - List indicators
+- `POST /check` - Check value against indicators
+- `GET /stats` - Threat intel statistics
+
+### Semantic Analysis (`/api/v1/semantic`)
+- `GET /config` - List all semantic configs
+- `GET /config/{source_id}` - Get config for source
+- `PUT /config/{source_id}` - Update config (admin)
+- `GET /patterns` - List log patterns
+- `GET /patterns/{source_id}` - Patterns for source
+- `PATCH /patterns/{id}` - Update pattern (admin)
+- `GET /irregular` - List irregular logs
+- `GET /irregular/{id}` - Get irregular log
+- `PATCH /irregular/{id}/review` - Mark reviewed
+- `GET /irregular/{id}/research-query` - Generate AI research query
+- `GET /runs` - List analysis runs
+- `GET /runs/{source_id}` - Runs for source
+- `POST /runs/{source_id}/trigger` - Trigger analysis (admin)
+- `GET /stats` - Semantic stats
+- `GET /stats/{source_id}` - Stats for source
+- `GET /rules` - List suggested rules
+- `GET /rules/pending` - Pending rules
+- `GET /rules/history` - Rule history
+- `GET /rules/{id}` - Get suggested rule
+- `POST /rules/{id}/approve` - Approve rule (admin)
+- `POST /rules/{id}/reject` - Reject rule (admin)
+
+### Network Topology (`/api/v1/topology`)
+- `GET /` - Network topology data
+- `GET /device/{id}/connections` - Device connections
+
+### Notifications (`/api/v1/notifications`)
+- `GET /preferences` - Get user preferences
+- `PUT /preferences` - Update preferences
+- `POST /test` - Send test notification
+- `GET /status` - Service status
+
+### Admin (`/api/v1/admin`)
+- `GET /retention/policies` - List retention policies
+- `GET /retention/policies/{id}` - Get policy
+- `PATCH /retention/policies/{id}` - Update policy
+- `POST /retention/cleanup` - Run cleanup
+- `GET /retention/stats` - Storage statistics
+
+### Metrics (`/api/v1/metrics`)
+- `GET /` - Prometheus metrics
+
+### Audit (`/api/v1/audit`)
+- `GET /` - List audit logs (admin)
+- `GET /device/{id}` - Device audit history
+- `GET /quarantine-history` - Quarantine actions
+- `GET /stats` - Audit statistics
+- `GET /export/csv` - Export CSV (admin)
+- `GET /export/pdf` - Export PDF (admin)
+
+### Integrations (`/api/v1/integrations`)
+- `GET /status` - Integration status
+- `POST /adguard/test` - Test AdGuard
+- `POST /router/test` - Test router
+- `GET /adguard/blocked` - AdGuard blocked list
+- `GET /router/blocked` - Router blocked list
+- `POST /sync-quarantine` - Sync quarantine
+
+### Playbooks (`/api/v1/playbooks`)
+- `GET /` - List playbooks
+- `POST /` - Create playbook
+- `GET /{id}` - Get playbook
+- `PATCH /{id}` - Update playbook
+- `DELETE /{id}` - Delete playbook
+- `POST /{id}/execute` - Execute playbook
+- `POST /{id}/activate` - Activate playbook
+- `POST /{id}/deactivate` - Deactivate playbook
+- `GET /{id}/executions` - List executions
+- `GET /actions/types` - List action types
+- `GET /triggers/types` - List trigger types
+
 ---
 
 ## Test Coverage
@@ -481,6 +649,7 @@ HTTP_KEEPALIVE_EXPIRY=30           # Idle connection keepalive
 | Endpoint Parser | 11 | Passing |
 | NetFlow Parser | 11 | Passing |
 | sFlow Parser | 11 | Passing |
+| Loki Parser | 33 | Passing |
 | Baseline Service | 14 | Passing |
 | Anomaly Service | 16 | Passing |
 | LLM Service | 22 | Passing |
@@ -488,7 +657,13 @@ HTTP_KEEPALIVE_EXPIRY=30           # Idle connection keepalive
 | Integration Services | 15 | Passing |
 | Audit Service | 12 | Passing |
 | Playbook Engine | 18 | Passing |
-| **Total** | **256** | **All Passing** |
+| Pattern Normalizer | 35+ | Passing |
+| Pattern Service | 10+ | Passing |
+| LLM Providers | 15+ | Passing |
+| Semantic Analysis Service | 10+ | Passing |
+| Rule Suggestion Service | 10+ | Passing |
+| Semantic API | 10+ | Passing |
+| **Total** | **380+** | **All Passing** |
 
 ---
 
@@ -511,8 +686,8 @@ JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 # LLM (Phase 3)
 ANTHROPIC_API_KEY=sk-ant-your-api-key
 LLM_ENABLED=true
-LLM_MODEL_DEFAULT=claude-sonnet-4-20250514
-LLM_MODEL_FAST=claude-haiku-4-20250514
+LLM_MODEL_DEFAULT=claude-sonnet-4-latest
+LLM_MODEL_FAST=claude-3-5-haiku-latest
 LLM_CACHE_ENABLED=true
 
 # AdGuard Home Integration (Phase 4)

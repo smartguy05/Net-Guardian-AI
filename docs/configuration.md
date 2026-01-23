@@ -197,9 +197,9 @@ Configure Anthropic Claude for AI-powered analysis.
 |----------|------|---------|-------------|
 | `ANTHROPIC_API_KEY` | string | `` | Anthropic API key |
 | `LLM_ENABLED` | bool | `true` | Enable LLM features |
-| `LLM_MODEL_DEFAULT` | string | `claude-sonnet-4-20250514` | Model for general analysis |
-| `LLM_MODEL_FAST` | string | `claude-haiku-4-20250514` | Model for quick triage |
-| `LLM_MODEL_DEEP` | string | `claude-sonnet-4-20250514` | Model for detailed analysis |
+| `LLM_MODEL_DEFAULT` | string | `claude-sonnet-4-latest` | Model for general analysis |
+| `LLM_MODEL_FAST` | string | `claude-3-5-haiku-latest` | Model for quick triage |
+| `LLM_MODEL_DEEP` | string | `claude-sonnet-4-latest` | Model for detailed analysis |
 | `LLM_MAX_TOKENS` | int | `4096` | Maximum tokens per response |
 | `LLM_TEMPERATURE` | float | `0.3` | Model temperature (0-1) |
 | `LLM_CACHE_ENABLED` | bool | `true` | Enable Anthropic prompt caching |
@@ -209,7 +209,7 @@ Configure Anthropic Claude for AI-powered analysis.
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
 LLM_ENABLED=true
-LLM_MODEL_DEFAULT=claude-sonnet-4-20250514
+LLM_MODEL_DEFAULT=claude-sonnet-4-latest
 ```
 
 ---
@@ -277,6 +277,8 @@ Monitor local Ollama LLM instances for prompt injection attacks.
 | `OLLAMA_PROMPT_ANALYSIS_ENABLED` | bool | `true` | Use Claude to analyze prompts |
 | `OLLAMA_ALERT_ON_INJECTION` | bool | `true` | Create alerts for detected attacks |
 | `OLLAMA_INJECTION_SEVERITY` | string | `high` | Alert severity for injections |
+| `OLLAMA_DEFAULT_MODEL` | string | `llama3.2` | Default model for semantic analysis |
+| `OLLAMA_TIMEOUT_SECONDS` | int | `120` | Timeout for Ollama API requests |
 
 ---
 
