@@ -160,6 +160,7 @@ Remaining tasks organized by priority.
 - [x] docs/deployment-guide.md - Deployment instructions
 - [x] docs/user-guide.md - User documentation
 - [x] docs/configuration.md - Configuration reference
+- [x] docs/architecture-guide.md - Comprehensive architecture learning guide
 - [x] CLAUDE.md - Claude Code guidance
 - [x] CONTRIBUTING.md - Contributing guidelines
 - [x] .memories/* - Project memory files

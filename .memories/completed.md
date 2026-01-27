@@ -4,6 +4,24 @@ Tasks completed during implementation.
 
 ---
 
+## Documentation - Architecture Learning Guide (January 2026)
+
+### docs/architecture-guide.md
+Comprehensive step-by-step guide covering:
+- [x] High-level system overview and architecture diagram
+- [x] Core concepts (registry pattern, ParseResult, async patterns)
+- [x] Data collection pipeline (collectors, parsers, error handling)
+- [x] Event storage & TimescaleDB hypertables
+- [x] Anomaly detection system (baselines, z-scores, severity)
+- [x] LLM integration (provider pattern, semantic analysis, rule suggestions)
+- [x] Security & authentication (JWT, RBAC, 2FA, rate limiting)
+- [x] Frontend architecture (Zustand, React Query, API client)
+- [x] Real-time updates (WebSocket implementation)
+- [x] Automated response (playbooks, quarantine service)
+- [x] Complete data flow walkthrough (DNS query to alert)
+
+---
+
 ## Test Suite Improvements - API Tests (January 2026)
 
 ### Users API Tests (22 tests)
