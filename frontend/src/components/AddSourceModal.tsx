@@ -211,21 +211,21 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
         />
 
         {/* Modal */}
-        <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
+        <div className="relative bg-white dark:bg-zinc-800 rounded-xl shadow-xl w-full max-w-lg">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-700">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-100 rounded-lg">
-                <Database className="w-5 h-5 text-primary-600" />
+              <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                <Database className="w-5 h-5 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Add Log Source</h2>
-                <p className="text-sm text-gray-500">Step {step} of 2</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Add Log Source</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Step {step} of 2</p>
               </div>
             </div>
             <button
               onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700"
             >
               <X className="w-5 h-5" />
             </button>
@@ -237,7 +237,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
               <div className="space-y-4">
                 {/* Source Type Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Source Type
                   </label>
                   <div className="grid grid-cols-1 gap-2">
@@ -251,22 +251,22 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                           className={clsx(
                             'flex items-start gap-3 p-3 rounded-lg border-2 text-left transition-colors',
                             sourceType === option.value
-                              ? 'border-primary-500 bg-primary-50'
-                              : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                              : 'border-gray-200 dark:border-zinc-600 hover:border-gray-300 dark:hover:border-zinc-500'
                           )}
                         >
                           <Icon className={clsx(
                             'w-5 h-5 mt-0.5',
-                            sourceType === option.value ? 'text-primary-600' : 'text-gray-400'
+                            sourceType === option.value ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'
                           )} />
                           <div>
                             <div className={clsx(
                               'font-medium',
-                              sourceType === option.value ? 'text-primary-900' : 'text-gray-900'
+                              sourceType === option.value ? 'text-primary-900 dark:text-primary-100' : 'text-gray-900 dark:text-white'
                             )}>
                               {option.label}
                             </div>
-                            <div className="text-sm text-gray-500">{option.description}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{option.description}</div>
                           </div>
                         </button>
                       );
@@ -276,7 +276,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
                 {/* Parser Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Parser Type
                   </label>
                   <select
@@ -294,7 +294,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
                 {/* ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Source ID
                   </label>
                   <input
@@ -305,14 +305,14 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                     className={clsx('input', errors.id && 'border-danger-500')}
                   />
                   {errors.id && <p className="mt-1 text-sm text-danger-600">{errors.id}</p>}
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Unique identifier (lowercase, hyphens allowed)
                   </p>
                 </div>
 
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Display Name
                   </label>
                   <input
@@ -327,8 +327,8 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description <span className="text-gray-400">(optional)</span>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description <span className="text-gray-400 dark:text-gray-500">(optional)</span>
                   </label>
                   <textarea
                     value={description}
@@ -345,7 +345,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                 {sourceType === 'api_pull' && (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         API URL
                       </label>
                       <input
@@ -359,7 +359,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Authentication
                       </label>
                       <select
@@ -377,7 +377,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                     {authType === 'basic' && (
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Username
                           </label>
                           <input
@@ -389,7 +389,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                           {errors.username && <p className="mt-1 text-sm text-danger-600">{errors.username}</p>}
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Password
                           </label>
                           <input
@@ -405,7 +405,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
                     {(authType === 'bearer' || authType === 'api_key') && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                           {authType === 'bearer' ? 'Bearer Token' : 'API Key'}
                         </label>
                         <input
@@ -419,7 +419,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                     )}
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Poll Interval (seconds)
                       </label>
                       <input
@@ -437,7 +437,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                 {/* File Watch Configuration */}
                 {sourceType === 'file_watch' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Log File Path
                     </label>
                     <input
@@ -448,7 +448,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                       className={clsx('input', errors.filePath && 'border-danger-500')}
                     />
                     {errors.filePath && <p className="mt-1 text-sm text-danger-600">{errors.filePath}</p>}
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Path inside the container. Mount external logs to /logs directory.
                     </p>
                   </div>
@@ -456,23 +456,23 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
                 {/* API Push Info */}
                 {sourceType === 'api_push' && (
-                  <div className="p-4 bg-primary-50 rounded-lg">
-                    <p className="text-sm text-primary-800">
+                  <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                    <p className="text-sm text-primary-800 dark:text-primary-200">
                       An API key will be automatically generated for this source.
                       External services can push logs to:
                     </p>
-                    <code className="mt-2 block text-xs bg-white p-2 rounded border">
+                    <code className="mt-2 block text-xs bg-white dark:bg-zinc-800 p-2 rounded border border-gray-200 dark:border-zinc-600 text-gray-800 dark:text-gray-200">
                       POST /api/v1/logs/ingest
                     </code>
-                    <p className="mt-2 text-xs text-primary-600">
+                    <p className="mt-2 text-xs text-primary-600 dark:text-primary-400">
                       Include the API key in the X-API-Key header.
                     </p>
                   </div>
                 )}
 
                 {errors.submit && (
-                  <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg">
-                    <p className="text-sm text-danger-700">{errors.submit}</p>
+                  <div className="p-3 bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800 rounded-lg">
+                    <p className="text-sm text-danger-700 dark:text-danger-400">{errors.submit}</p>
                   </div>
                 )}
               </div>
@@ -480,7 +480,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between p-4 border-t bg-gray-50 rounded-b-xl">
+          <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 rounded-b-xl">
             {step === 1 ? (
               <>
                 <button

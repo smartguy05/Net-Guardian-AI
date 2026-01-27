@@ -38,7 +38,7 @@ Remaining tasks organized by priority.
 
 ---
 
-## Phase 8: Landing Page & Help System (COMPLETE)
+## Phase 8: Landing Page & Help System (FULLY COMPLETE)
 
 ### Completed
 - [x] Public landing page at `/` route
@@ -48,13 +48,8 @@ Remaining tasks organized by priority.
 - [x] Keyboard shortcuts (? to toggle, Esc to close)
 - [x] Help content for all 14 pages
 - [x] Screenshots directory with placeholder/README
-
-### Remaining for Screenshots
-- [ ] Install and configure Playwright MCP server
-- [ ] Capture screenshots using Playwright MCP (see SCREENSHOT_PLAN.md)
-- [ ] Screenshots needed: dashboard, devices, alerts, anomalies, events, topology, rules, chat, settings
-- [ ] Each in both light and dark themes (18 total)
-- [ ] Verify all 18 screenshots in `/public/screenshots/`
+- [x] All 18 screenshots captured (9 pages × 2 themes) via Playwright MCP
+- [x] Screenshots saved to `frontend/public/screenshots/`
 
 ---
 
@@ -92,16 +87,47 @@ Remaining tasks organized by priority.
 
 ---
 
-## Dark Theme Fixes (Ongoing)
+## Dark Theme Fixes (COMPLETE)
 
 ### Completed Modal Theming
 - [x] EditUserModal - dark theme contrast fixed
 - [x] AddUserModal - dark theme contrast fixed
 - [x] TestRuleModal - legacy conditions format handling
+- [x] AddSourceModal - full dark theme styling (modal, labels, buttons, footer)
+- [x] AddFeedModal - already had proper dark theme styling
+- [x] CreateRuleModal - already had proper dark theme styling
+- [x] EditRuleModal - already had proper dark theme styling
+- [x] BulkTagModal - already had proper dark theme styling
 
-### Remaining UI Polish
-- [ ] Review all modals for dark theme consistency (if any missed)
-- [ ] Verify all dropdown menus have proper dark theme styling
+### Completed Dropdown Theming
+- [x] ExportButton - already had proper dark theme styling
+- [x] TagFilter - already had proper dark theme styling
+- [x] UsersPage action menu - already had proper dark theme styling
+- [x] ThreatIntelPage feed menu - fixed text colors for dark mode
+
+---
+
+## Test Suite Improvements (In Progress)
+
+### Completed
+- [x] Phase 1: Test Infrastructure (conftest.py, factories.py)
+- [x] Phase 2.1: Custom parser tests
+- [x] Phase 2.2-2.3: Parser improvements (NetFlow v9, binary sFlow, VLAN, IPv6)
+- [x] Phase 2.4: Cross-parser improvements (unicode, boundary tests, malformed input, IPv6)
+- [x] Phase 3.1: Error handler tests
+- [x] Phase 3.2-3.5: Collector tests (file, registry, UDP, API pull improvements)
+- [x] Phase 4.1: Pattern service tests
+- [x] Phase 5.1: Clean up useless API tests
+- [x] Phase 5.2-5.4: Real API tests (auth, devices, alerts)
+
+### Remaining (Lower Priority)
+- [ ] Phase 4.2: BaselineService tests
+- [ ] Phase 4.3: AnomalyService tests
+- [ ] Phase 4.4: SemanticAnalysisService tests (get_config success, create_config, etc.)
+- [ ] Phase 4.5: RuleSuggestionService tests (create_rule_from_suggestion, etc.)
+- [ ] Phase 4.6: LLM API call tests (mocked Anthropic client)
+- [ ] Phase 5.5: test_users_api.py (list/create/update/delete users)
+- [ ] Phase 5.6: test_rules_api.py (list/create/update/delete rules)
 
 ---
 

@@ -4,6 +4,62 @@ Tasks completed during implementation.
 
 ---
 
+## Dark Theme Polish (January 2026)
+
+### Modal and Dropdown Dark Theme Review - COMPLETE
+- [x] Reviewed all 8 modal components for dark theme consistency
+- [x] Fixed AddSourceModal.tsx:
+  - Added `dark:bg-zinc-800` to modal container
+  - Added `dark:border-zinc-700` to header/footer borders
+  - Added `dark:bg-primary-900/30` to header icon background
+  - Added dark text variants to all labels (`dark:text-gray-300`)
+  - Added dark text to title/description (`dark:text-white`, `dark:text-gray-400`)
+  - Added dark variants to source type selection buttons
+  - Added dark variants to API Push info box
+  - Added dark variants to error message box
+  - Added dark footer background (`dark:bg-zinc-800/50`)
+- [x] Fixed ThreatIntelPage.tsx:
+  - Added `dark:text-gray-200` to feed action menu items
+- [x] Verified other modals already had proper dark theme styling:
+  - AddFeedModal, CreateRuleModal, EditRuleModal, BulkTagModal
+  - EditUserModal, AddUserModal, TestRuleModal
+- [x] Verified dropdowns already had proper dark theme styling:
+  - ExportButton, TagFilter, UsersPage action menu
+
+---
+
+## Screenshot Capture for Landing Page & Help System (January 2026)
+
+### Playwright MCP Screenshots - COMPLETE
+- [x] Configured Playwright MCP browser automation
+- [x] Set browser viewport to 1920x1080 for consistent screenshots
+- [x] Logged in with demo_admin credentials
+- [x] Captured all 9 dark mode screenshots:
+  - dashboard-dark.png
+  - devices-dark.png
+  - alerts-dark.png
+  - anomalies-dark.png
+  - events-dark.png
+  - topology-dark.png
+  - rules-dark.png
+  - chat-dark.png
+  - settings-dark.png
+- [x] Toggled to light theme via Settings button
+- [x] Captured all 9 light mode screenshots:
+  - dashboard-light.png
+  - devices-light.png
+  - alerts-light.png
+  - anomalies-light.png
+  - events-light.png
+  - topology-light.png
+  - rules-light.png
+  - chat-light.png
+  - settings-light.png
+- [x] All 18 screenshots saved to `frontend/public/screenshots/`
+- [x] Screenshots show realistic demo data from seeded database
+
+---
+
 ## Help Content Accuracy Review (January 2026)
 
 ### Help System Content Update - COMPLETE
@@ -1402,3 +1458,158 @@ Tasks completed during implementation.
   - Verified events stored in database
   - Verified events retrievable via `/api/v1/events`
   - Verified source metadata (event_count, last_event_at) updated
+
+---
+
+## Test Suite Improvements (January 2026)
+
+### Phase 1: Test Infrastructure - COMPLETE
+- [x] Expanded `backend/tests/conftest.py` with shared fixtures
+  - mock_db_session, mock_redis, freeze_time
+  - sample_device, sample_event, sample_alert, sample_user, sample_source, sample_rule
+  - auth_headers fixtures for different user roles
+  - generate_events factory fixture
+- [x] Created `backend/tests/factories.py`
+  - DeviceFactory, EventFactory, AlertFactory
+  - UserFactory, SourceFactory, RuleFactory
+  - Each with build() method and specialized builders
+
+### Phase 2.1: Custom Parser Tests - COMPLETE
+- [x] Created `backend/tests/parsers/test_custom_parser.py`
+  - Pattern matching tests (single, multiple patterns)
+  - Named capture groups for standard fields
+  - Timestamp parsing with custom formats
+  - Severity mapping tests
+  - Field mapping configuration tests
+  - Edge cases (empty input, unicode, IPv6)
+
+### Phase 3.1: Error Handler Tests - COMPLETE
+- [x] Created `backend/tests/collectors/test_error_handler.py`
+  - categorize_error() for all httpx exception types
+  - RetryConfig dataclass validation
+  - CircuitBreaker state machine tests (CLOSED→OPEN→HALF_OPEN)
+  - RetryHandler exponential backoff and max retries
+  - ErrorTracker recording, rate calculation, summary generation
+
+### Phase 3.2-3.5: Collector Tests - COMPLETE
+- [x] Created `backend/tests/collectors/test_file_collector.py`
+  - FileWatchCollector initialization
+  - File opening with position tracking (read_from_end)
+  - Line reading with batch limits
+  - Start/stop lifecycle
+  - test_connection() method tests
+  - FileEventHandler tests
+- [x] Created `backend/tests/collectors/test_registry.py`
+  - CollectorRegistry.register() and get() methods
+  - list_collectors() and is_registered() tests
+  - @register_collector decorator tests
+  - get_collector() convenience function tests
+- [x] Created `backend/tests/collectors/test_udp_listener_collector.py`
+  - UDPListenerCollector initialization with queue_size, allowed_sources
+  - UDP transport creation and cleanup
+  - Source IP filtering in collect()
+  - UDPServerProtocol datagram handling tests
+  - test_connection() port binding tests
+- [x] Improved `backend/tests/collectors/test_api_pull_collector.py`
+  - HTTP error handling tests (401, 429, 500)
+  - Circuit breaker integration tests
+  - Retry behavior tests
+  - POST method tests
+  - collect() async generator tests
+  - Timeout configuration tests
+  - Error tracking tests
+  - Timestamp and offset pagination tests
+
+### Phase 4: Service Test Improvements - COMPLETE
+- [x] Expanded `backend/tests/services/test_pattern_service.py` with 8 new test classes
+  - get_pattern_by_hash, get_pattern_by_id
+  - get_pattern_stats, mark_pattern_ignored
+  - get_patterns_for_source, get_pattern_count
+  - delete_pattern, record_pattern (fixed mock)
+
+### Phase 5: API Tests - COMPLETE
+- [x] Cleaned up `backend/tests/api/test_semantic_api.py`
+  - Removed 12 useless Pydantic model tests
+  - Kept router setup, endpoint paths, HTTP methods tests
+- [x] Created `backend/tests/api/test_auth_api.py`
+  - Login tests (valid/invalid credentials, disabled user)
+  - 2FA verification flow tests
+  - Token refresh tests
+  - Password change validation tests
+  - Role requirement tests
+- [x] Created `backend/tests/api/test_devices_api.py`
+  - List devices with pagination/filters
+  - Get device (found/not found)
+  - Update device tests
+  - Quarantine/release device tests
+  - Tag management tests (add/remove/bulk)
+  - Export CSV tests
+- [x] Created `backend/tests/api/test_alerts_api.py`
+  - List alerts with pagination/filters
+  - Get/acknowledge/resolve alert tests
+  - Mark false positive tests
+  - LLM analysis trigger tests
+  - Authorization tests
+
+### Phase 2.2-2.3: Parser Improvements - COMPLETE
+- [x] Added NetFlow v9 tests to `backend/tests/parsers/test_netflow_parser.py`
+  - Template parsing and caching
+  - Data flowset parsing with templates
+  - Template update/override behavior
+  - Mixed template/data packets
+  - Multiple data records in one flowset
+  - Options template handling (skipped)
+  - Header truncation handling
+- [x] Added severity detection tests
+  - Port scan detection (many packets, few bytes)
+  - SYN flood detection
+  - Normal traffic severity (DEBUG)
+- [x] Added field extraction tests
+  - Alternative JSON field names (source_ip, octets)
+  - Missing timestamp handling
+  - Exporter IP configuration
+- [x] Added sFlow binary parsing tests to `backend/tests/parsers/test_sflow_parser.py`
+  - Complete flow sample parsing from binary
+  - Raw packet header extraction (Ethernet/IP/TCP/UDP)
+  - Multiple flow samples in one datagram
+  - Counter samples with include_counters option
+  - Expanded flow samples (type 3)
+  - Mixed sample types
+  - UDP and ICMP protocol handling
+  - Agent IP extraction
+- [x] Added VLAN parsing tests
+  - VLAN tag extraction from 802.1Q headers
+- [x] Added IPv6 tests
+  - IPv6 packet parsing in flow samples
+  - IPv6 agent address handling
+- [x] Added edge case tests
+  - Truncated samples
+  - Unknown sample types
+  - Empty flow samples
+  - Unknown record types
+
+### Phase 2.4: Cross-Parser Improvements - COMPLETE
+- [x] Created `backend/tests/parsers/test_cross_parser.py` with 49 tests
+  - Unicode handling tests (13 tests)
+    - JSON, Syslog, Endpoint, Custom, NetFlow, sFlow, Loki parsers
+    - Chinese, Russian, Arabic, emoji characters
+  - Boundary condition tests (16 tests)
+    - Very long strings (100KB messages)
+    - Empty values, null fields, empty objects
+    - Whitespace handling
+    - Special characters (tabs, newlines, control chars)
+  - Malformed input tests (12 tests)
+    - Invalid data types (numbers, booleans, None)
+    - Invalid timestamps, far-future timestamps
+    - Invalid IP addresses
+    - Deeply nested data, large arrays
+  - IPv6 address tests (5 tests)
+    - Full and compressed IPv6 formats
+    - IPv4-mapped IPv6 addresses
+  - Concurrent parsing tests (3 tests)
+    - Parser state isolation
+
+### Test Count Summary
+- Total tests: 488 → 804
+- New test files created: 8
+- Existing files improved: 5

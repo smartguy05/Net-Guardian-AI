@@ -130,7 +130,7 @@ function FeedCard({
                       onRefresh(feed.id);
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" />
                     Fetch Now
@@ -140,7 +140,7 @@ function FeedCard({
                       onToggle(feed.id, !feed.enabled);
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-700 flex items-center gap-2"
                   >
                     {feed.enabled ? (
                       <>

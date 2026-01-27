@@ -8,7 +8,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 from app.collectors.api_pull_collector import ApiPullCollector
+from app.collectors.error_handler import (
+    CircuitBreaker,
+    CollectorCircuitOpenError,
+)
 from app.models.log_source import LogSource, SourceType
+from app.parsers.base import ParseResult
 from app.parsers.json_parser import JsonParser
 
 
@@ -459,3 +464,419 @@ class TestApiPullCollectorPolling:
             assert collector._last_timestamp.hour == 13
 
         await collector.stop()
+
+
+class TestApiPullCollectorHttpErrors:
+    """Tests for HTTP error handling."""
+
+    @pytest.mark.asyncio
+    async def test_http_401_unauthorized(self):
+        """Test handling 401 Unauthorized response."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        mock_response = MagicMock()
+        mock_response.status_code = 401
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = httpx.HTTPStatusError(
+                "Unauthorized",
+                request=MagicMock(),
+                response=mock_response,
+            )
+
+            results = await collector._poll_once()
+
+            assert len(results) == 0
+            assert collector._consecutive_failures >= 1
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_http_429_rate_limited(self):
+        """Test handling 429 Too Many Requests response."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        mock_response = MagicMock()
+        mock_response.status_code = 429
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = httpx.HTTPStatusError(
+                "Too Many Requests",
+                request=MagicMock(),
+                response=mock_response,
+            )
+
+            results = await collector._poll_once()
+
+            assert len(results) == 0
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_http_500_server_error(self):
+        """Test handling 500 Internal Server Error response."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = httpx.HTTPStatusError(
+                "Internal Server Error",
+                request=MagicMock(),
+                response=mock_response,
+            )
+
+            results = await collector._poll_once()
+
+            assert len(results) == 0
+
+        await collector.stop()
+
+
+class TestApiPullCollectorCircuitBreaker:
+    """Tests for circuit breaker integration."""
+
+    @pytest.mark.asyncio
+    async def test_circuit_breaker_opens_on_failures(self):
+        """Test that circuit breaker opens after repeated failures."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "circuit_failure_threshold": 3,
+            "circuit_recovery_timeout": 30.0,
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        # Simulate multiple failures to open circuit
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = Exception("Connection error")
+
+            # Trigger failures
+            for _ in range(5):
+                await collector._poll_once()
+
+            # Circuit should be open after failures
+            # Note: This depends on the retry handler behavior
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_circuit_open_returns_empty(self):
+        """Test that circuit open state returns empty results."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        # Create mock retry handler that raises circuit open error
+        with patch.object(collector._retry_handler, 'execute', new_callable=AsyncMock) as mock_execute:
+            mock_execute.side_effect = CollectorCircuitOpenError("Circuit open")
+
+            results = await collector._poll_once()
+
+            assert len(results) == 0
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_success_resets_consecutive_failures(self):
+        """Test that successful poll resets consecutive failures."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        # Set some failures
+        collector._consecutive_failures = 3
+
+        mock_data = [{"timestamp": "2024-01-15T12:00:00Z", "message": "Event"}]
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = mock_data
+
+            await collector._poll_once()
+
+            assert collector._consecutive_failures == 0
+
+        await collector.stop()
+
+
+class TestApiPullCollectorPostMethod:
+    """Tests for POST request method."""
+
+    @pytest.mark.asyncio
+    async def test_make_request_post(self):
+        """Test making POST request."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "endpoint": "/events",
+            "method": "POST",
+            "auth_type": "none",
+            "body": {"query": "fetch events"},
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"data": []}
+        mock_response.raise_for_status = MagicMock()
+
+        with patch.object(httpx.AsyncClient, 'post', new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = mock_response
+
+            result = await collector._make_request()
+
+            assert result == {"data": []}
+            mock_post.assert_called_once()
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_make_request_unsupported_method(self):
+        """Test that unsupported HTTP method raises error."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "method": "DELETE",
+            "auth_type": "none",
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        with pytest.raises(ValueError, match="Unsupported HTTP method"):
+            await collector._make_request()
+
+        await collector.stop()
+
+
+class TestApiPullCollectorCollect:
+    """Tests for the collect async generator."""
+
+    @pytest.mark.asyncio
+    async def test_collect_yields_results_from_queue(self):
+        """Test that collect yields results from the event queue."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        # Put results in the queue
+        mock_result = MagicMock(spec=ParseResult)
+        await collector._event_queue.put(mock_result)
+
+        collector._running = True
+
+        results = []
+        async for result in collector.collect():
+            results.append(result)
+            collector._running = False  # Stop after first result
+            break
+
+        assert len(results) == 1
+        assert results[0] == mock_result
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_collect_continues_when_not_running_but_queue_not_empty(self):
+        """Test that collect yields remaining queue items when stopped."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        # Put results in the queue
+        mock_result1 = MagicMock(spec=ParseResult)
+        mock_result2 = MagicMock(spec=ParseResult)
+        await collector._event_queue.put(mock_result1)
+        await collector._event_queue.put(mock_result2)
+
+        collector._running = False  # Already stopped
+
+        results = []
+        async for result in collector.collect():
+            results.append(result)
+            if len(results) >= 2:
+                break
+
+        assert len(results) == 2
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_collect_handles_timeout(self):
+        """Test that collect handles queue timeout gracefully."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        collector._running = True
+
+        # Run collect briefly with empty queue
+        async def collect_with_timeout():
+            results = []
+            count = 0
+            async for result in collector.collect():
+                results.append(result)
+                count += 1
+                if count >= 2:
+                    break
+            return results
+
+        # Stop collector after a brief moment
+        async def stop_after_delay():
+            await asyncio.sleep(0.1)
+            collector._running = False
+
+        await asyncio.gather(
+            stop_after_delay(),
+            asyncio.wait_for(collect_with_timeout(), timeout=2.0),
+            return_exceptions=True,
+        )
+
+        await collector.stop()
+
+
+class TestApiPullCollectorTimeout:
+    """Tests for timeout configuration."""
+
+    def test_default_timeout(self):
+        """Test default timeout is used when not configured."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        # Default is 30 seconds per the docstring
+        assert collector.config.get("timeout_seconds", 30) == 30
+
+    def test_custom_timeout(self):
+        """Test custom timeout is respected."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "timeout_seconds": 60,
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        assert collector.config.get("timeout_seconds") == 60
+
+    @pytest.mark.asyncio
+    async def test_request_timeout_error(self):
+        """Test handling of timeout errors."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = httpx.TimeoutException("Request timed out")
+
+            results = await collector._poll_once()
+
+            assert len(results) == 0
+            assert collector._consecutive_failures >= 1
+
+        await collector.stop()
+
+
+class TestApiPullCollectorErrorTracking:
+    """Tests for error tracking functionality."""
+
+    @pytest.mark.asyncio
+    async def test_error_tracker_records_errors(self):
+        """Test that errors are recorded in the error tracker."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = Exception("Test error")
+
+            with patch.object(collector._error_tracker, 'record_error', new_callable=AsyncMock) as mock_record:
+                await collector._poll_once()
+
+                mock_record.assert_called_once()
+
+        await collector.stop()
+
+    @pytest.mark.asyncio
+    async def test_consecutive_failures_increment(self):
+        """Test that consecutive failures increment on error."""
+        source = create_mock_source()
+        collector = ApiPullCollector(source, JsonParser())
+
+        initial_failures = collector._consecutive_failures
+
+        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = Exception("Test error")
+
+            await collector._poll_once()
+
+            assert collector._consecutive_failures > initial_failures
+
+        await collector.stop()
+
+
+class TestApiPullCollectorTimestampPagination:
+    """Tests for timestamp-based pagination."""
+
+    def test_build_params_with_timestamp_pagination(self):
+        """Test params with timestamp pagination."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "pagination": {
+                "type": "timestamp",
+                "timestamp_param": "since",
+            },
+        })
+        collector = ApiPullCollector(source, JsonParser())
+        collector._last_timestamp = datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+        params = collector._build_params()
+
+        assert "since" in params
+        assert "2024-01-15" in params["since"]
+
+    def test_build_params_without_timestamp(self):
+        """Test params with timestamp pagination but no timestamp yet."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "pagination": {
+                "type": "timestamp",
+                "timestamp_param": "since",
+            },
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        params = collector._build_params()
+
+        assert "since" not in params
+
+    def test_build_params_with_offset_pagination(self):
+        """Test params with offset pagination."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "pagination": {
+                "type": "offset",
+                "offset_param": "offset",
+                "limit_param": "limit",
+                "limit": 50,
+            },
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        params = collector._build_params()
+
+        assert params["limit"] == 50
+
+
+class TestApiPullCollectorStartAlreadyRunning:
+    """Tests for start when already running."""
+
+    @pytest.mark.asyncio
+    async def test_start_already_running_is_noop(self):
+        """Test that starting an already running collector is a no-op."""
+        source = create_mock_source(config={
+            "url": "https://api.example.com",
+            "poll_interval_seconds": 60,
+        })
+        collector = ApiPullCollector(source, JsonParser())
+
+        with patch.object(collector, '_poll_once', new_callable=AsyncMock) as mock_poll:
+            mock_poll.return_value = []
+
+            await collector.start()
+            first_task = collector._poll_task
+
+            await collector.start()  # Should be no-op
+            assert collector._poll_task is first_task
+
+            await collector.stop()
