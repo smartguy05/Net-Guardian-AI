@@ -6,8 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
+from app.models.device import Device, DeviceStatus
 from app.models.raw_event import EventType, RawEvent
-from app.services.baseline_service import BaselineCalculator
+from app.services.baseline_service import BaselineCalculator, BaselineService
 
 
 class TestBaselineCalculator:
@@ -272,3 +273,234 @@ class TestDNSMetricsCalculation:
 
         metrics = calculator._calculate_dns_metrics(events)
         assert len(metrics["unique_domains"]) <= 500
+
+
+class TestBaselineStatusTransitions:
+    """Tests for baseline status state transitions."""
+
+    @pytest.fixture
+    def calculator(self):
+        session = AsyncMock()
+        return BaselineCalculator(session)
+
+    def test_status_learning_with_few_events(self, calculator):
+        """Test LEARNING status with insufficient events."""
+        baseline = MagicMock()
+        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.baseline_window_days = 7
+
+        # Few events relative to minimum
+        status = calculator._determine_status(30, 100, baseline)
+        assert status == BaselineStatus.LEARNING
+
+    def test_status_ready_with_enough_events(self, calculator):
+        """Test READY status with sufficient events."""
+        baseline = MagicMock()
+        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.baseline_window_days = 7
+
+        # Enough events
+        status = calculator._determine_status(150, 100, baseline)
+        assert status == BaselineStatus.READY
+
+    def test_status_stale_when_old(self, calculator):
+        """Test STALE status when baseline is too old."""
+        baseline = MagicMock()
+        baseline.last_calculated = datetime.now(timezone.utc) - timedelta(days=21)  # 3 weeks old
+        baseline.baseline_window_days = 7
+
+        status = calculator._determine_status(200, 100, baseline)
+        assert status == BaselineStatus.STALE
+
+    def test_status_boundary_at_minimum(self, calculator):
+        """Test status exactly at minimum sample count."""
+        baseline = MagicMock()
+        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.baseline_window_days = 7
+
+        # Exactly at minimum
+        status = calculator._determine_status(100, 100, baseline)
+        assert status == BaselineStatus.READY
+
+    def test_status_boundary_just_below_minimum(self, calculator):
+        """Test status just below minimum sample count."""
+        baseline = MagicMock()
+        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.baseline_window_days = 7
+
+        # Just below minimum
+        status = calculator._determine_status(99, 100, baseline)
+        assert status == BaselineStatus.LEARNING
+
+
+class TestTrafficMetricsEdgeCases:
+    """Additional edge case tests for traffic metrics."""
+
+    @pytest.fixture
+    def calculator(self):
+        session = AsyncMock()
+        return BaselineCalculator(session)
+
+    def test_traffic_metrics_mixed_protocols(self, calculator):
+        """Test with multiple protocols."""
+        events = []
+        base_time = datetime.now(timezone.utc)
+        protocols = ["tcp", "udp", "icmp", "other"]
+
+        for i in range(100):
+            events.append(
+                MagicMock(
+                    timestamp=base_time - timedelta(hours=i % 24),
+                    protocol=protocols[i % len(protocols)],
+                    port=80,
+                    action="allow",
+                )
+            )
+
+        metrics = calculator._calculate_traffic_metrics(events)
+
+        assert len(metrics["protocol_distribution"]) == 4
+        assert "tcp" in metrics["protocol_distribution"]
+        assert "icmp" in metrics["protocol_distribution"]
+
+    def test_traffic_metrics_many_ports(self, calculator):
+        """Test with many different ports."""
+        events = [
+            MagicMock(
+                timestamp=datetime.now(timezone.utc),
+                protocol="tcp",
+                port=i,
+                action="allow",
+            )
+            for i in range(200)
+        ]
+
+        metrics = calculator._calculate_traffic_metrics(events)
+
+        # Port distribution should be capped
+        assert len(metrics["port_distribution"]) <= 100
+
+    def test_traffic_metrics_high_blocked_ratio(self, calculator):
+        """Test with high blocked ratio."""
+        events = [
+            MagicMock(
+                timestamp=datetime.now(timezone.utc),
+                protocol="tcp",
+                port=22,
+                action="block" if i < 90 else "allow",
+            )
+            for i in range(100)
+        ]
+
+        metrics = calculator._calculate_traffic_metrics(events)
+
+        assert metrics["blocked_ratio"] == 0.9
+
+
+class TestConnectionMetricsEdgeCases:
+    """Additional edge case tests for connection metrics."""
+
+    @pytest.fixture
+    def calculator(self):
+        session = AsyncMock()
+        return BaselineCalculator(session)
+
+    def test_connection_metrics_all_internal(self, calculator):
+        """Test with all internal connections."""
+        internal_ips = ["192.168.1.100", "10.0.0.1", "172.16.0.1"]
+        events = [
+            MagicMock(
+                timestamp=datetime.now(timezone.utc),
+                target_ip=internal_ips[i % len(internal_ips)],
+                port=443,
+            )
+            for i in range(100)
+        ]
+
+        metrics = calculator._calculate_connection_metrics(events)
+
+        assert metrics["internal_external_ratio"] == 1.0
+
+    def test_connection_metrics_all_external(self, calculator):
+        """Test with all external connections."""
+        external_ips = ["8.8.8.8", "1.1.1.1", "208.67.222.222"]
+        events = [
+            MagicMock(
+                timestamp=datetime.now(timezone.utc),
+                target_ip=external_ips[i % len(external_ips)],
+                port=443,
+            )
+            for i in range(100)
+        ]
+
+        metrics = calculator._calculate_connection_metrics(events)
+
+        assert metrics["internal_external_ratio"] == 0.0
+
+    def test_connection_metrics_missing_target_ip(self, calculator):
+        """Test with events missing target_ip."""
+        events = [
+            MagicMock(
+                timestamp=datetime.now(timezone.utc),
+                target_ip=None,
+                port=443,
+            )
+            for _ in range(50)
+        ]
+
+        metrics = calculator._calculate_connection_metrics(events)
+
+        # Should handle gracefully
+        assert metrics["total_connections"] == 50
+        assert len(metrics["unique_destinations"]) == 0
+
+
+class TestIPClassification:
+    """Tests for IP address classification edge cases."""
+
+    @pytest.fixture
+    def calculator(self):
+        session = AsyncMock()
+        return BaselineCalculator(session)
+
+    def test_ipv4_class_a_private(self, calculator):
+        """Test 10.x.x.x class A private addresses."""
+        assert calculator._is_internal_ip("10.0.0.0") is True
+        assert calculator._is_internal_ip("10.0.0.1") is True
+        assert calculator._is_internal_ip("10.255.255.254") is True
+        assert calculator._is_internal_ip("10.255.255.255") is True
+
+    def test_ipv4_class_b_private(self, calculator):
+        """Test 172.16-31.x.x class B private addresses."""
+        assert calculator._is_internal_ip("172.16.0.0") is True
+        assert calculator._is_internal_ip("172.16.0.1") is True
+        assert calculator._is_internal_ip("172.31.255.255") is True
+
+        # Boundary - just outside range
+        assert calculator._is_internal_ip("172.15.255.255") is False
+        assert calculator._is_internal_ip("172.32.0.0") is False
+
+    def test_ipv4_class_c_private(self, calculator):
+        """Test 192.168.x.x class C private addresses."""
+        assert calculator._is_internal_ip("192.168.0.0") is True
+        assert calculator._is_internal_ip("192.168.0.1") is True
+        assert calculator._is_internal_ip("192.168.255.255") is True
+
+        # Similar but not private
+        assert calculator._is_internal_ip("192.167.1.1") is False
+        assert calculator._is_internal_ip("192.169.1.1") is False
+
+    def test_ipv4_loopback(self, calculator):
+        """Test loopback addresses."""
+        assert calculator._is_internal_ip("127.0.0.1") is True
+        assert calculator._is_internal_ip("127.0.0.0") is True
+        assert calculator._is_internal_ip("127.255.255.255") is True
+
+    def test_invalid_ip_formats(self, calculator):
+        """Test various invalid IP formats."""
+        assert calculator._is_internal_ip("") is False
+        assert calculator._is_internal_ip("invalid") is False
+        assert calculator._is_internal_ip("not-an-ip") is False
+        assert calculator._is_internal_ip("256.256.256.256") is False
+        # Truncated IP - should return False (invalid format)
+        assert calculator._is_internal_ip("192.168.1") is False

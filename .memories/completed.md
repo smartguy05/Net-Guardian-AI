@@ -4,6 +4,62 @@ Tasks completed during implementation.
 
 ---
 
+## Test Suite Improvements - API Tests (January 2026)
+
+### Users API Tests (22 tests)
+- [x] List users with pagination (empty, with data)
+- [x] Create user (success, duplicate username, default role)
+- [x] Get user by ID (success, not found)
+- [x] Update user (email, role, deactivate, not found)
+- [x] Deactivate user (success, self-deactivation rejected, not found)
+- [x] Reset user password (success, not found)
+- [x] Schema validation tests (UserCreate, UserUpdate, UserResponse)
+
+### Rules API Tests (36 tests)
+- [x] List rules with filters (all, by enabled, by severity)
+- [x] Get condition fields (returns all fields with descriptions)
+- [x] Get rule by ID (success, not found)
+- [x] Create rule (success, duplicate ID)
+- [x] Update rule (name, severity, not found)
+- [x] Delete rule (success, not found)
+- [x] Enable/disable rule (success, not found)
+- [x] Test rule against sample event (matches, no match, OR logic)
+- [x] Operator tests (contains, regex, gt/lt, in)
+- [x] Validation tests (operators, logic, action types, rule ID format)
+- [x] Response action normalization (legacy strings, dict format)
+
+---
+
+## Test Suite Improvements - BaselineService & AnomalyService (January 2026)
+
+### BaselineService Tests (30 tests)
+- [x] DNS/Traffic/Connection metrics calculation (empty, with events, edge cases)
+- [x] Status transition tests (LEARNING, READY, STALE boundaries)
+- [x] Traffic metrics edge cases (mixed protocols, many ports, high blocked ratio)
+- [x] Connection metrics edge cases (all internal, all external, missing target_ip)
+- [x] IP classification tests (IPv4 private classes A/B/C, loopback, invalid formats)
+
+### AnomalyService Tests (36 tests)
+- [x] Async detection method tests for no baselines and learning baselines scenarios
+- [x] Severity calculation tests (high-risk vs standard anomaly types)
+- [x] Volume spike detection math verification (z-score calculations)
+- [x] AnomalyService facade tests (`get_device_anomalies`, `get_active_anomalies`, `update_anomaly_status`)
+- [x] `run_detection_for_all_devices()` batch operation tests
+- [x] Suspicious port detection tests (common safe, alternative web, service ports)
+- [x] Alert creation tests for high/low severity anomalies
+- [x] Z-score calculation tests (normal, threshold, above, high, critical, extreme)
+
+### Test Quality Review (January 2026)
+- [x] Sub-agent review of newly added tests for quality and usefulness
+- [x] Removed TestBaselineCalculatorAsyncMethods (6 tests) - only tested mock behavior
+- [x] Removed TestBaselineService (4 tests) - tested mock setup, too brittle
+- [x] Removed 3 baseline structure verification tests - only tested fixtures
+- [x] Fixed invalid IP test assertion (was `assert result is False or True` - always passes)
+
+**Total: 66 passing tests** in baseline and anomaly service test files (13 low-value tests removed).
+
+---
+
 ## Dark Theme Polish (January 2026)
 
 ### Modal and Dropdown Dark Theme Review - COMPLETE

@@ -107,7 +107,7 @@ Remaining tasks organized by priority.
 
 ---
 
-## Test Suite Improvements (In Progress)
+## Test Suite Improvements (COMPLETE)
 
 ### Completed
 - [x] Phase 1: Test Infrastructure (conftest.py, factories.py)
@@ -117,17 +117,14 @@ Remaining tasks organized by priority.
 - [x] Phase 3.1: Error handler tests
 - [x] Phase 3.2-3.5: Collector tests (file, registry, UDP, API pull improvements)
 - [x] Phase 4.1: Pattern service tests
+- [x] Phase 4.2: BaselineService tests (30 tests - metrics calculation, status transitions, IP classification)
+- [x] Phase 4.3: AnomalyService tests (36 tests - severity calculation, z-score thresholds, suspicious ports)
+- [x] Phase 4.2-4.3 Quality Review: Removed 13 low-value tests that only tested mock behavior
+- [x] Phase 4.4-4.6: SemanticAnalysisService, RuleSuggestionService, LLM tests (already comprehensive - 30+ tests each)
 - [x] Phase 5.1: Clean up useless API tests
 - [x] Phase 5.2-5.4: Real API tests (auth, devices, alerts)
-
-### Remaining (Lower Priority)
-- [ ] Phase 4.2: BaselineService tests
-- [ ] Phase 4.3: AnomalyService tests
-- [ ] Phase 4.4: SemanticAnalysisService tests (get_config success, create_config, etc.)
-- [ ] Phase 4.5: RuleSuggestionService tests (create_rule_from_suggestion, etc.)
-- [ ] Phase 4.6: LLM API call tests (mocked Anthropic client)
-- [ ] Phase 5.5: test_users_api.py (list/create/update/delete users)
-- [ ] Phase 5.6: test_rules_api.py (list/create/update/delete rules)
+- [x] Phase 5.5: test_users_api.py (22 tests - list, create, update, delete, reset password)
+- [x] Phase 5.6: test_rules_api.py (36 tests - CRUD, enable/disable, test rule, validation)
 
 ---
 
