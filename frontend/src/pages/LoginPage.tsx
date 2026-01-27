@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Shield, Eye, EyeOff, AlertCircle, ArrowLeft, Key } from 'lucide-react';
-import { useLogin, useVerify2FA } from '../api/hooks';
+import { Shield, Eye, EyeOff, AlertCircle, ArrowLeft, Key, ShieldCheck, Loader2 } from 'lucide-react';
+import { useLogin, useVerify2FA, useOIDCConfig, useOIDCAuthorize } from '../api/hooks';
 import { useAuthStore } from '../stores/auth';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -14,6 +14,8 @@ export default function LoginPage() {
   const login = useLogin();
   const verify2FA = useVerify2FA();
   const { pending2FA, pending2FAToken, pending2FAUser, clearPending2FA } = useAuthStore();
+  const { data: oidcConfig } = useOIDCConfig();
+  const oidcAuthorize = useOIDCAuthorize();
 
   const totpInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,6 +52,30 @@ export default function LoginPage() {
     setTotpCode('');
     setTwoFAError('');
   };
+
+  const handleSSOLogin = async () => {
+    try {
+      const result = await oidcAuthorize.mutateAsync();
+      // Store state and generate PKCE code verifier for callback
+      const codeVerifier = generateCodeVerifier();
+      sessionStorage.setItem('oidc_state', result.state);
+      sessionStorage.setItem('oidc_code_verifier', codeVerifier);
+      // Redirect to Authentik
+      window.location.href = result.authorization_url;
+    } catch (error) {
+      console.error('Failed to initiate SSO login:', error);
+    }
+  };
+
+  // Helper to generate PKCE code verifier (matches backend)
+  function generateCodeVerifier(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  }
 
   // Show 2FA verification form
   if (pending2FA) {
@@ -227,6 +253,36 @@ export default function LoginPage() {
               {login.isPending ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
+
+          {/* SSO Login Button */}
+          {oidcConfig?.enabled && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200 dark:border-zinc-700" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white dark:bg-zinc-800 px-2 text-gray-500 dark:text-gray-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleSSOLogin}
+                disabled={oidcAuthorize.isPending}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 dark:border-zinc-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50"
+              >
+                {oidcAuthorize.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ShieldCheck className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                )}
+                <span>Sign in with Authentik</span>
+              </button>
+            </>
+          )}
         </div>
 
         <p className="mt-6 text-center text-sm text-gray-500">

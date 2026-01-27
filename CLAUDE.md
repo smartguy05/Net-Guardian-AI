@@ -254,6 +254,8 @@ async def expensive_endpoint(request: Request):
 
 - **AdGuard Home**: DNS-level device blocking (`app/services/integrations/adguard.py`)
 - **Router Integration**: UniFi, pfSense, OPNsense device quarantine (`app/services/integrations/`)
+- **Authentik SSO**: OAuth2/OIDC Single Sign-On authentication (`app/services/oidc_service.py`)
+- **Authentik Events**: Authentication event log parsing (`app/parsers/authentik_parser.py`)
 - **Anthropic Claude**: LLM-powered alert analysis and natural language queries (`app/services/llm_providers/claude_provider.py`)
 - **Ollama**: Local LLM monitoring for prompt injection/jailbreak detection (`app/services/llm_providers/ollama_provider.py`)
 
@@ -324,6 +326,7 @@ Environment variables are defined in `deploy/.env` and `backend/.env`. Key setti
 ### Integrations
 - `ADGUARD_*`: AdGuard Home integration (url, username, password, verify_ssl)
 - `ROUTER_*`: Router integration (type, url, credentials, site)
+- `AUTHENTIK_*`: Authentik SSO (enabled, issuer_url, client_id, client_secret, redirect_uri, group_mappings, auto_create_users, default_role)
 - `SMTP_*`: Email notifications (host, port, username, password, use_tls)
 - `NTFY_*`: Push notifications (server_url, topic, auth_token)
 

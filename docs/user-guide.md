@@ -10,6 +10,23 @@ This guide explains how to use NetGuardian AI's features for network security mo
 2. Log in with the admin credentials (check deployment logs for initial password)
 3. **Important:** Change your password immediately after first login
 
+### Single Sign-On (Authentik)
+
+If your organization has configured Authentik SSO:
+
+1. Navigate to the NetGuardian login page
+2. Click "Sign in with Authentik" below the login form
+3. You'll be redirected to your Authentik instance
+4. Log in with your organization credentials
+5. After authentication, you'll be redirected back to NetGuardian
+
+**SSO Users:**
+- Your account may be created automatically on first login (if enabled)
+- Alternatively, your admin may pre-create your account with a specific role
+- If your account was pre-created, it links to your Authentik identity on first SSO login
+- Your role may be assigned based on Authentik group membership or set by admin
+- You can still use local authentication if needed
+
 ### User Roles
 
 NetGuardian supports three user roles:
@@ -83,7 +100,7 @@ View all normalized events from configured log sources:
 |------|-------------|
 | DNS | DNS queries and responses |
 | Firewall | Firewall allow/block actions |
-| Auth | Authentication events |
+| Auth | Authentication events (including Authentik SSO events) |
 | HTTP | Web request logs |
 | System | System and application logs |
 | LLM | AI/LLM interaction events |
@@ -324,6 +341,45 @@ Query: {namespace="production"}
 Auth Type: None (or Bearer for secured Loki)
 Poll Interval: 60 seconds
 ```
+
+### Authentik Event Sources
+
+Monitor authentication events from your Authentik identity provider:
+
+1. Create an **API Pull** source
+2. Select parser type: **authentik**
+3. Configure:
+   - URL: Your Authentik server URL
+   - Endpoint: `/api/v3/events/`
+   - Auth Type: Bearer token (create an API token in Authentik)
+   - Poll Interval: How often to fetch events
+
+**Authentik Parser Features:**
+- Parses login, logout, and authorization events
+- Detects failed logins and suspicious requests
+- Tracks impersonation events
+- Maps event actions to severity levels
+- Extracts client IP and geo information
+
+**Example Configuration:**
+```
+URL: https://auth.example.com
+Endpoint: /api/v3/events/
+Auth Type: Bearer
+API Key: your-authentik-api-token
+Poll Interval: 60 seconds
+```
+
+**Detected Event Types:**
+| Action | Severity | Security Flag |
+|--------|----------|---------------|
+| login | Info | No |
+| login_failed | Warning | Yes |
+| logout | Info | No |
+| authorize_application | Info | No |
+| impersonation_started | Warning | Yes |
+| suspicious_request | Error | Yes |
+| policy_exception | Warning | No |
 
 ## User Management
 

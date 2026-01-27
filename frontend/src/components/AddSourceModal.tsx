@@ -32,8 +32,11 @@ const sourceTypeOptions: { value: SourceType; label: string; description: string
 
 const parserTypeOptions: { value: ParserType; label: string; sourceTypes: SourceType[] }[] = [
   { value: 'adguard', label: 'AdGuard Home', sourceTypes: ['api_pull'] },
+  { value: 'authentik', label: 'Authentik', sourceTypes: ['api_pull'] },
   { value: 'unifi', label: 'UniFi Controller', sourceTypes: ['api_pull'] },
   { value: 'pfsense', label: 'pfSense', sourceTypes: ['api_pull', 'file_watch'] },
+  { value: 'loki', label: 'Grafana Loki', sourceTypes: ['api_pull'] },
+  { value: 'ollama', label: 'Ollama LLM', sourceTypes: ['api_pull'] },
   { value: 'json', label: 'JSON', sourceTypes: ['api_pull', 'file_watch', 'api_push'] },
   { value: 'syslog', label: 'Syslog', sourceTypes: ['file_watch', 'api_push'] },
   { value: 'nginx', label: 'Nginx', sourceTypes: ['file_watch'] },

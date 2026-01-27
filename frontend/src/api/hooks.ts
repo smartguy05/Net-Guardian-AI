@@ -46,6 +46,59 @@ import type {
   UserListResponse,
 } from '../types';
 
+// OIDC Types
+export interface OIDCConfig {
+  enabled: boolean;
+  issuer: string | null;
+  client_id: string | null;
+}
+
+export interface OIDCAuthorizeResponse {
+  authorization_url: string;
+  state: string;
+}
+
+export interface OIDCCallbackRequest {
+  code: string;
+  state: string;
+  code_verifier: string;
+}
+
+// OIDC hooks
+export function useOIDCConfig() {
+  return useQuery({
+    queryKey: ['auth', 'oidc', 'config'],
+    queryFn: async (): Promise<OIDCConfig> => {
+      const response = await apiClient.get('/auth/oidc/config');
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+  });
+}
+
+export function useOIDCAuthorize() {
+  return useMutation({
+    mutationFn: async (): Promise<OIDCAuthorizeResponse> => {
+      const response = await apiClient.get('/auth/oidc/authorize');
+      return response.data;
+    },
+  });
+}
+
+export function useOIDCCallback() {
+  const login = useAuthStore((state) => state.login);
+
+  return useMutation({
+    mutationFn: async (data: OIDCCallbackRequest): Promise<LoginResponse> => {
+      const response = await apiClient.post<LoginResponse>('/auth/oidc/callback', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      login(data.user, data.access_token, data.refresh_token);
+    },
+  });
+}
+
 // Auth hooks
 export function useLogin() {
   const login = useAuthStore((state) => state.login);

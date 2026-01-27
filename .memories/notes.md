@@ -972,6 +972,88 @@ const handleToggle = async (source: Source) => {
 
 ---
 
+## Authentik OIDC Integration Notes (January 2026)
+
+### PKCE Flow Implementation
+
+The OIDC integration uses PKCE (Proof Key for Code Exchange) for security:
+
+1. **Frontend generates code_verifier** - Random 64-byte URL-safe string stored in sessionStorage
+2. **Backend generates code_challenge** - SHA256 hash of verifier, base64url encoded
+3. **Redirect to Authentik** - Include code_challenge in authorization URL
+4. **Callback validation** - Frontend sends code_verifier back to backend
+5. **Token exchange** - Backend sends verifier to Authentik, which validates against original challenge
+
+**Key files:**
+- `backend/app/services/oidc_service.py` - generate_pkce(), exchange_code()
+- `frontend/src/pages/LoginPage.tsx` - handleSSOLogin() generates verifier
+- `frontend/src/pages/OIDCCallbackPage.tsx` - Retrieves verifier from sessionStorage
+
+### State Parameter for CSRF Protection
+
+State is stored in Redis with 5-minute TTL:
+```python
+await cache_manager.set(f"oidc_state:{state}", code_verifier, ttl=300)
+```
+
+The callback validates state by checking Redis before processing the code exchange.
+
+### Group to Role Mapping
+
+Group mappings are configured via JSON in environment:
+```
+AUTHENTIK_GROUP_MAPPINGS={"netguardian-admins": "admin", "netguardian-operators": "operator"}
+```
+
+Role priority order: admin > operator > viewer (first matching role wins)
+
+### External User Tracking
+
+Users authenticated via Authentik are tracked with:
+- `external_id` - Authentik's `sub` claim (unique identifier)
+- `external_provider` - Set to "authentik"
+- `is_external` - Boolean flag for external auth
+
+External users can still have local passwords disabled or set for emergency access.
+
+### Email-Based User Linking
+
+When a user logs in via Authentik SSO, the callback endpoint uses this lookup order:
+
+1. **Look up by `external_id`** - Find existing SSO-linked user
+2. **Look up by email** - Find pre-created local user to link
+3. **Create new user** - Only if `AUTHENTIK_AUTO_CREATE_USERS=true`
+
+This enables two workflows:
+
+**Auto-create mode** (`AUTHENTIK_AUTO_CREATE_USERS=true`):
+- Any Authentik user can access NetGuardian
+- User account created automatically on first SSO login
+- Role assigned from Authentik groups or default role
+
+**Pre-create mode** (`AUTHENTIK_AUTO_CREATE_USERS=false`):
+- Admin creates users in NetGuardian with specific roles
+- User email must match their Authentik email exactly
+- On first SSO login, accounts are linked by email match
+- Unregistered users are rejected with 403 error
+
+**Implementation:** `backend/app/api/v1/auth.py:583-625` in `oidc_callback()` endpoint
+
+### Authentik Event Parser
+
+The parser handles Authentik's `/api/v3/events/` API format:
+- Paginated responses: `{"results": [...], "pagination": {...}}`
+- Direct list of events: `[{...}, {...}]`
+
+Action to severity mapping:
+- INFO: login, logout, authorize_application, model_created/updated/deleted
+- WARNING: login_failed, impersonation_started/ended, policy_exception
+- ERROR: suspicious_request, configuration_error, secret_view
+
+Security events are flagged with `is_security_event: true` in parsed_fields.
+
+---
+
 ### Dark Theme Modal Styling Checklist
 
 When fixing dark theme for modals, ensure these elements have proper styling:

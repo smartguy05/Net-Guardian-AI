@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { X, Lightbulb, Keyboard } from 'lucide-react';
+import { X, Lightbulb, Keyboard, ExternalLink } from 'lucide-react';
 import { useHelpStore } from '../stores/help';
 import { getHelpForPath } from '../content/helpContent';
 import clsx from 'clsx';
@@ -193,12 +193,13 @@ export default function HelpPanel() {
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <span>Press <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-zinc-700 rounded">Esc</kbd> to close</span>
               <a
-                href="https://github.com/netguardian-ai/netguardian"
+                href="/docs"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary-600 dark:text-primary-400 hover:underline"
+                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 hover:underline"
               >
-                Documentation
+                Full Documentation
+                <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           </div>

@@ -93,5 +93,22 @@ class User(Base, TimestampMixin):
         nullable=True,
     )
 
+    # External authentication (Authentik SSO)
+    external_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True,
+    )
+    external_provider: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    is_external: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
     def __repr__(self) -> str:
         return f"<User {self.username} ({self.role.value})>"

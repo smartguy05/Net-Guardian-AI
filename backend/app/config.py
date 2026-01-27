@@ -129,6 +129,17 @@ class Settings(BaseSettings):
     ntfy_default_topic: str = ""
     ntfy_auth_token: str = ""  # Optional for private topics
 
+    # Authentik OIDC Configuration
+    authentik_enabled: bool = False
+    authentik_issuer_url: str = ""  # e.g., https://auth.example.com/application/o/netguardian/
+    authentik_client_id: str = ""
+    authentik_client_secret: str = ""
+    authentik_redirect_uri: str = ""  # e.g., http://localhost:8000/api/v1/auth/oidc/callback
+    authentik_scopes: str = "openid profile email groups"
+    authentik_group_mappings: str = "{}"  # JSON: {"group-name": "admin"}
+    authentik_auto_create_users: bool = True
+    authentik_default_role: str = "viewer"
+
     @property
     def async_database_url(self) -> str:
         """Ensure database URL uses asyncpg driver."""

@@ -112,6 +112,27 @@ def mock_redis() -> AsyncMock:
 
 
 # ============================================================================
+# Test Client Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+def test_client():
+    """Create a FastAPI TestClient for API integration tests.
+
+    This fixture creates an actual TestClient that can make HTTP requests
+    to the FastAPI app. Use this for tests that need to test the full
+    HTTP request/response cycle, including middleware, dependency injection,
+    and routing.
+    """
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    with TestClient(app) as client:
+        yield client
+
+
+# ============================================================================
 # Time Fixtures
 # ============================================================================
 

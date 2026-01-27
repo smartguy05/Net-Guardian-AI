@@ -7,6 +7,7 @@ from app.parsers.registry import ParserRegistry, get_parser
 from app.parsers import json_parser  # noqa: F401
 from app.parsers import syslog_parser  # noqa: F401
 from app.parsers import adguard_parser  # noqa: F401
+from app.parsers import authentik_parser  # noqa: F401
 from app.parsers import custom_parser  # noqa: F401
 from app.parsers import ollama_parser  # noqa: F401
 from app.parsers import endpoint_parser  # noqa: F401
