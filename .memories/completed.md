@@ -4,6 +4,25 @@ Tasks completed during implementation.
 
 ---
 
+## Test Suite Fixes (January 2026)
+
+### Fixed 33 Failing Tests
+Fixed test suite from 865 passed to 898 passed (100% passing):
+
+- [x] Alert API tests - Fixed parameter names (`page`/`page_size` → `limit`/`offset`, `status` → `status_filter`)
+- [x] Alert API tests - Added missing mock attributes (`acknowledged_at`, `resolved_at`, `actions_taken`)
+- [x] Device API tests - Added explicit `tags=None` parameter to avoid Query object issues
+- [x] Device export tests - Added explicit parameters for `status_filter`, `device_type`, `limit`
+- [x] Pattern normalizer tests - Updated placeholder expectations (`<IPV6>`, `<FLOAT>`)
+- [x] Pattern service tests - Fixed delete_pattern test to mock `get_pattern_by_id`
+- [x] LLM provider tests - Fixed patch paths, made async tests properly async
+- [x] LLM provider tests - Updated severity range test to check for actual prompt content
+- [x] UDP listener tests - Mocked asyncio socket operations instead of actual port binding
+- [x] Custom parser tests - Fixed syslog test expectation (colon is separator, not captured)
+- [x] Semantic analysis tests - Added missing `rarity_threshold` to mock config
+
+---
+
 ## Documentation - Architecture Learning Guide (January 2026)
 
 ### docs/architecture-guide.md

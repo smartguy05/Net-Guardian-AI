@@ -4,6 +4,46 @@ Issues, gotchas, and lessons learned during development.
 
 ---
 
+## Test Suite Gotchas (January 2026)
+
+### FastAPI Query Parameter Defaults
+**Problem:** When calling FastAPI endpoints directly in tests (without going through the ASGI test client), parameters with `Query(default)` become `Query` objects instead of the default values.
+
+**Solution:** Always pass explicit values for Query parameters when testing endpoints directly:
+```python
+# Bad - limit becomes Query(1000) object
+await export_devices_csv(session=session, _current_user=user)
+
+# Good - explicit values
+await export_devices_csv(session=session, _current_user=user, limit=1000, status_filter=None)
+```
+
+### MagicMock Attributes in Pydantic Models
+**Problem:** When mocking database models, MagicMock returns MagicMock for any attribute access. This breaks Pydantic validation when building response models.
+
+**Solution:** Explicitly set all attributes that will be accessed:
+```python
+alert = MagicMock()
+alert.id = uuid4()
+alert.device_id = None  # Prevents complex device queries
+alert.acknowledged_at = None  # Must be None or datetime, not MagicMock
+alert.resolved_at = None
+```
+
+### UDP Socket Tests on Windows
+**Problem:** Tests that bind UDP ports fail with `PermissionError: [WinError 10013]` on Windows.
+
+**Solution:** Mock `asyncio.get_running_loop().create_datagram_endpoint` instead of binding actual ports:
+```python
+with patch("asyncio.get_running_loop") as mock_loop:
+    mock_loop.return_value.create_datagram_endpoint = AsyncMock(
+        return_value=(mock_transport, mock_protocol)
+    )
+    await collector.start()
+```
+
+---
+
 ## Users Page Contrast Issues
 
 **Problem:** Users page had poor contrast in dark mode - usernames, emails, role badges, and dropdown menu were hard to read.

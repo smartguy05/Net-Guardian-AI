@@ -583,19 +583,17 @@ class TestDeletePattern:
         mock_pattern = MagicMock()
         mock_pattern.id = pattern_id
 
-        # Mock get_pattern_by_id to return pattern
-        mock_get_result = MagicMock()
-        mock_get_result.scalar_one_or_none.return_value = mock_pattern
-        mock_session.execute = AsyncMock(return_value=mock_get_result)
-        mock_session.delete = MagicMock()
+        mock_session.delete = AsyncMock()
         mock_session.commit = AsyncMock()
 
         service = PatternService(session=mock_session)
 
-        result = await service.delete_pattern(pattern_id)
+        # Mock get_pattern_by_id to return the pattern
+        with patch.object(service, "get_pattern_by_id", return_value=mock_pattern):
+            result = await service.delete_pattern(pattern_id)
 
         assert result is True
-        mock_session.delete.assert_called_once()
+        mock_session.delete.assert_called_once_with(mock_pattern)
         mock_session.commit.assert_called_once()
 
     @pytest.mark.asyncio

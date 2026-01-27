@@ -630,7 +630,7 @@ class TestComplexPatterns:
         results = parser.parse(log_line)
 
         assert results[0].parsed_fields["hostname"] == "server01"
-        assert results[0].parsed_fields["program"] == "sshd:"
+        assert results[0].parsed_fields["program"] == "sshd"  # Colon is separator, not captured
         assert "Failed password" in results[0].parsed_fields["message"]
 
     def test_firewall_log_pattern(self):

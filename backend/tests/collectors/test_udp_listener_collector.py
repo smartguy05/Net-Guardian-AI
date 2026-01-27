@@ -98,18 +98,24 @@ class TestUDPListenerCollectorStartStop:
     @pytest.mark.asyncio
     async def test_start_creates_transport(self):
         """Test that start creates UDP transport."""
-        # Use a high port number to avoid conflicts
         source = create_mock_source(config={"port": 59995})
         collector = UDPListenerCollector(source, MagicMock())
 
-        try:
+        mock_transport = MagicMock()
+        mock_protocol = MagicMock()
+
+        with patch("asyncio.get_running_loop") as mock_loop:
+            mock_loop.return_value.create_datagram_endpoint = AsyncMock(
+                return_value=(mock_transport, mock_protocol)
+            )
+
             await collector.start()
 
             assert collector.is_running()
-            assert collector._transport is not None
-            assert collector._protocol is not None
-        finally:
-            await collector.stop()
+            assert collector._transport is mock_transport
+            assert collector._protocol is mock_protocol
+
+        await collector.stop()
 
     @pytest.mark.asyncio
     async def test_stop_cleans_up(self):
@@ -117,12 +123,22 @@ class TestUDPListenerCollectorStartStop:
         source = create_mock_source(config={"port": 59996})
         collector = UDPListenerCollector(source, MagicMock())
 
-        await collector.start()
+        mock_transport = MagicMock()
+        mock_protocol = MagicMock()
+
+        with patch("asyncio.get_running_loop") as mock_loop:
+            mock_loop.return_value.create_datagram_endpoint = AsyncMock(
+                return_value=(mock_transport, mock_protocol)
+            )
+
+            await collector.start()
+
         await collector.stop()
 
         assert not collector.is_running()
         assert collector._transport is None
         assert collector._protocol is None
+        mock_transport.close.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_stop_clears_queue(self):
@@ -134,7 +150,16 @@ class TestUDPListenerCollectorStartStop:
         await collector._queue.put(MagicMock())
         await collector._queue.put(MagicMock())
 
-        await collector.start()
+        mock_transport = MagicMock()
+        mock_protocol = MagicMock()
+
+        with patch("asyncio.get_running_loop") as mock_loop:
+            mock_loop.return_value.create_datagram_endpoint = AsyncMock(
+                return_value=(mock_transport, mock_protocol)
+            )
+
+            await collector.start()
+
         await collector.stop()
 
         assert collector._queue.empty()
@@ -157,13 +182,22 @@ class TestUDPListenerCollectorTestConnection:
     @pytest.mark.asyncio
     async def test_connection_success(self):
         """Test successful connection test."""
-        source = create_mock_source(config={"port": 59998})  # Use a high port
+        source = create_mock_source(config={"port": 59998})
         collector = UDPListenerCollector(source, MagicMock())
 
-        success, message = await collector.test_connection()
+        mock_transport = MagicMock()
+        mock_protocol = MagicMock()
+
+        with patch("asyncio.get_running_loop") as mock_loop:
+            mock_loop.return_value.create_datagram_endpoint = AsyncMock(
+                return_value=(mock_transport, mock_protocol)
+            )
+
+            success, message = await collector.test_connection()
 
         assert success is True
         assert "successfully bound" in message.lower()
+        mock_transport.close.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_connection_bind_failure(self):

@@ -65,6 +65,7 @@ class TestListDevices:
             _current_user=mock_current_user_viewer,
             page=1,
             page_size=50,
+            tags=None,
         )
 
         assert response.total == 5
@@ -96,6 +97,7 @@ class TestListDevices:
             page=1,
             page_size=50,
             status=DeviceStatus.QUARANTINED,
+            tags=None,
         )
 
         assert response.total == len(quarantined_devices)
@@ -122,6 +124,7 @@ class TestListDevices:
             page=1,
             page_size=50,
             device_type=DeviceType.PC,
+            tags=None,
         )
 
         assert response.total == 5
@@ -149,6 +152,7 @@ class TestListDevices:
             page=1,
             page_size=50,
             search="device-0",
+            tags=None,
         )
 
         assert response.total == 1
@@ -175,6 +179,7 @@ class TestListDevices:
             _current_user=mock_current_user_viewer,
             page=2,
             page_size=2,
+            tags=None,
         )
 
         assert response.total == 5
@@ -784,6 +789,9 @@ class TestExportDevices:
             response = await export_devices_csv(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
+                status_filter=None,
+                device_type=None,
+                limit=10000,
             )
 
         assert response.media_type == "text/csv"
@@ -807,6 +815,9 @@ class TestExportDevices:
             response = await export_devices_pdf(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
+                status_filter=None,
+                device_type=None,
+                limit=1000,
             )
 
         assert response.media_type == "application/pdf"

@@ -416,6 +416,7 @@ class TestEdgeCases:
 
         mock_config = MagicMock()
         mock_config.enabled = True
+        mock_config.rarity_threshold = 3  # Required for comparison in process_event
 
         mock_pattern = MagicMock()
         mock_pattern.is_ignored = False

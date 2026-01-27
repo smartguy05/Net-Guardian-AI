@@ -69,8 +69,8 @@ class TestListAlerts:
             response = await alerts_module.list_alerts(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
-                page=1,
-                page_size=5,
+                limit=5,
+                offset=0,
             )
             assert response.total == 10
             assert len(response.items) == 5
@@ -97,9 +97,9 @@ class TestListAlerts:
             response = await alerts_module.list_alerts(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
-                page=1,
-                page_size=50,
-                status=AlertStatus.NEW,
+                limit=50,
+                offset=0,
+                status_filter=AlertStatus.NEW,
             )
             assert response.total == len(new_alerts)
 
@@ -125,8 +125,8 @@ class TestListAlerts:
             response = await alerts_module.list_alerts(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
-                page=1,
-                page_size=50,
+                limit=50,
+                offset=0,
                 severity=AlertSeverity.CRITICAL,
             )
             assert response.total == len(critical_alerts)
@@ -318,11 +318,23 @@ class TestTriggerLLMAnalysis:
     @pytest.fixture
     def mock_alert(self):
         """Create a mock alert without LLM analysis."""
+        from app.models.alert import AlertSeverity, AlertStatus
+
         alert = MagicMock()
         alert.id = uuid4()
         alert.title = "Suspicious Activity"
         alert.description = "Multiple failed login attempts"
         alert.llm_analysis = None
+        alert.device_id = None  # Set to None to avoid complex device queries
+        alert.rule_id = "test-rule"
+        alert.severity = AlertSeverity.HIGH
+        alert.status = AlertStatus.NEW
+        alert.timestamp = datetime.now(timezone.utc)
+        alert.actions_taken = []
+        alert.acknowledged_by = None
+        alert.acknowledged_at = None
+        alert.resolved_by = None
+        alert.resolved_at = None
         return alert
 
     @pytest.mark.asyncio
@@ -349,7 +361,8 @@ class TestTriggerLLMAnalysis:
                 response = await alerts_module.analyze_alert(
                     alert_id=mock_alert.id,
                     session=mock_db_session,
-                    _operator=mock_current_user_operator,
+                    _current_user=mock_current_user_operator,
+                    request=None,  # Explicit parameter
                 )
 
                 # Analysis should be stored
@@ -385,7 +398,19 @@ class TestAlertAuthorization:
         """Create a mock alert."""
         alert = MagicMock()
         alert.id = uuid4()
+        alert.timestamp = datetime.now(timezone.utc)
+        alert.device_id = uuid4()
+        alert.rule_id = "test-rule"
+        alert.severity = AlertSeverity.MEDIUM
+        alert.title = "Test Alert"
+        alert.description = "Test alert description"
+        alert.llm_analysis = None
         alert.status = AlertStatus.NEW
+        alert.actions_taken = []
+        alert.acknowledged_by = None
+        alert.acknowledged_at = None
+        alert.resolved_by = None
+        alert.resolved_at = None
         return alert
 
     @pytest.mark.asyncio
