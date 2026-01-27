@@ -564,6 +564,7 @@ export const helpContent: Record<string, HelpContent> = {
           'Disabled accounts cannot log in but are preserved',
           'Reset passwords for users who forget credentials',
           'View last login time to identify inactive accounts',
+          'SSO users show "External" badge and their identity provider',
         ],
       },
       {
@@ -574,6 +575,7 @@ export const helpContent: Record<string, HelpContent> = {
           'Admin role has full access to all features',
           'Operator role can view and acknowledge alerts',
           'Viewer role has read-only access',
+          'SSO users get roles from Authentik group membership',
         ],
       },
       {
@@ -584,6 +586,21 @@ export const helpContent: Record<string, HelpContent> = {
           'Admins can require 2FA for all users',
           'Reset 2FA if user loses their device',
           'Backup codes should be stored securely',
+        ],
+      },
+      {
+        title: 'Authentik SSO Integration',
+        description:
+          'Enable Single Sign-On via Authentik identity provider for centralized authentication.',
+        tips: [
+          'Set AUTHENTIK_ENABLED=true in backend .env file',
+          'Configure AUTHENTIK_ISSUER_URL with your Authentik server',
+          'Set AUTHENTIK_CLIENT_ID and AUTHENTIK_CLIENT_SECRET from Authentik',
+          'Map Authentik groups to roles via AUTHENTIK_GROUP_MAPPINGS',
+          'Auto-create mode: Set AUTHENTIK_AUTO_CREATE_USERS=true to create users on first SSO login',
+          'Pre-create mode: Set AUTHENTIK_AUTO_CREATE_USERS=false, then create users here first',
+          'Pre-created users link to Authentik by email match on first SSO login',
+          'See docs/deployment-guide.md for full setup instructions',
         ],
       },
     ],

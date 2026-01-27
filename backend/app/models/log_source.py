@@ -26,6 +26,7 @@ class ParserType(str, Enum):
 
     # Built-in parsers
     ADGUARD = "adguard"
+    AUTHENTIK = "authentik"  # Authentik identity provider events
     UNIFI = "unifi"
     PFSENSE = "pfsense"
     OLLAMA = "ollama"  # Ollama LLM server parser

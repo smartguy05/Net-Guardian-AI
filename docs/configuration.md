@@ -10,6 +10,7 @@ NetGuardian AI is configured via environment variables. All settings can be set 
 - [HTTP Client Settings](#http-client-settings)
 - [Rate Limiting](#rate-limiting)
 - [Authentication](#authentication)
+- [Authentik SSO Integration](#authentik-sso-integration)
 - [CORS Settings](#cors-settings)
 - [Log Ingestion](#log-ingestion)
 - [AdGuard Home Integration](#adguard-home-integration)
@@ -101,6 +102,119 @@ API rate limiting to prevent abuse.
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | int | `7` | Refresh token expiry in days |
 
 **Important:** Always set a secure `SECRET_KEY` in production!
+
+---
+
+## Authentik SSO Integration
+
+Enable Single Sign-On (SSO) via Authentik identity provider using OAuth2/OIDC.
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `AUTHENTIK_ENABLED` | bool | `false` | Enable Authentik SSO |
+| `AUTHENTIK_ISSUER_URL` | string | `` | Authentik OIDC issuer URL (e.g., `https://auth.example.com/application/o/netguardian/`) |
+| `AUTHENTIK_CLIENT_ID` | string | `` | OAuth2 client ID |
+| `AUTHENTIK_CLIENT_SECRET` | string | `` | OAuth2 client secret |
+| `AUTHENTIK_REDIRECT_URI` | string | `` | OAuth2 callback URL (e.g., `http://localhost:5173/auth/callback`) |
+| `AUTHENTIK_SCOPES` | string | `openid profile email groups` | OAuth2 scopes to request |
+| `AUTHENTIK_GROUP_MAPPINGS` | string | `{}` | JSON mapping of Authentik groups to NetGuardian roles |
+| `AUTHENTIK_AUTO_CREATE_USERS` | bool | `true` | Automatically create users on first SSO login |
+| `AUTHENTIK_DEFAULT_ROLE` | string | `viewer` | Default role for auto-created users |
+
+### Setting Up Authentik
+
+1. **Create an OAuth2/OIDC Provider in Authentik:**
+   - Go to Applications > Providers > Create
+   - Select "OAuth2/OIDC Provider"
+   - Set Authorization flow and Client type to "Confidential"
+   - Note the Client ID and Client Secret
+
+2. **Create an Application:**
+   - Go to Applications > Applications > Create
+   - Link to your OAuth2/OIDC provider
+   - Set the Launch URL to your NetGuardian frontend URL
+
+3. **Configure Groups (optional):**
+   - Create groups in Authentik (e.g., `netguardian-admins`, `netguardian-operators`)
+   - Assign users to groups
+   - Configure group mappings in NetGuardian
+
+### Example Configuration
+
+```env
+AUTHENTIK_ENABLED=true
+AUTHENTIK_ISSUER_URL=https://auth.example.com/application/o/netguardian/
+AUTHENTIK_CLIENT_ID=netguardian-client-id
+AUTHENTIK_CLIENT_SECRET=your-client-secret
+AUTHENTIK_REDIRECT_URI=https://netguardian.example.com/auth/callback
+AUTHENTIK_SCOPES=openid profile email groups
+AUTHENTIK_GROUP_MAPPINGS={"netguardian-admins": "admin", "netguardian-operators": "operator"}
+AUTHENTIK_AUTO_CREATE_USERS=true
+AUTHENTIK_DEFAULT_ROLE=viewer
+```
+
+### Group to Role Mapping
+
+The `AUTHENTIK_GROUP_MAPPINGS` setting maps Authentik groups to NetGuardian roles:
+
+| Authentik Group | NetGuardian Role | Permissions |
+|-----------------|------------------|-------------|
+| `netguardian-admins` | `admin` | Full access |
+| `netguardian-operators` | `operator` | Operational access |
+| (default) | `viewer` | Read-only access |
+
+Role priority: `admin` > `operator` > `viewer`. If a user belongs to multiple groups, the highest-priority role is assigned.
+
+### User Provisioning Modes
+
+NetGuardian supports two user provisioning modes for SSO:
+
+**Mode 1: Auto-Create Users (Default)**
+- Set `AUTHENTIK_AUTO_CREATE_USERS=true`
+- Users are created automatically on first SSO login
+- Role assigned from Authentik groups or `AUTHENTIK_DEFAULT_ROLE`
+- Good for open enrollment or when Authentik controls access
+
+**Mode 2: Pre-Create Users (Controlled Access)**
+- Set `AUTHENTIK_AUTO_CREATE_USERS=false`
+- Admin manually creates users in NetGuardian first
+- User email must match their Authentik email
+- On first SSO login, accounts are linked by email
+- Only pre-approved users can access the system
+
+**Pre-Create Workflow:**
+1. Admin creates user in NetGuardian with desired role
+2. User email must match their Authentik account email
+3. User clicks "Sign in with Authentik" on login page
+4. System links accounts by email match
+5. User is logged in with their NetGuardian role
+
+This mode is recommended when you want to control exactly who can access NetGuardian, rather than granting access to anyone in Authentik.
+
+### Authentik Event Log Collection
+
+You can also collect Authentik's event logs as a log source:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/sources \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "authentik-events",
+    "name": "Authentik Events",
+    "source_type": "api_pull",
+    "parser_type": "authentik",
+    "config": {
+      "url": "https://auth.example.com",
+      "endpoint": "/api/v3/events/",
+      "auth_type": "bearer",
+      "api_key": "your-authentik-api-token",
+      "poll_interval_seconds": 60
+    }
+  }'
+```
+
+This monitors authentication events (logins, failures, impersonation, etc.) from your Authentik instance.
 
 ---
 

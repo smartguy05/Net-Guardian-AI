@@ -190,6 +190,7 @@ const sections: Section[] = [
     icon: Users,
     subsections: [
       { id: 'users-roles', title: 'User Roles' },
+      { id: 'users-sso', title: 'Authentik SSO' },
       { id: 'users-2fa', title: 'Two-Factor Authentication' },
     ],
   },
@@ -209,6 +210,7 @@ const sections: Section[] = [
     subsections: [
       { id: 'integrations-adguard', title: 'AdGuard Home' },
       { id: 'integrations-router', title: 'Router Integration' },
+      { id: 'integrations-authentik', title: 'Authentik' },
       { id: 'integrations-ollama', title: 'Ollama Monitoring' },
     ],
   },
@@ -1425,6 +1427,89 @@ curl -X POST http://localhost:8000/api/v1/semantic/runs/{source_id}/trigger \\
               </div>
             </div>
 
+            <div id="users-sso" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Authentik SSO</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                NetGuardian supports Single Sign-On (SSO) via Authentik identity provider using OAuth2/OIDC.
+              </p>
+
+              <h3 className="text-lg font-semibold mb-3">Logging in with SSO</h3>
+              <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-400 mb-6">
+                <li>Navigate to the login page</li>
+                <li>Click "Sign in with Authentik" below the login form</li>
+                <li>You'll be redirected to your organization's Authentik instance</li>
+                <li>Log in with your organization credentials</li>
+                <li>After authentication, you'll be redirected back to NetGuardian</li>
+              </ol>
+
+              <h3 className="text-lg font-semibold mb-3">Role Mapping</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Your NetGuardian role is automatically assigned based on your Authentik group membership:
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-gray-200 dark:border-zinc-700 text-sm mb-4">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-zinc-800">
+                      <th className="border border-gray-200 dark:border-zinc-700 px-4 py-2 text-left">Authentik Group</th>
+                      <th className="border border-gray-200 dark:border-zinc-700 px-4 py-2 text-left">NetGuardian Role</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-gray-600 dark:text-gray-400">
+                    <tr>
+                      <td className="border border-gray-200 dark:border-zinc-700 px-4 py-2">netguardian-admins</td>
+                      <td className="border border-gray-200 dark:border-zinc-700 px-4 py-2">Admin</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 dark:border-zinc-700 px-4 py-2">netguardian-operators</td>
+                      <td className="border border-gray-200 dark:border-zinc-700 px-4 py-2">Operator</td>
+                    </tr>
+                    <tr>
+                      <td className="border border-gray-200 dark:border-zinc-700 px-4 py-2">(default)</td>
+                      <td className="border border-gray-200 dark:border-zinc-700 px-4 py-2">Viewer</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 className="text-lg font-semibold mb-3 mt-6">User Provisioning Modes</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                NetGuardian supports two modes for SSO user provisioning:
+              </p>
+
+              <div className="space-y-4 mb-6">
+                <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Auto-Create Mode (Default)</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Set <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-700 rounded text-xs">AUTHENTIK_AUTO_CREATE_USERS=true</code>
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <li>Any Authentik user can access NetGuardian</li>
+                    <li>User account created automatically on first SSO login</li>
+                    <li>Role assigned from Authentik groups or default role</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">Pre-Create Mode (Controlled Access)</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Set <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-zinc-700 rounded text-xs">AUTHENTIK_AUTO_CREATE_USERS=false</code>
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <li>Admin creates users in NetGuardian first with desired roles</li>
+                    <li>User email must match their Authentik email address</li>
+                    <li>On first SSO login, accounts are linked automatically by email</li>
+                    <li>Unregistered users are rejected (403 error)</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  <strong>Tip:</strong> Use Pre-Create Mode when you want to control exactly who can access NetGuardian, rather than granting access to all Authentik users.
+                </p>
+              </div>
+            </div>
+
             <div id="users-2fa" className="mb-12">
               <h2 className="text-2xl font-bold mb-4">Two-Factor Authentication</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
@@ -1515,6 +1600,39 @@ ROUTER_URL=https://192.168.1.1
 ROUTER_USERNAME=admin
 ROUTER_PASSWORD=your-password
 ROUTER_VERIFY_SSL=true`}</CodeBlock>
+            </div>
+
+            <div id="integrations-authentik" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Authentik</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Integrate with Authentik for SSO authentication and event log monitoring.
+              </p>
+
+              <h3 className="text-lg font-semibold mb-3">SSO Configuration</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Enable Single Sign-On via Authentik OIDC:
+              </p>
+              <CodeBlock language="env">{`AUTHENTIK_ENABLED=true
+AUTHENTIK_ISSUER_URL=https://auth.example.com/application/o/netguardian/
+AUTHENTIK_CLIENT_ID=your-client-id
+AUTHENTIK_CLIENT_SECRET=your-client-secret
+AUTHENTIK_REDIRECT_URI=https://netguardian.example.com/auth/callback
+AUTHENTIK_GROUP_MAPPINGS={"netguardian-admins": "admin", "netguardian-operators": "operator"}
+AUTHENTIK_AUTO_CREATE_USERS=true
+AUTHENTIK_DEFAULT_ROLE=viewer`}</CodeBlock>
+
+              <h3 className="text-lg font-semibold mb-3 mt-6">Event Log Collection</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Monitor authentication events from Authentik by adding it as a log source:
+              </p>
+              <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400 mb-4">
+                <li>Create an API token in Authentik (Directory → Tokens)</li>
+                <li>Add an API Pull source with parser type "authentik"</li>
+                <li>Set endpoint to <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">/api/v3/events/</code></li>
+              </ul>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                <strong>Detected events:</strong> logins, failed logins, logouts, application authorizations, impersonation, suspicious requests, and policy exceptions.
+              </p>
             </div>
 
             <div id="integrations-ollama" className="mb-12">

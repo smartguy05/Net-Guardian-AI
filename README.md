@@ -20,10 +20,10 @@ All phases complete! The system provides comprehensive network security monitori
 ## Features
 
 ### Core Features
-- **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow), Grafana Loki
+- **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow), Grafana Loki, Authentik
 - **Device Inventory** - Auto-discovery with network topology visualization
 - **Real-time Event Processing** - Redis Streams event bus with WebSocket updates
-- **Authentication & RBAC** - JWT tokens, 2FA (TOTP), admin/operator/viewer roles
+- **Authentication & RBAC** - JWT tokens, 2FA (TOTP), Authentik SSO, admin/operator/viewer roles
 - **Dashboard** - Device list, event feed, alerts, stats overview
 - **TimescaleDB** - Time-series optimized storage for events
 - **Dark Mode** - Full dark theme support
@@ -241,6 +241,14 @@ ROUTER_URL=https://192.168.1.1:8443
 ROUTER_USERNAME=admin
 ROUTER_PASSWORD=your-password
 
+# Authentik SSO - optional
+AUTHENTIK_ENABLED=true
+AUTHENTIK_ISSUER_URL=https://auth.example.com/application/o/netguardian/
+AUTHENTIK_CLIENT_ID=your-client-id
+AUTHENTIK_CLIENT_SECRET=your-client-secret
+AUTHENTIK_REDIRECT_URI=https://netguardian.example.com/auth/callback
+AUTHENTIK_GROUP_MAPPINGS={"netguardian-admins": "admin", "netguardian-operators": "operator"}
+
 # Notifications - optional
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
@@ -317,6 +325,7 @@ curl -X POST http://localhost:8000/api/v1/sources \
 | Parser | Description |
 |--------|-------------|
 | adguard | AdGuard Home DNS query logs |
+| authentik | Authentik identity provider events (logins, SSO, etc.) |
 | unifi | UniFi Controller logs |
 | pfsense | pfSense/OPNsense firewall logs |
 | loki | Grafana Loki log aggregation |

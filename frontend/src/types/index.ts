@@ -11,6 +11,8 @@ export interface User {
   last_login: string | null;
   created_at: string;
   totp_enabled?: boolean;
+  is_external?: boolean;
+  external_provider?: string | null;
 }
 
 export interface UserListResponse {
@@ -127,7 +129,7 @@ export interface AlertListResponse {
 
 // Log Source types
 export type SourceType = 'api_pull' | 'file_watch' | 'api_push';
-export type ParserType = 'adguard' | 'unifi' | 'pfsense' | 'json' | 'syslog' | 'nginx' | 'custom';
+export type ParserType = 'adguard' | 'authentik' | 'unifi' | 'pfsense' | 'json' | 'syslog' | 'nginx' | 'custom' | 'ollama' | 'endpoint' | 'netflow' | 'sflow' | 'loki';
 
 export interface CreateSourceRequest {
   id: string;

@@ -22,6 +22,7 @@ import DocsPage from './pages/DocsPage';
 import SemanticReviewPage from './pages/SemanticReviewPage';
 import PatternsPage from './pages/PatternsPage';
 import SuggestedRulesPage from './pages/SuggestedRulesPage';
+import OIDCCallbackPage from './pages/OIDCCallbackPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -51,6 +52,9 @@ function App() {
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
         }
       />
+
+      {/* OIDC callback route */}
+      <Route path="/auth/callback" element={<OIDCCallbackPage />} />
 
       {/* Protected dashboard routes */}
       <Route

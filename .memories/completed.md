@@ -4,6 +4,113 @@ Tasks completed during implementation.
 
 ---
 
+## Authentik Integration (January 2026)
+
+### OAuth2/OIDC SSO Login - COMPLETE
+- [x] Backend configuration settings in `backend/app/config.py`:
+  - authentik_enabled, authentik_issuer_url, authentik_client_id
+  - authentik_client_secret, authentik_redirect_uri, authentik_scopes
+  - authentik_group_mappings (JSON), authentik_auto_create_users, authentik_default_role
+- [x] User model external auth fields in `backend/app/models/user.py`:
+  - external_id (unique, indexed), external_provider, is_external
+- [x] Database migration `backend/alembic/versions/20260127_0010_010_add_authentik_support.py`:
+  - Adds user columns, creates index, adds 'authentik' to parsertype enum
+- [x] OIDC Service in `backend/app/services/oidc_service.py`:
+  - OIDCService class with PKCE support, JWKS caching
+  - get_oidc_config(), generate_pkce(), generate_state()
+  - get_authorization_url(), exchange_code(), validate_id_token()
+  - map_groups_to_role(), extract_user_info()
+  - Singleton pattern via get_oidc_service()
+- [x] Auth API endpoints in `backend/app/api/v1/auth.py`:
+  - GET /oidc/config - Return OIDC config for frontend
+  - GET /oidc/authorize - Initiate OIDC flow with PKCE
+  - POST /oidc/callback - Handle callback, validate tokens, create/update user
+
+### Authentik Log Parser - COMPLETE
+- [x] Created `backend/app/parsers/authentik_parser.py`:
+  - @register_parser("authentik") decorator
+  - ACTION_SEVERITY_MAP for event severity mapping
+  - SECURITY_ACTIONS for security event flagging
+  - Parses paginated {"results": [...]} or direct list format
+  - Extracts client_ip from context.http_request or geo
+  - Returns ParseResult with event_type=AUTH
+- [x] Added AUTHENTIK to ParserType enum in `backend/app/models/log_source.py`
+- [x] Registered parser in `backend/app/parsers/__init__.py`
+
+### Frontend OIDC Integration - COMPLETE
+- [x] Updated `frontend/src/types/index.ts`:
+  - Added is_external, external_provider to User interface
+  - Added 'authentik' to ParserType
+- [x] Added OIDC hooks to `frontend/src/api/hooks.ts`:
+  - OIDCConfig, OIDCAuthorizeResponse, OIDCCallbackRequest types
+  - useOIDCConfig(), useOIDCAuthorize(), useOIDCCallback()
+- [x] Updated `frontend/src/pages/LoginPage.tsx`:
+  - Added "Sign in with Authentik" SSO button
+  - handleSSOLogin() with PKCE code verifier generation
+  - Stores state and code_verifier in sessionStorage
+- [x] Created `frontend/src/pages/OIDCCallbackPage.tsx`:
+  - Handles /auth/callback route
+  - Validates state against sessionStorage
+  - Calls oidcCallback mutation, navigates on success/error
+- [x] Added route in `frontend/src/App.tsx`:
+  - `<Route path="/auth/callback" element={<OIDCCallbackPage />} />`
+- [x] Updated `frontend/src/components/AddSourceModal.tsx`:
+  - Added 'authentik' to parserTypeOptions
+
+### Email-Based User Linking - COMPLETE
+- [x] Updated `backend/app/api/v1/auth.py` OIDC callback to support user account linking:
+  - First lookup by external_id (already linked SSO user)
+  - If not found, lookup by email address (pre-created local user)
+  - If found by email, link account by setting external_id, external_provider, is_external
+  - Only create new user if AUTHENTIK_AUTO_CREATE_USERS=true
+  - Enables workflow: Admin creates user locally → User logs in via SSO → Accounts linked by email
+
+### Tests - COMPLETE
+- [x] Created `backend/tests/services/test_oidc_service.py`:
+  - Tests for is_configured, generate_pkce, generate_state
+  - Tests for get_oidc_config with caching
+  - Tests for map_groups_to_role with priority and defaults
+  - Tests for extract_user_info
+- [x] Created `backend/tests/parsers/test_authentik_parser.py`:
+  - Tests for login, login_failed, suspicious_request events
+  - Tests for impersonation, authorize_application events
+  - Tests for paginated and direct list formats
+  - Tests for timestamp parsing and client IP extraction
+- [x] Created `backend/tests/api/test_auth_oidc.py`:
+  - Tests for /oidc/config endpoint
+  - Tests for /oidc/authorize endpoint
+  - Tests for /oidc/callback with various scenarios
+  - Tests for email-based user linking
+- [x] Added `test_client` fixture to `backend/tests/conftest.py` for API integration tests
+- [x] Fixed test mock to use actual `UserRole` enum instead of MagicMock
+
+### Documentation - COMPLETE
+- [x] Updated `docs/configuration.md`:
+  - Added Authentik SSO Integration section with all settings
+  - Added Authentik setup instructions
+  - Added group-to-role mapping documentation
+  - Added Authentik event log collection example
+- [x] Updated `docs/user-guide.md`:
+  - Added SSO login instructions in Getting Started section
+  - Added Authentik Event Sources documentation
+  - Updated event types to include Auth events
+- [x] Updated `docs/deployment-guide.md`:
+  - Added Authentik SSO configuration example
+  - Added full Authentik SSO Setup section with step-by-step instructions
+  - Added event log collection instructions
+- [x] Updated `README.md`:
+  - Added Authentik to Core Features
+  - Added authentik parser to Supported Parsers table
+  - Added Authentik SSO configuration example
+- [x] Updated `frontend/src/pages/DocsPage.tsx`:
+  - Added Authentik SSO subsection under User Management
+  - Added Authentik subsection under Integrations
+- [x] Updated `CLAUDE.md`:
+  - Added Authentik to Integration Points
+  - Added AUTHENTIK_* to Integrations configuration
+
+---
+
 ## Test Suite Fixes (January 2026)
 
 ### Fixed 33 Failing Tests

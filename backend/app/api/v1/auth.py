@@ -1,14 +1,19 @@
 """Authentication API endpoints."""
 
+import secrets
 from datetime import datetime, timezone
 from typing import Annotated, List, Optional
+from uuid import uuid4
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
+from app.core.cache import get_cache_service
 from app.core.exceptions import AuthenticationError
 from app.core.rate_limit import login_rate_limiter
 from app.core.security import (
@@ -23,7 +28,14 @@ from app.core.security import (
 from app.core.validation import validate_password_strength
 from app.db.session import get_async_session
 from app.models.user import User
+from app.services.oidc_service import (
+    OIDCError,
+    OIDCService,
+    get_oidc_service,
+)
 from app.services.totp_service import get_totp_service
+
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -570,3 +582,316 @@ async def get_2fa_status(
         "enabled": current_user.totp_enabled,
         "backup_codes_remaining": len(current_user.backup_codes or []),
     }
+
+
+# ============================================================================
+# OIDC/Authentik SSO Endpoints
+# ============================================================================
+
+
+class OIDCConfigResponse(BaseModel):
+    """Response for OIDC configuration."""
+    enabled: bool
+    issuer: str | None = None
+    client_id: str | None = None
+
+
+class OIDCAuthorizeResponse(BaseModel):
+    """Response for OIDC authorization initiation."""
+    authorization_url: str
+    state: str
+
+
+class OIDCCallbackRequest(BaseModel):
+    """Request for OIDC callback."""
+    code: str
+    state: str
+    code_verifier: str
+
+
+@router.get("/oidc/config", response_model=OIDCConfigResponse)
+async def get_oidc_config() -> OIDCConfigResponse:
+    """Return OIDC configuration for frontend.
+
+    This endpoint returns public OIDC configuration info that the
+    frontend needs to display SSO login options.
+    """
+    oidc_service = get_oidc_service()
+
+    if not oidc_service.is_configured:
+        return OIDCConfigResponse(enabled=False)
+
+    return OIDCConfigResponse(
+        enabled=True,
+        issuer=settings.authentik_issuer_url,
+        client_id=settings.authentik_client_id,
+    )
+
+
+@router.get("/oidc/authorize", response_model=OIDCAuthorizeResponse)
+async def oidc_authorize() -> OIDCAuthorizeResponse:
+    """Initiate OIDC authorization flow.
+
+    Returns the authorization URL to redirect the user to and the state
+    parameter for CSRF protection. The frontend should store the state
+    and code_verifier in sessionStorage.
+    """
+    oidc_service = get_oidc_service()
+
+    if not oidc_service.is_configured:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OIDC is not configured",
+        )
+
+    # Generate PKCE values
+    code_verifier, code_challenge = oidc_service.generate_pkce()
+
+    # Generate state for CSRF protection
+    state = oidc_service.generate_state()
+
+    try:
+        # Get the authorization URL
+        authorization_url = await oidc_service.get_authorization_url(state, code_challenge)
+
+        # Store the code_verifier in Redis with the state as key (5 minute expiry)
+        cache_key = f"oidc_state:{state}"
+        cache = get_cache_service()
+        if cache:
+            await cache.set(cache_key, code_verifier, ttl=300)
+        else:
+            logger.warning("oidc_cache_unavailable", msg="Cache service not available for OIDC state storage")
+
+        logger.info("oidc_authorize_initiated", state=state[:8])
+
+        return OIDCAuthorizeResponse(
+            authorization_url=authorization_url,
+            state=state,
+        )
+
+    except OIDCError as e:
+        logger.error("oidc_authorize_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to initiate OIDC flow: {e}",
+        )
+
+
+@router.post("/oidc/callback", response_model=LoginResponse)
+async def oidc_callback(
+    request: OIDCCallbackRequest,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+) -> LoginResponse:
+    """Handle OIDC callback after user authenticates with Authentik.
+
+    This endpoint:
+    1. Validates the state parameter (CSRF check)
+    2. Exchanges the authorization code for tokens
+    3. Validates the ID token
+    4. Creates or updates the user in the database
+    5. Returns NetGuardian JWT tokens
+    """
+    oidc_service = get_oidc_service()
+
+    if not oidc_service.is_configured:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OIDC is not configured",
+        )
+
+    # Validate state (CSRF check)
+    cache_key = f"oidc_state:{request.state}"
+    cache = get_cache_service()
+    stored_code_verifier = None
+    if cache:
+        stored_code_verifier = await cache.get(cache_key)
+
+    if not stored_code_verifier:
+        logger.warning("oidc_invalid_state", state=request.state[:8])
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired state parameter",
+        )
+
+    # Delete the state from cache (one-time use)
+    if cache:
+        await cache.delete(cache_key)
+
+    try:
+        # Exchange code for tokens
+        token_response = await oidc_service.exchange_code(
+            request.code,
+            request.code_verifier,
+        )
+
+        id_token = token_response.get("id_token")
+        if not id_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No ID token in response",
+            )
+
+        # Validate ID token and extract claims
+        claims = await oidc_service.validate_id_token(id_token)
+        user_info = oidc_service.extract_user_info(claims)
+
+        sub = user_info.get("sub")
+        if not sub:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No subject in ID token",
+            )
+
+        # Map groups to role
+        groups = user_info.get("groups", [])
+        role = oidc_service.map_groups_to_role(groups)
+
+        # Find existing user by external_id (returning SSO user)
+        result = await session.execute(
+            select(User).where(User.external_id == sub)
+        )
+        user = result.scalar_one_or_none()
+
+        if user:
+            # Update existing SSO user
+            if user.role != role:
+                logger.info(
+                    "oidc_user_role_updated",
+                    user_id=str(user.id),
+                    old_role=user.role.value,
+                    new_role=role.value,
+                    groups=groups,
+                )
+                user.role = role
+
+            user.last_login = datetime.now(timezone.utc)
+
+        else:
+            # Try to find existing local user by email to link accounts
+            email = user_info.get("email")
+            if email:
+                result = await session.execute(
+                    select(User).where(User.email == email)
+                )
+                user = result.scalar_one_or_none()
+
+            if user:
+                # Link existing local user to Authentik identity
+                logger.info(
+                    "oidc_user_linked",
+                    user_id=str(user.id),
+                    username=user.username,
+                    email=email,
+                    external_id=sub,
+                )
+                user.external_id = sub
+                user.external_provider = "authentik"
+                user.is_external = True
+                user.last_login = datetime.now(timezone.utc)
+
+                # Update role based on groups
+                if user.role != role:
+                    logger.info(
+                        "oidc_user_role_updated",
+                        user_id=str(user.id),
+                        old_role=user.role.value,
+                        new_role=role.value,
+                        groups=groups,
+                    )
+                    user.role = role
+
+            elif settings.authentik_auto_create_users:
+                # Create new user
+                username = user_info.get("username")
+
+                if not email or not username:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Email and username required in ID token",
+                    )
+
+                # Ensure username is unique (append suffix if needed)
+                base_username = username.lower()[:45]
+                final_username = base_username
+                suffix = 1
+
+                while True:
+                    existing = await session.execute(
+                        select(User).where(User.username == final_username)
+                    )
+                    if not existing.scalar_one_or_none():
+                        break
+                    final_username = f"{base_username}_{suffix}"
+                    suffix += 1
+
+                # Create user with random password (won't be used for SSO users)
+                user = User(
+                    id=uuid4(),
+                    username=final_username,
+                    email=email,
+                    password_hash=hash_password(secrets.token_urlsafe(32)),
+                    role=role,
+                    is_active=True,
+                    must_change_password=False,
+                    last_login=datetime.now(timezone.utc),
+                    external_id=sub,
+                    external_provider="authentik",
+                    is_external=True,
+                )
+                session.add(user)
+
+                logger.info(
+                    "oidc_user_created",
+                    username=final_username,
+                    email=email,
+                    role=role.value,
+                    groups=groups,
+                )
+
+            else:
+                # Auto-create disabled and user doesn't exist
+                logger.warning(
+                    "oidc_user_not_found",
+                    sub=sub,
+                    email=user_info.get("email"),
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="User not found and auto-creation is disabled",
+                )
+
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User account is disabled",
+            )
+
+        await session.commit()
+
+        # Generate NetGuardian tokens
+        access_token = create_access_token(str(user.id), user.role)
+        refresh_token = create_refresh_token(str(user.id))
+
+        logger.info("oidc_login_success", user_id=str(user.id), username=user.username)
+
+        return LoginResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=UserResponse(
+                id=str(user.id),
+                username=user.username,
+                email=user.email,
+                role=user.role.value,
+                is_active=user.is_active,
+                must_change_password=user.must_change_password,
+                last_login=user.last_login,
+                totp_enabled=user.totp_enabled,
+            ),
+        )
+
+    except OIDCError as e:
+        logger.error("oidc_callback_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"OIDC authentication failed: {e}",
+        )

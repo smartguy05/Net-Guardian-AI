@@ -180,6 +180,140 @@ OLLAMA_DEFAULT_MODEL=llama3.2
 OLLAMA_TIMEOUT_SECONDS=120
 ```
 
+**Authentik SSO:**
+```bash
+# Enable Single Sign-On via Authentik
+AUTHENTIK_ENABLED=true
+AUTHENTIK_ISSUER_URL=https://auth.example.com/application/o/netguardian/
+AUTHENTIK_CLIENT_ID=your-client-id
+AUTHENTIK_CLIENT_SECRET=your-client-secret
+AUTHENTIK_REDIRECT_URI=https://netguardian.example.com/auth/callback
+AUTHENTIK_GROUP_MAPPINGS={"netguardian-admins": "admin", "netguardian-operators": "operator"}
+AUTHENTIK_AUTO_CREATE_USERS=true
+AUTHENTIK_DEFAULT_ROLE=viewer
+```
+
+## Authentik SSO Setup
+
+### Prerequisites
+
+- Running Authentik instance (self-hosted or cloud)
+- Admin access to create OAuth2/OIDC providers
+
+### Step 1: Create OAuth2/OIDC Provider in Authentik
+
+1. Log in to your Authentik admin interface
+2. Navigate to **Applications > Providers**
+3. Click **Create** and select **OAuth2/OIDC Provider**
+4. Configure:
+   - **Name:** NetGuardian AI
+   - **Authorization flow:** default-provider-authorization-implicit-consent (or your preferred flow)
+   - **Client type:** Confidential
+   - **Redirect URIs:** `https://your-netguardian-url/auth/callback`
+   - **Scopes:** openid, profile, email, groups
+
+5. Save and note the **Client ID** and **Client Secret**
+
+### Step 2: Create Application in Authentik
+
+1. Navigate to **Applications > Applications**
+2. Click **Create**
+3. Configure:
+   - **Name:** NetGuardian AI
+   - **Slug:** netguardian
+   - **Provider:** Select the provider you created
+   - **Launch URL:** Your NetGuardian frontend URL
+
+### Step 3: Configure Groups (Optional)
+
+For role-based access control:
+
+1. Create groups in Authentik:
+   - `netguardian-admins` - Full admin access
+   - `netguardian-operators` - Operational access
+   - (Users without groups get `viewer` role by default)
+
+2. Assign users to appropriate groups
+
+3. Configure group mappings in NetGuardian:
+   ```bash
+   AUTHENTIK_GROUP_MAPPINGS={"netguardian-admins": "admin", "netguardian-operators": "operator"}
+   ```
+
+### Step 4: Configure NetGuardian
+
+Add the following to your `.env` file:
+
+```bash
+AUTHENTIK_ENABLED=true
+AUTHENTIK_ISSUER_URL=https://auth.example.com/application/o/netguardian/
+AUTHENTIK_CLIENT_ID=<from-step-1>
+AUTHENTIK_CLIENT_SECRET=<from-step-1>
+AUTHENTIK_REDIRECT_URI=https://your-netguardian-url/auth/callback
+```
+
+### User Provisioning Options
+
+**Option A: Auto-Create Users (Default)**
+```bash
+AUTHENTIK_AUTO_CREATE_USERS=true
+AUTHENTIK_DEFAULT_ROLE=viewer
+```
+- Any Authentik user can access NetGuardian
+- Users created automatically on first SSO login
+- Role assigned from Authentik groups or default role
+
+**Option B: Pre-Create Users (Controlled Access)**
+```bash
+AUTHENTIK_AUTO_CREATE_USERS=false
+```
+1. Admin creates users in NetGuardian via Users page
+2. User email must match their Authentik email address
+3. Assign desired role to each user
+4. When user logs in via Authentik, accounts are linked by email
+5. Only pre-approved users can access the system
+
+This approach is recommended when:
+- You want to control exactly who has access
+- Users need specific roles not mapped from Authentik groups
+- You need to audit and approve access before granting it
+
+### Verifying SSO Setup
+
+1. Restart NetGuardian backend
+2. Navigate to the login page
+3. You should see "Sign in with Authentik" button
+4. Click it and verify you're redirected to Authentik
+5. After login, verify you're redirected back and logged in
+
+### Collecting Authentik Event Logs
+
+To monitor authentication events from Authentik:
+
+1. Create an API token in Authentik:
+   - Go to **Directory > Tokens & App passwords**
+   - Create a new token with appropriate permissions
+
+2. Add a log source in NetGuardian:
+   ```bash
+   curl -X POST http://localhost:8000/api/v1/sources \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "id": "authentik-events",
+       "name": "Authentik Events",
+       "source_type": "api_pull",
+       "parser_type": "authentik",
+       "config": {
+         "url": "https://auth.example.com",
+         "endpoint": "/api/v3/events/",
+         "auth_type": "bearer",
+         "api_key": "your-api-token",
+         "poll_interval_seconds": 60
+       }
+     }'
+   ```
+
 ## Endpoint Agent Deployment
 
 The optional endpoint agent monitors workstations for process and network activity.

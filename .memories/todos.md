@@ -2,7 +2,31 @@
 
 Remaining tasks organized by priority.
 
-**Status:** Phase 9 (Semantic Log Analysis) COMPLETE
+**Status:** Phase 9 (Semantic Log Analysis) COMPLETE + Authentik Integration COMPLETE
+
+---
+
+## Authentik Integration (COMPLETE)
+
+### OAuth2/OIDC SSO Login - COMPLETE
+- [x] Backend configuration settings (authentik_enabled, issuer_url, client_id, etc.)
+- [x] User model external auth fields (external_id, external_provider, is_external)
+- [x] Database migration for user columns and parser type
+- [x] OIDC Service (PKCE, token exchange, validation, group mapping)
+- [x] Auth API endpoints (/oidc/config, /oidc/authorize, /oidc/callback)
+- [x] Frontend OIDC hooks and SSO login button
+- [x] OIDC callback page for redirect handling
+- [x] Email-based user account linking (pre-create users locally, link on SSO login)
+
+### Authentik Log Parser - COMPLETE
+- [x] Parser for Authentik /api/v3/events/ API
+- [x] Event severity mapping and security event flagging
+- [x] Frontend parser option in AddSourceModal
+
+### Tests - COMPLETE
+- [x] OIDC service unit tests
+- [x] Authentik parser unit tests
+- [x] Auth OIDC API endpoint tests
 
 ---
 
@@ -133,7 +157,7 @@ Remaining tasks organized by priority.
 
 - [ ] Dashboard customization (drag-and-drop widgets)
 - [ ] Multi-tenant support
-- [ ] LDAP/Active Directory integration
+- [x] ~~LDAP/Active Directory integration~~ → Authentik SSO integration complete
 - [ ] Grafana dashboard templates
 - [ ] Kubernetes Helm chart
 
@@ -150,6 +174,7 @@ Remaining tasks organized by priority.
 - [x] Endpoint Agent
 - [x] Ollama LLM monitoring
 - [x] Grafana Loki (query + push API)
+- [x] Authentik (identity provider events)
 
 ---
 
