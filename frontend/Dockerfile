@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (use --force to handle cross-platform lockfile issues)
+RUN npm ci || npm install --force
 
 # Install matching esbuild version globally to work around permission issues
 RUN npm install -g esbuild@0.21.5
