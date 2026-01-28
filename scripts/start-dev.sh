@@ -132,9 +132,19 @@ echo -e "  ${GREEN}Backend configuration ready${NC}"
 # Step 3: Install dependencies if needed
 echo -e "${YELLOW}[3/5] Checking dependencies...${NC}"
 cd "$PROJECT_ROOT/backend"
-if [[ ! -d ".venv" ]] && [[ -z "$VIRTUAL_ENV" ]]; then
-    echo "  Note: Consider using a virtual environment"
+
+# Create virtual environment if it doesn't exist
+if [[ ! -d ".venv" ]]; then
+    echo "  Creating Python virtual environment..."
+    python3 -m venv .venv
 fi
+
+# Activate virtual environment
+source .venv/bin/activate
+echo "  Using virtual environment: $VIRTUAL_ENV"
+
+# Install backend dependencies
+echo "  Installing backend dependencies..."
 pip install -q -e . 2>/dev/null || pip install -e .
 
 cd "$PROJECT_ROOT/frontend"
@@ -147,13 +157,13 @@ echo -e "  ${GREEN}Dependencies ready${NC}"
 # Step 4: Run migrations
 echo -e "${YELLOW}[4/5] Running database migrations...${NC}"
 cd "$PROJECT_ROOT/backend"
-alembic upgrade head
+.venv/bin/alembic upgrade head
 echo -e "  ${GREEN}Migrations complete${NC}"
 
 # Seed data if requested
 if $SEED_DATA; then
     echo "  Loading demo data..."
-    python scripts/seed_demo_data.py
+    .venv/bin/python scripts/seed_demo_data.py
     echo -e "  ${GREEN}Demo data loaded${NC}"
 fi
 
@@ -174,7 +184,7 @@ trap cleanup SIGINT SIGTERM
 # Start backend
 echo "  Starting backend on port 8000..."
 cd "$PROJECT_ROOT/backend"
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
+.venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 # Start frontend

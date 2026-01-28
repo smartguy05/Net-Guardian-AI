@@ -2,9 +2,10 @@
 
 import asyncio
 import hashlib
+import time
 from datetime import datetime, timezone
-from typing import Dict, Optional
-from uuid import uuid4
+from typing import Dict, List, Optional, Tuple
+from uuid import UUID, uuid4
 
 import structlog
 from sqlalchemy import select
@@ -14,23 +15,86 @@ from app.collectors import get_collector
 from app.collectors.base import BaseCollector
 from app.db.session import AsyncSessionLocal
 from app.events.bus import EventBus, get_event_bus
-from app.models.device import Device
+from app.models.device import Device, DeviceStatus
 from app.models.log_source import LogSource
 from app.models.raw_event import RawEvent
 from app.parsers.base import ParseResult
-from app.services.semantic_analysis_service import get_semantic_analysis_service
 
 logger = structlog.get_logger()
 
 
+# Configuration constants
+BATCH_SIZE = 100  # Number of events to batch before committing
+BATCH_TIMEOUT = 2.0  # Seconds to wait before flushing incomplete batch
+MAX_CONCURRENT_BATCHES = 3  # Max concurrent batch processing
+DEVICE_CACHE_TTL = 300  # Seconds to cache IP->device mappings
+SEMANTIC_QUEUE_SIZE = 10000  # Max queued events for semantic analysis
+SEMANTIC_BATCH_SIZE = 50  # Events to process per semantic analysis batch
+
+
+class DeviceCache:
+    """TTL-based cache for IP address to device ID mappings."""
+
+    def __init__(self, ttl: int = DEVICE_CACHE_TTL):
+        self._cache: Dict[str, Tuple[Optional[UUID], float]] = {}
+        self._ttl = ttl
+
+    def get(self, ip_address: str) -> Tuple[Optional[UUID], bool]:
+        """Get device ID for IP. Returns (device_id, cache_hit)."""
+        if ip_address in self._cache:
+            device_id, timestamp = self._cache[ip_address]
+            if time.time() - timestamp < self._ttl:
+                return device_id, True
+            # Expired
+            del self._cache[ip_address]
+        return None, False
+
+    def set(self, ip_address: str, device_id: Optional[UUID]) -> None:
+        """Cache device ID for IP."""
+        self._cache[ip_address] = (device_id, time.time())
+
+    def invalidate(self, ip_address: str) -> None:
+        """Remove IP from cache."""
+        self._cache.pop(ip_address, None)
+
+    def clear(self) -> None:
+        """Clear all cached entries."""
+        self._cache.clear()
+
+    def cleanup_expired(self) -> int:
+        """Remove expired entries. Returns count removed."""
+        now = time.time()
+        expired = [k for k, (_, ts) in self._cache.items() if now - ts >= self._ttl]
+        for k in expired:
+            del self._cache[k]
+        return len(expired)
+
+
 class CollectorService:
-    """Service for managing log collectors and processing events."""
+    """Service for managing log collectors and processing events.
+
+    Optimizations:
+    - Batch inserts: Events are batched and committed together
+    - Concurrent processing: Multiple batches processed in parallel
+    - Deferred semantic analysis: Queued for background processing
+    - Device cache: IP->device mappings cached to reduce DB queries
+    """
 
     def __init__(self):
         self._collectors: Dict[str, BaseCollector] = {}
         self._collector_tasks: Dict[str, asyncio.Task] = {}
         self._running = False
         self._event_bus: Optional[EventBus] = None
+
+        # Batch processing
+        self._batch_semaphore = asyncio.Semaphore(MAX_CONCURRENT_BATCHES)
+
+        # Device cache
+        self._device_cache = DeviceCache()
+
+        # Deferred semantic analysis
+        self._semantic_queue: asyncio.Queue = asyncio.Queue(maxsize=SEMANTIC_QUEUE_SIZE)
+        self._semantic_task: Optional[asyncio.Task] = None
 
     async def start(self) -> None:
         """Start the collector service."""
@@ -41,6 +105,9 @@ class CollectorService:
         self._event_bus = await get_event_bus()
 
         logger.info("collector_service_starting")
+
+        # Start semantic analysis background task
+        self._semantic_task = asyncio.create_task(self._semantic_analysis_worker())
 
         # Load and start all enabled sources
         await self._load_sources()
@@ -59,6 +126,18 @@ class CollectorService:
         # Stop all collectors
         for source_id in list(self._collectors.keys()):
             await self._stop_collector(source_id)
+
+        # Stop semantic analysis worker
+        if self._semantic_task:
+            self._semantic_task.cancel()
+            try:
+                await self._semantic_task
+            except asyncio.CancelledError:
+                pass
+            self._semantic_task = None
+
+        # Clear caches
+        self._device_cache.clear()
 
         logger.info("collector_service_stopped")
 
@@ -147,87 +226,110 @@ class CollectorService:
         source_id: str,
         collector: BaseCollector,
     ) -> None:
-        """Process events from a collector."""
+        """Process events from a collector with batching."""
+        batch: List[ParseResult] = []
+        last_flush = time.time()
+
         async for event in collector.collect():
             if not self._running:
                 break
 
-            try:
-                await self._handle_event(source_id, event)
-            except Exception as e:
-                logger.error(
-                    "event_processing_error",
-                    source_id=source_id,
-                    error=str(e),
-                )
+            batch.append(event)
 
-    async def _handle_event(
-        self,
-        source_id: str,
-        event: ParseResult,
-    ) -> None:
-        """Handle a single parsed event."""
-        async with AsyncSessionLocal() as session:
-            # Try to find/create device from client IP
-            device_id = None
-            if event.client_ip:
-                device_id = await self._get_or_create_device(
-                    session, event.client_ip
-                )
-
-            # Create raw event record
-            raw_event = RawEvent(
-                id=uuid4(),
-                timestamp=event.timestamp,
-                source_id=source_id,
-                event_type=event.event_type,
-                severity=event.severity,
-                client_ip=event.client_ip,
-                target_ip=event.target_ip,
-                domain=event.domain,
-                port=event.port,
-                protocol=event.protocol,
-                action=event.action,
-                response_status=event.response_status,
-                raw_message=event.raw_message,
-                parsed_fields=event.parsed_fields,
-                device_id=device_id,
+            # Flush batch if full or timeout reached
+            should_flush = (
+                len(batch) >= BATCH_SIZE or
+                (batch and time.time() - last_flush >= BATCH_TIMEOUT)
             )
 
-            session.add(raw_event)
+            if should_flush:
+                # Process batch concurrently (limited by semaphore)
+                asyncio.create_task(
+                    self._process_batch(source_id, batch.copy())
+                )
+                batch.clear()
+                last_flush = time.time()
 
-            # Update source metadata
-            source = await session.get(LogSource, source_id)
-            if source:
-                source.last_event_at = datetime.now(timezone.utc)
-                source.event_count += 1
-                source.last_error = None
+        # Flush remaining events
+        if batch:
+            await self._process_batch(source_id, batch)
 
-            await session.commit()
+    async def _process_batch(
+        self,
+        source_id: str,
+        events: List[ParseResult],
+    ) -> None:
+        """Process a batch of events with a single database transaction."""
+        if not events:
+            return
 
-            # Process for semantic analysis (pattern learning + irregularity detection)
+        async with self._batch_semaphore:
             try:
-                semantic_service = get_semantic_analysis_service(session)
-                irregular_log = await semantic_service.process_event(raw_event)
-                if irregular_log:
-                    logger.debug(
-                        "irregular_log_flagged",
-                        event_id=str(raw_event.id),
-                        source_id=source_id,
-                        reason=irregular_log.reason,
-                    )
+                await self._handle_event_batch(source_id, events)
             except Exception as e:
-                # Log but don't fail event processing for semantic analysis errors
-                logger.warning(
-                    "semantic_analysis_error",
-                    event_id=str(raw_event.id),
+                logger.error(
+                    "batch_processing_error",
                     source_id=source_id,
+                    batch_size=len(events),
                     error=str(e),
                 )
 
-            # Publish event to Redis
-            if self._event_bus:
-                await self._event_bus.publish_raw_event({
+    async def _handle_event_batch(
+        self,
+        source_id: str,
+        events: List[ParseResult],
+    ) -> None:
+        """Handle a batch of parsed events with optimized DB operations."""
+        async with AsyncSessionLocal() as session:
+            raw_events: List[RawEvent] = []
+            event_data_for_bus: List[dict] = []
+
+            # Collect unique IPs that need device lookup
+            ips_to_lookup: Dict[str, Optional[UUID]] = {}
+            for event in events:
+                if event.client_ip and event.client_ip not in ips_to_lookup:
+                    # Check cache first
+                    device_id, cache_hit = self._device_cache.get(event.client_ip)
+                    if cache_hit:
+                        ips_to_lookup[event.client_ip] = device_id
+                    else:
+                        ips_to_lookup[event.client_ip] = None  # Needs lookup
+
+            # Batch lookup uncached IPs
+            uncached_ips = [ip for ip, dev_id in ips_to_lookup.items() if dev_id is None]
+            if uncached_ips:
+                device_map = await self._batch_get_or_create_devices(session, uncached_ips)
+                ips_to_lookup.update(device_map)
+                # Update cache
+                for ip, device_id in device_map.items():
+                    self._device_cache.set(ip, device_id)
+
+            # Create all RawEvent records
+            for event in events:
+                device_id = ips_to_lookup.get(event.client_ip) if event.client_ip else None
+
+                raw_event = RawEvent(
+                    id=uuid4(),
+                    timestamp=event.timestamp,
+                    source_id=source_id,
+                    event_type=event.event_type,
+                    severity=event.severity,
+                    client_ip=event.client_ip,
+                    target_ip=event.target_ip,
+                    domain=event.domain,
+                    port=event.port,
+                    protocol=event.protocol,
+                    action=event.action,
+                    response_status=event.response_status,
+                    raw_message=event.raw_message,
+                    parsed_fields=event.parsed_fields,
+                    device_id=device_id,
+                )
+                raw_events.append(raw_event)
+                session.add(raw_event)
+
+                # Prepare event bus data
+                event_data_for_bus.append({
                     "id": str(raw_event.id),
                     "source_id": source_id,
                     "event_type": event.event_type.value,
@@ -238,51 +340,165 @@ class CollectorService:
                     "device_id": str(device_id) if device_id else None,
                 })
 
-    async def _get_or_create_device(
+            # Update source metadata (single update for the whole batch)
+            source = await session.get(LogSource, source_id)
+            if source:
+                source.last_event_at = datetime.now(timezone.utc)
+                source.event_count += len(events)
+                source.last_error = None
+
+            # Single commit for entire batch
+            await session.commit()
+
+            logger.debug(
+                "batch_committed",
+                source_id=source_id,
+                event_count=len(events),
+            )
+
+            # Queue events for deferred semantic analysis
+            for raw_event in raw_events:
+                try:
+                    self._semantic_queue.put_nowait(raw_event)
+                except asyncio.QueueFull:
+                    # Queue full, skip semantic analysis for this event
+                    logger.warning(
+                        "semantic_queue_full",
+                        source_id=source_id,
+                    )
+                    break
+
+            # Publish events to Redis (batch)
+            if self._event_bus:
+                for event_data in event_data_for_bus:
+                    await self._event_bus.publish_raw_event(event_data)
+
+    async def _batch_get_or_create_devices(
         self,
         session: AsyncSession,
-        ip_address: str,
-    ) -> Optional[uuid4]:
-        """Get or create a device by IP address."""
-        from app.models.device import Device, DeviceStatus
+        ip_addresses: List[str],
+    ) -> Dict[str, Optional[UUID]]:
+        """Batch get or create devices by IP addresses."""
+        result_map: Dict[str, Optional[UUID]] = {}
 
-        # Look for existing device with this IP
+        if not ip_addresses:
+            return result_map
+
+        # Query all existing devices with these IPs in one query
+        # Note: This uses the ARRAY contains operator
+        from sqlalchemy import or_
+
+        conditions = [Device.ip_addresses.contains([ip]) for ip in ip_addresses]
         result = await session.execute(
-            select(Device).where(Device.ip_addresses.contains([ip_address]))
+            select(Device).where(or_(*conditions))
         )
-        device = result.scalar_one_or_none()
+        existing_devices = result.scalars().all()
 
-        if device:
-            # Update last seen
-            device.last_seen = datetime.now(timezone.utc)
-            return device.id
+        # Map IPs to existing devices
+        for device in existing_devices:
+            for ip in ip_addresses:
+                if ip in device.ip_addresses:
+                    result_map[ip] = device.id
+                    # Update last seen
+                    device.last_seen = datetime.now(timezone.utc)
 
-        # Create new device with placeholder MAC (must be <=17 chars)
-        # Generate a consistent placeholder MAC from IP hash: 00:00:XX:XX:XX:XX
-        ip_hash = hashlib.md5(ip_address.encode()).hexdigest()[:8]
-        placeholder_mac = f"00:00:{ip_hash[0:2]}:{ip_hash[2:4]}:{ip_hash[4:6]}:{ip_hash[6:8]}"
+        # Create new devices for IPs without matches
+        now = datetime.now(timezone.utc)
+        for ip in ip_addresses:
+            if ip not in result_map:
+                # Generate placeholder MAC from IP hash
+                ip_hash = hashlib.md5(ip.encode()).hexdigest()[:8]
+                placeholder_mac = f"00:00:{ip_hash[0:2]}:{ip_hash[2:4]}:{ip_hash[4:6]}:{ip_hash[6:8]}"
 
-        device = Device(
-            id=uuid4(),
-            mac_address=placeholder_mac,
-            ip_addresses=[ip_address],
-            hostname=None,
-            manufacturer=None,
-            device_type=None,
-            status=DeviceStatus.ACTIVE,
-            first_seen=datetime.now(timezone.utc),
-            last_seen=datetime.now(timezone.utc),
-        )
-        session.add(device)
-        await session.flush()
+                device = Device(
+                    id=uuid4(),
+                    mac_address=placeholder_mac,
+                    ip_addresses=[ip],
+                    hostname=None,
+                    manufacturer=None,
+                    device_type=None,
+                    status=DeviceStatus.ACTIVE,
+                    first_seen=now,
+                    last_seen=now,
+                )
+                session.add(device)
+                result_map[ip] = device.id
 
-        logger.info(
-            "device_auto_created",
-            device_id=str(device.id),
-            ip_address=ip_address,
-        )
+                logger.info(
+                    "device_auto_created",
+                    device_id=str(device.id),
+                    ip_address=ip,
+                )
 
-        return device.id
+        return result_map
+
+    async def _semantic_analysis_worker(self) -> None:
+        """Background worker for deferred semantic analysis."""
+        from app.services.semantic_analysis_service import get_semantic_analysis_service
+
+        logger.info("semantic_analysis_worker_started")
+
+        while self._running:
+            try:
+                # Collect a batch of events
+                batch: List[RawEvent] = []
+
+                # Wait for first event (with timeout to check running flag)
+                try:
+                    event = await asyncio.wait_for(
+                        self._semantic_queue.get(),
+                        timeout=1.0
+                    )
+                    batch.append(event)
+                except asyncio.TimeoutError:
+                    continue
+
+                # Try to get more events without waiting (up to batch size)
+                while len(batch) < SEMANTIC_BATCH_SIZE:
+                    try:
+                        event = self._semantic_queue.get_nowait()
+                        batch.append(event)
+                    except asyncio.QueueEmpty:
+                        break
+
+                # Process the batch
+                if batch:
+                    async with AsyncSessionLocal() as session:
+                        semantic_service = get_semantic_analysis_service(session)
+
+                        for raw_event in batch:
+                            try:
+                                irregular_log = await semantic_service.process_event(raw_event)
+                                if irregular_log:
+                                    logger.debug(
+                                        "irregular_log_flagged",
+                                        event_id=str(raw_event.id),
+                                        source_id=raw_event.source_id,
+                                        reason=irregular_log.reason,
+                                    )
+                            except Exception as e:
+                                logger.warning(
+                                    "semantic_analysis_error",
+                                    event_id=str(raw_event.id),
+                                    error=str(e),
+                                )
+
+                    logger.debug(
+                        "semantic_batch_processed",
+                        batch_size=len(batch),
+                        queue_size=self._semantic_queue.qsize(),
+                    )
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(
+                    "semantic_worker_error",
+                    error=str(e),
+                )
+                await asyncio.sleep(1)
+
+        logger.info("semantic_analysis_worker_stopped")
 
     async def reload_source(self, source_id: str) -> None:
         """Reload a source configuration."""
@@ -312,6 +528,14 @@ class CollectorService:
         return {
             source_id: collector.is_running()
             for source_id, collector in self._collectors.items()
+        }
+
+    def get_stats(self) -> Dict[str, any]:
+        """Get collector service statistics."""
+        return {
+            "active_collectors": len(self._collectors),
+            "device_cache_size": len(self._device_cache._cache),
+            "semantic_queue_size": self._semantic_queue.qsize(),
         }
 
 

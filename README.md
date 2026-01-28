@@ -411,6 +411,21 @@ npm install
 npm run dev
 ```
 
+### Linux/Podman Notes
+
+On Linux with Podman, you may encounter a registry resolution error:
+```
+Error: short-name "timescale/timescaledb:latest-pg16" did not resolve to an alias
+and no unqualified-search registries are defined in "/etc/containers/registries.conf"
+```
+
+**Fix:** Configure Podman to search Docker Hub by default:
+```bash
+echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/docker.conf
+```
+
+Then re-run the start script or container commands.
+
 ### Windows/Podman Notes
 
 Podman on Windows uses WSL2 and sometimes has SSH tunnel issues. The startup script handles this automatically by:

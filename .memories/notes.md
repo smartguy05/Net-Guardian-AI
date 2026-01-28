@@ -1154,3 +1154,25 @@ collector:
 **Solution:** Updated `collector_service.py` to import `AsyncSessionLocal` instead of `async_session_factory`.
 
 ---
+
+### Event Processing Performance Pattern
+When processing high-volume log events:
+1. **Batch inserts** - Collect events into batches (100-500 events) before DB commit
+2. **Concurrent batches** - Use `asyncio.create_task()` with semaphore to limit parallelism
+3. **Deferred heavy processing** - Queue semantic analysis for background worker
+4. **Cache frequently accessed data** - Cache device lookups with TTL (5 min)
+
+Key constants in `backend/app/services/collector_service.py`:
+- `BATCH_SIZE = 100` - Events per batch
+- `BATCH_TIMEOUT = 2.0` - Seconds before flushing incomplete batch
+- `MAX_CONCURRENT_BATCHES = 3` - Concurrent batch limit
+- `DEVICE_CACHE_TTL = 300` - Device cache TTL in seconds
+- `SEMANTIC_QUEUE_SIZE = 10000` - Max queued events for analysis
+
+### Podman Registry Error on Linux
+Error: `short-name "image" did not resolve to an alias and no unqualified-search registries are defined`
+
+Fix:
+```bash
+echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/docker.conf
+```
