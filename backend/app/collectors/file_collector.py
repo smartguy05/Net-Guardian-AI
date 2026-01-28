@@ -2,8 +2,8 @@
 
 import asyncio
 import os
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator, Optional
 
 import structlog
 from watchdog.events import FileModifiedEvent, FileSystemEventHandler
@@ -48,12 +48,12 @@ class FileWatchCollector(BaseCollector):
 
     def __init__(self, source: LogSource, parser: BaseParser):
         super().__init__(source, parser)
-        self._observer: Optional[Observer] = None
+        self._observer: Observer | None = None
         self._file_handle = None
         self._file_position: int = 0
         self._event_queue: asyncio.Queue = asyncio.Queue()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._read_task: Optional[asyncio.Task] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._read_task: asyncio.Task | None = None
         self._file_modified = asyncio.Event()
 
     @property
@@ -79,7 +79,7 @@ class FileWatchCollector(BaseCollector):
         if not path.exists():
             raise FileNotFoundError(f"Log file not found: {path}")
 
-        self._file_handle = open(path, "r", encoding=self.encoding)
+        self._file_handle = open(path, encoding=self.encoding)
 
         # Position at end if configured
         if self.config.get("read_from_end", True):
@@ -137,7 +137,7 @@ class FileWatchCollector(BaseCollector):
                         timeout=1.0,
                     )
                     self._file_modified.clear()
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Check for new content periodically even without event
                     pass
 
@@ -178,7 +178,7 @@ class FileWatchCollector(BaseCollector):
                     timeout=1.0,
                 )
                 yield result
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except asyncio.CancelledError:
                 break
@@ -250,7 +250,7 @@ class FileWatchCollector(BaseCollector):
             return False, f"Path is not a file: {path}"
 
         try:
-            with open(path, "r", encoding=self.encoding) as f:
+            with open(path, encoding=self.encoding) as f:
                 # Try to read first line
                 f.readline()
             return True, f"File is readable: {path}"

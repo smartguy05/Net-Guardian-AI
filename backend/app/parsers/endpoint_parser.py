@@ -4,8 +4,8 @@ Parses events sent from endpoint agents that monitor local system activity
 including processes, network connections, file changes, and system events.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -65,7 +65,7 @@ class EndpointParser(BaseParser):
     }
     """
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse endpoint agent data.
 
         Args:
@@ -88,7 +88,7 @@ class EndpointParser(BaseParser):
             logger.warning("endpoint_parser_invalid_data", data_type=type(raw_data).__name__)
             return []
 
-    def _parse_entry(self, entry: Dict[str, Any]) -> ParseResult | None:
+    def _parse_entry(self, entry: dict[str, Any]) -> ParseResult | None:
         """Parse a single endpoint agent entry."""
         try:
             # Parse timestamp
@@ -97,9 +97,9 @@ class EndpointParser(BaseParser):
                 if isinstance(ts_str, str):
                     timestamp = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
                 else:
-                    timestamp = datetime.fromtimestamp(ts_str, tz=timezone.utc)
+                    timestamp = datetime.fromtimestamp(ts_str, tz=UTC)
             else:
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             # Determine event type and severity
             endpoint_event_type = entry.get("event_type", "system")
@@ -167,7 +167,7 @@ class EndpointParser(BaseParser):
             logger.warning("endpoint_parser_error", error=str(e), entry=entry)
             return None
 
-    def _get_process_severity(self, data: Dict[str, Any]) -> EventSeverity:
+    def _get_process_severity(self, data: dict[str, Any]) -> EventSeverity:
         """Determine severity based on process characteristics."""
         # Check for suspicious process patterns
         name = data.get("name", "").lower()
@@ -197,7 +197,7 @@ class EndpointParser(BaseParser):
 
         return EventSeverity.DEBUG
 
-    def _get_network_severity(self, data: Dict[str, Any]) -> EventSeverity:
+    def _get_network_severity(self, data: dict[str, Any]) -> EventSeverity:
         """Determine severity based on network connection characteristics."""
         remote_port = data.get("remote_port", 0)
         state = data.get("state", "").lower()
@@ -214,7 +214,7 @@ class EndpointParser(BaseParser):
 
         return EventSeverity.DEBUG
 
-    def _get_file_severity(self, data: Dict[str, Any]) -> EventSeverity:
+    def _get_file_severity(self, data: dict[str, Any]) -> EventSeverity:
         """Determine severity based on file access patterns."""
         path = data.get("path", "").lower()
         action = data.get("action", "").lower()
@@ -234,9 +234,9 @@ class EndpointParser(BaseParser):
 
     def _build_raw_message(
         self,
-        entry: Dict[str, Any],
+        entry: dict[str, Any],
         event_type: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> str:
         """Build a human-readable raw message."""
         hostname = entry.get("hostname", "unknown")

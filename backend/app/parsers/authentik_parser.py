@@ -1,7 +1,7 @@
 """Authentik event log parser for /api/v3/events/ API responses."""
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -20,7 +20,7 @@ class AuthentikParser(BaseParser):
     """
 
     # Map Authentik action types to severity levels
-    ACTION_SEVERITY_MAP: Dict[str, EventSeverity] = {
+    ACTION_SEVERITY_MAP: dict[str, EventSeverity] = {
         # Info-level events
         "login": EventSeverity.INFO,
         "logout": EventSeverity.INFO,
@@ -77,13 +77,13 @@ class AuthentikParser(BaseParser):
             except (ValueError, AttributeError):
                 pass
 
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
     def _determine_severity(self, action: str) -> EventSeverity:
         """Determine event severity based on action type."""
         return self.ACTION_SEVERITY_MAP.get(action, EventSeverity.INFO)
 
-    def _extract_client_ip(self, event: Dict) -> str | None:
+    def _extract_client_ip(self, event: dict) -> str | None:
         """Extract client IP from event context."""
         context = event.get("context", {})
 
@@ -105,7 +105,7 @@ class AuthentikParser(BaseParser):
 
         return None
 
-    def _build_message(self, event: Dict) -> str:
+    def _build_message(self, event: dict) -> str:
         """Build a descriptive message from the event."""
         action = event.get("action", "unknown")
         user = event.get("user", {})
@@ -142,7 +142,7 @@ class AuthentikParser(BaseParser):
             # Generic message
             return f"Authentik {action.replace('_', ' ')}: {username}"
 
-    def _extract_action_result(self, event: Dict) -> str:
+    def _extract_action_result(self, event: dict) -> str:
         """Extract action result (success/failure)."""
         action = event.get("action", "")
         context = event.get("context", {})
@@ -159,7 +159,7 @@ class AuthentikParser(BaseParser):
         # Assume success for completed events
         return "success"
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse Authentik event log data.
 
         Args:

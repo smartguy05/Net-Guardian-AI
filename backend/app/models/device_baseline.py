@@ -1,11 +1,17 @@
 """Device baseline model for behavioral profiling."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, Float, ForeignKey, Integer, String
+if TYPE_CHECKING:
+    from app.models.device import Device
+
+from sqlalchemy import DateTime, ForeignKey, Integer
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -71,7 +77,7 @@ class DeviceBaseline(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    metrics: Mapped[Dict[str, Any]] = mapped_column(
+    metrics: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
@@ -91,13 +97,13 @@ class DeviceBaseline(Base, TimestampMixin):
         default=7,
         nullable=False,
     )
-    last_calculated: Mapped[Optional[datetime]] = mapped_column(
+    last_calculated: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     # Relationships
-    device: Mapped["Device"] = relationship(
+    device: Mapped[Device] = relationship(
         "Device",
         back_populates="baselines",
     )

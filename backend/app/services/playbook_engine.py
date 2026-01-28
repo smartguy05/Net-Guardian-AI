@@ -1,7 +1,7 @@
 """Playbook engine for automated response actions."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -34,9 +34,9 @@ class PlaybookEngine:
 
     def __init__(
         self,
-        session: Optional[AsyncSession] = None,
-        quarantine_service: Optional[QuarantineService] = None,
-        audit_service: Optional[AuditService] = None,
+        session: AsyncSession | None = None,
+        quarantine_service: QuarantineService | None = None,
+        audit_service: AuditService | None = None,
     ):
         """Initialize the playbook engine."""
         self._session = session
@@ -57,9 +57,9 @@ class PlaybookEngine:
     async def evaluate_triggers(
         self,
         trigger_type: PlaybookTriggerType,
-        event_data: Dict[str, Any],
-        device_id: Optional[UUID] = None,
-    ) -> List[Playbook]:
+        event_data: dict[str, Any],
+        device_id: UUID | None = None,
+    ) -> list[Playbook]:
         """Find playbooks that match the given trigger.
 
         Args:
@@ -100,8 +100,8 @@ class PlaybookEngine:
     async def _check_trigger_conditions(
         self,
         playbook: Playbook,
-        event_data: Dict[str, Any],
-        device_id: Optional[UUID],
+        event_data: dict[str, Any],
+        device_id: UUID | None,
     ) -> bool:
         """Check if the event matches the playbook's trigger conditions."""
         conditions = playbook.trigger_conditions
@@ -172,7 +172,7 @@ class PlaybookEngine:
         self, session: AsyncSession, playbook: Playbook
     ) -> bool:
         """Check if the playbook is within rate limits."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Check cooldown
         result = await session.execute(
@@ -219,9 +219,9 @@ class PlaybookEngine:
     async def execute_playbook(
         self,
         playbook: Playbook,
-        trigger_event: Dict[str, Any],
-        device_id: Optional[UUID] = None,
-        triggered_by: Optional[User] = None,
+        trigger_event: dict[str, Any],
+        device_id: UUID | None = None,
+        triggered_by: User | None = None,
     ) -> PlaybookExecution:
         """Execute a playbook.
 
@@ -243,7 +243,7 @@ class PlaybookEngine:
                 trigger_event=trigger_event,
                 trigger_device_id=device_id,
                 triggered_by=triggered_by.id if triggered_by else None,
-                started_at=datetime.now(timezone.utc),
+                started_at=datetime.now(UTC),
                 action_results=[],
             )
             session.add(execution)
@@ -298,7 +298,7 @@ class PlaybookEngine:
 
             # Update execution record
             execution.action_results = action_results
-            execution.completed_at = datetime.now(timezone.utc)
+            execution.completed_at = datetime.now(UTC)
             execution.status = (
                 ExecutionStatus.COMPLETED
                 if all(r.get("success", False) for r in action_results)
@@ -332,11 +332,11 @@ class PlaybookEngine:
 
     async def _execute_action(
         self,
-        action: Dict[str, Any],
-        trigger_event: Dict[str, Any],
-        device_id: Optional[UUID],
-        user: Optional[User],
-    ) -> Dict[str, Any]:
+        action: dict[str, Any],
+        trigger_event: dict[str, Any],
+        device_id: UUID | None,
+        user: User | None,
+    ) -> dict[str, Any]:
         """Execute a single playbook action."""
         action_type = action.get("type")
         params = action.get("params", {})
@@ -380,11 +380,11 @@ class PlaybookEngine:
 
     async def _action_quarantine_device(
         self,
-        device_id: Optional[UUID],
-        params: Dict[str, Any],
-        user: Optional[User],
-        trigger_event: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        device_id: UUID | None,
+        params: dict[str, Any],
+        user: User | None,
+        trigger_event: dict[str, Any],
+    ) -> dict[str, Any]:
         """Execute quarantine device action."""
         if not device_id:
             return {"success": False, "error": "No device ID provided"}
@@ -418,11 +418,11 @@ class PlaybookEngine:
 
     async def _action_release_device(
         self,
-        device_id: Optional[UUID],
-        params: Dict[str, Any],
-        user: Optional[User],
-        trigger_event: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        device_id: UUID | None,
+        params: dict[str, Any],
+        user: User | None,
+        trigger_event: dict[str, Any],
+    ) -> dict[str, Any]:
         """Execute release device action."""
         if not device_id:
             return {"success": False, "error": "No device ID provided"}
@@ -452,10 +452,10 @@ class PlaybookEngine:
 
     async def _action_create_alert(
         self,
-        device_id: Optional[UUID],
-        params: Dict[str, Any],
-        trigger_event: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        device_id: UUID | None,
+        params: dict[str, Any],
+        trigger_event: dict[str, Any],
+    ) -> dict[str, Any]:
         """Create an alert based on playbook action."""
         from app.models.alert import Alert, AlertSeverity, AlertStatus
 
@@ -489,9 +489,9 @@ class PlaybookEngine:
 
     async def _action_tag_device(
         self,
-        device_id: Optional[UUID],
-        params: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        device_id: UUID | None,
+        params: dict[str, Any],
+    ) -> dict[str, Any]:
         """Add or remove tags from a device."""
         if not device_id:
             return {"success": False, "error": "No device ID provided"}
@@ -535,10 +535,10 @@ class PlaybookEngine:
 
     async def _action_send_notification(
         self,
-        params: Dict[str, Any],
-        trigger_event: Dict[str, Any],
-        device_id: Optional[UUID],
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        trigger_event: dict[str, Any],
+        device_id: UUID | None,
+    ) -> dict[str, Any]:
         """Send a notification via email and/or ntfy.sh."""
         from app.services.email_service import get_email_service
         from app.services.ntfy_service import get_ntfy_service
@@ -612,10 +612,10 @@ class PlaybookEngine:
 
     async def _action_log_event(
         self,
-        params: Dict[str, Any],
-        trigger_event: Dict[str, Any],
-        device_id: Optional[UUID],
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        trigger_event: dict[str, Any],
+        device_id: UUID | None,
+    ) -> dict[str, Any]:
         """Log an event via the audit service."""
         log_level = params.get("level", "info")
         message = params.get("message", str(trigger_event))
@@ -640,10 +640,10 @@ class PlaybookEngine:
 
     async def _action_execute_webhook(
         self,
-        params: Dict[str, Any],
-        trigger_event: Dict[str, Any],
-        device_id: Optional[UUID],
-    ) -> Dict[str, Any]:
+        params: dict[str, Any],
+        trigger_event: dict[str, Any],
+        device_id: UUID | None,
+    ) -> dict[str, Any]:
         """Execute a webhook (send HTTP request)."""
         import httpx
 
@@ -659,7 +659,7 @@ class PlaybookEngine:
         payload = {
             "trigger_event": trigger_event,
             "device_id": str(device_id) if device_id else None,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **params.get("extra_data", {}),
         }
 
@@ -681,7 +681,7 @@ class PlaybookEngine:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    async def get_playbook(self, playbook_id: UUID) -> Optional[Playbook]:
+    async def get_playbook(self, playbook_id: UUID) -> Playbook | None:
         """Get a playbook by ID."""
         session = await self._get_session()
         try:
@@ -694,11 +694,11 @@ class PlaybookEngine:
 
     async def list_playbooks(
         self,
-        status: Optional[PlaybookStatus] = None,
-        trigger_type: Optional[PlaybookTriggerType] = None,
+        status: PlaybookStatus | None = None,
+        trigger_type: PlaybookTriggerType | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Playbook]:
+    ) -> list[Playbook]:
         """List playbooks with optional filtering."""
         session = await self._get_session()
         try:
@@ -720,10 +720,10 @@ class PlaybookEngine:
         self,
         name: str,
         trigger_type: PlaybookTriggerType,
-        actions: List[Dict[str, Any]],
-        description: Optional[str] = None,
-        trigger_conditions: Optional[Dict[str, Any]] = None,
-        created_by: Optional[UUID] = None,
+        actions: list[dict[str, Any]],
+        description: str | None = None,
+        trigger_conditions: dict[str, Any] | None = None,
+        created_by: UUID | None = None,
         **kwargs,
     ) -> Playbook:
         """Create a new playbook."""
@@ -759,7 +759,7 @@ class PlaybookEngine:
         self,
         playbook_id: UUID,
         **updates,
-    ) -> Optional[Playbook]:
+    ) -> Playbook | None:
         """Update a playbook."""
         session = await self._get_session()
         try:
@@ -810,7 +810,7 @@ class PlaybookEngine:
 
 
 # Global engine instance
-_playbook_engine: Optional[PlaybookEngine] = None
+_playbook_engine: PlaybookEngine | None = None
 
 
 def get_playbook_engine() -> PlaybookEngine:

@@ -5,7 +5,7 @@ the configured parser (NetFlow or sFlow).
 """
 
 import asyncio
-from typing import Any, AsyncGenerator, Dict, Optional
+from collections.abc import AsyncGenerator
 
 import structlog
 
@@ -23,7 +23,7 @@ class UDPServerProtocol(asyncio.DatagramProtocol):
     def __init__(self, queue: asyncio.Queue, parser: BaseParser):
         self.queue = queue
         self.parser = parser
-        self.transport: Optional[asyncio.DatagramTransport] = None
+        self.transport: asyncio.DatagramTransport | None = None
 
     def connection_made(self, transport: asyncio.DatagramTransport) -> None:
         """Called when the socket is ready."""
@@ -55,7 +55,7 @@ class UDPServerProtocol(asyncio.DatagramProtocol):
         """Handle errors."""
         logger.error("udp_protocol_error", error=str(exc))
 
-    def connection_lost(self, exc: Optional[Exception]) -> None:
+    def connection_lost(self, exc: Exception | None) -> None:
         """Called when the connection is lost."""
         if exc:
             logger.warning("udp_connection_lost", error=str(exc))
@@ -78,8 +78,8 @@ class UDPListenerCollector(BaseCollector):
         self._queue: asyncio.Queue = asyncio.Queue(
             maxsize=self.config.get("queue_size", 10000)
         )
-        self._transport: Optional[asyncio.DatagramTransport] = None
-        self._protocol: Optional[UDPServerProtocol] = None
+        self._transport: asyncio.DatagramTransport | None = None
+        self._protocol: UDPServerProtocol | None = None
         self._host = self.config.get("host", "0.0.0.0")
         self._port = self.config.get("port")
         self._allowed_sources = set(self.config.get("allowed_sources", []))
@@ -103,7 +103,7 @@ class UDPListenerCollector(BaseCollector):
                     if source_ip not in self._allowed_sources:
                         continue
                 yield result
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.error("udp_collect_error", error=str(e))

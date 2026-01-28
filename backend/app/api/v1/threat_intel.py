@@ -1,16 +1,15 @@
 """Threat intelligence feed API endpoints."""
 
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from pydantic import BaseModel, HttpUrl, Field
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin
 from app.db.session import get_async_session
-from app.models.user import User
 from app.models.threat_intel import FeedType, IndicatorType
+from app.models.user import User
 from app.services.threat_intel_service import ThreatIntelService
 
 router = APIRouter(prefix="/threat-intel", tags=["threat-intel"])
@@ -21,7 +20,7 @@ class FeedCreate(BaseModel):
     """Schema for creating a threat intel feed."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     feed_type: FeedType
     url: HttpUrl
     enabled: bool = True
@@ -34,15 +33,15 @@ class FeedCreate(BaseModel):
 class FeedUpdate(BaseModel):
     """Schema for updating a threat intel feed."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    feed_type: Optional[FeedType] = None
-    url: Optional[HttpUrl] = None
-    enabled: Optional[bool] = None
-    update_interval_hours: Optional[int] = Field(None, ge=1, le=168)
-    auth_type: Optional[str] = Field(None, pattern="^(none|basic|bearer|api_key)$")
-    auth_config: Optional[dict] = None
-    field_mapping: Optional[dict] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    feed_type: FeedType | None = None
+    url: HttpUrl | None = None
+    enabled: bool | None = None
+    update_interval_hours: int | None = Field(None, ge=1, le=168)
+    auth_type: str | None = Field(None, pattern="^(none|basic|bearer|api_key)$")
+    auth_config: dict | None = None
+    field_mapping: dict | None = None
 
 
 class FeedResponse(BaseModel):
@@ -50,7 +49,7 @@ class FeedResponse(BaseModel):
 
     id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     feed_type: str
     url: str
     enabled: bool
@@ -58,9 +57,9 @@ class FeedResponse(BaseModel):
     auth_type: str
     auth_config: dict
     field_mapping: dict
-    last_fetch_at: Optional[str]
-    last_fetch_status: Optional[str]
-    last_fetch_message: Optional[str]
+    last_fetch_at: str | None
+    last_fetch_status: str | None
+    last_fetch_message: str | None
     indicator_count: int
     created_at: str
     updated_at: str
@@ -74,20 +73,20 @@ class IndicatorResponse(BaseModel):
 
     id: UUID
     feed_id: UUID
-    feed_name: Optional[str] = None
+    feed_name: str | None = None
     indicator_type: str
     value: str
     confidence: int
     severity: str
     tags: list[str]
-    description: Optional[str]
-    source_ref: Optional[str]
-    first_seen_at: Optional[str]
-    last_seen_at: Optional[str]
-    expires_at: Optional[str]
+    description: str | None
+    source_ref: str | None
+    first_seen_at: str | None
+    last_seen_at: str | None
+    expires_at: str | None
     metadata: dict
     hit_count: int
-    last_hit_at: Optional[str]
+    last_hit_at: str | None
     created_at: str
 
     class Config:
@@ -98,7 +97,7 @@ class IndicatorCheckRequest(BaseModel):
     """Schema for checking an indicator."""
 
     value: str = Field(..., min_length=1)
-    indicator_type: Optional[IndicatorType] = None
+    indicator_type: IndicatorType | None = None
 
 
 class IndicatorCheckResponse(BaseModel):
@@ -136,8 +135,8 @@ class StatsResponse(BaseModel):
 # Endpoints
 @router.get("/feeds", response_model=FeedListResponse)
 async def list_feeds(
-    enabled: Optional[bool] = Query(None, description="Filter by enabled status"),
-    feed_type: Optional[FeedType] = Query(None, description="Filter by feed type"),
+    enabled: bool | None = Query(None, description="Filter by enabled status"),
+    feed_type: FeedType | None = Query(None, description="Filter by feed type"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session),
@@ -404,10 +403,10 @@ async def disable_feed(
 
 @router.get("/indicators", response_model=IndicatorListResponse)
 async def list_indicators(
-    feed_id: Optional[UUID] = Query(None, description="Filter by feed"),
-    indicator_type: Optional[IndicatorType] = Query(None, description="Filter by type"),
-    severity: Optional[str] = Query(None, description="Filter by severity"),
-    value_contains: Optional[str] = Query(None, description="Search by value"),
+    feed_id: UUID | None = Query(None, description="Filter by feed"),
+    indicator_type: IndicatorType | None = Query(None, description="Filter by type"),
+    severity: str | None = Query(None, description="Filter by severity"),
+    value_contains: str | None = Query(None, description="Search by value"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session),

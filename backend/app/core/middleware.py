@@ -1,18 +1,18 @@
 """Custom middleware for the application."""
 
-import time
 import re
-from typing import Callable
+import time
+from collections.abc import Callable
 
+import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import structlog
 
 from app.services.metrics_service import (
-    record_http_request,
     HTTP_REQUEST_DURATION_SECONDS,
     HTTP_REQUESTS_IN_PROGRESS,
+    record_http_request,
 )
 
 logger = structlog.get_logger()

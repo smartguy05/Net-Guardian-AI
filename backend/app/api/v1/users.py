@@ -1,6 +1,6 @@
 """User management API endpoints (Admin only)."""
 
-from typing import Annotated, List, Optional
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.auth import get_current_user, require_admin
+from app.api.v1.auth import require_admin
 from app.core.security import UserRole, generate_secure_password, hash_password
 from app.db.session import get_async_session
 from app.models.user import User
@@ -24,9 +24,9 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
-    role: Optional[UserRole] = None
-    is_active: Optional[bool] = None
+    email: EmailStr | None = None
+    role: UserRole | None = None
+    is_active: bool | None = None
 
 
 class UserResponse(BaseModel):
@@ -43,7 +43,7 @@ class UserResponse(BaseModel):
 
 
 class UserListResponse(BaseModel):
-    items: List[UserResponse]
+    items: list[UserResponse]
     total: int
 
 

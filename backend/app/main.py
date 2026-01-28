@@ -1,7 +1,7 @@
 """FastAPI application entry point for NetGuardian AI."""
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,10 +10,10 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.api.v1.router import api_router
 from app.config import settings
-from app.core.exceptions import NetGuardianException
-from app.core.logging import get_logger, setup_logging
 from app.core.cache import CacheService, set_cache_service
+from app.core.exceptions import NetGuardianException
 from app.core.http_client import close_http_client_pool
+from app.core.logging import get_logger, setup_logging
 from app.core.middleware import MetricsMiddleware, RequestLoggingMiddleware
 from app.core.rate_limiter import RateLimitMiddleware
 from app.db.session import close_db, init_db

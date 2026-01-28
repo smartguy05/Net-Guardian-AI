@@ -1,11 +1,12 @@
 """Audit log model for tracking administrative actions."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, DateTime, Enum as SQLEnum, ForeignKey, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,7 +75,7 @@ class AuditLog(Base):
 
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
         index=True,
     )
@@ -86,14 +87,14 @@ class AuditLog(Base):
     )
 
     # Who performed the action
-    user_id: Mapped[Optional[UUID]] = mapped_column(
+    user_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
 
-    username: Mapped[Optional[str]] = mapped_column(
+    username: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
     )
@@ -104,13 +105,13 @@ class AuditLog(Base):
         nullable=False,
     )  # device, user, alert, anomaly, source, etc.
 
-    target_id: Mapped[Optional[str]] = mapped_column(
+    target_id: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
         index=True,
     )
 
-    target_name: Mapped[Optional[str]] = mapped_column(
+    target_name: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
@@ -121,7 +122,7 @@ class AuditLog(Base):
         nullable=False,
     )
 
-    details: Mapped[Dict[str, Any]] = mapped_column(
+    details: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         default=dict,
         nullable=False,
@@ -133,18 +134,18 @@ class AuditLog(Base):
         nullable=False,
     )
 
-    error_message: Mapped[Optional[str]] = mapped_column(
+    error_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
 
     # Request context
-    ip_address: Mapped[Optional[str]] = mapped_column(
+    ip_address: Mapped[str | None] = mapped_column(
         String(45),
         nullable=True,
     )
 
-    user_agent: Mapped[Optional[str]] = mapped_column(
+    user_agent: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
     )
@@ -161,15 +162,15 @@ class AuditLog(Base):
         action: AuditAction,
         target_type: str,
         description: str,
-        user_id: Optional[UUID] = None,
-        username: Optional[str] = None,
-        target_id: Optional[str] = None,
-        target_name: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        user_id: UUID | None = None,
+        username: str | None = None,
+        target_id: str | None = None,
+        target_name: str | None = None,
+        details: dict[str, Any] | None = None,
         success: bool = True,
-        error_message: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        error_message: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> "AuditLog":
         """Create a new audit log entry."""
         return cls(

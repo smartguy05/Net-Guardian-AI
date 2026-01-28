@@ -1,8 +1,9 @@
 """AdGuard Home integration service for DNS-level device blocking."""
 
+from typing import Any
+
 import httpx
 import structlog
-from typing import Any, Dict, List, Optional
 
 from app.config import settings
 from app.core.http_client import get_http_client_pool
@@ -27,7 +28,7 @@ class AdGuardHomeService(IntegrationService):
 
     def __init__(self):
         """Initialize the AdGuard Home service."""
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
         self._use_pool = True  # Use shared connection pool
 
     @property
@@ -137,7 +138,7 @@ class AdGuardHomeService(IntegrationService):
                 error=str(e),
             )
 
-    async def _get_clients(self) -> Dict[str, Any]:
+    async def _get_clients(self) -> dict[str, Any]:
         """Get all configured clients from AdGuard Home."""
         client = await self._get_client()
         response = await client.get("/control/clients")
@@ -145,8 +146,8 @@ class AdGuardHomeService(IntegrationService):
         return response.json()
 
     async def _find_client(
-        self, mac_address: str, ip_address: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        self, mac_address: str, ip_address: str | None = None
+    ) -> dict[str, Any] | None:
         """Find a client by MAC address or IP."""
         clients_data = await self._get_clients()
         clients = clients_data.get("clients", [])
@@ -174,8 +175,8 @@ class AdGuardHomeService(IntegrationService):
     async def block_device(
         self,
         mac_address: str,
-        ip_address: Optional[str] = None,
-        reason: Optional[str] = None,
+        ip_address: str | None = None,
+        reason: str | None = None,
     ) -> IntegrationResult:
         """Block a device by adding it to AdGuard Home with blocking enabled.
 
@@ -292,7 +293,7 @@ class AdGuardHomeService(IntegrationService):
     async def unblock_device(
         self,
         mac_address: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> IntegrationResult:
         """Unblock a device by removing its blocking configuration."""
         if not self.is_enabled:
@@ -380,7 +381,7 @@ class AdGuardHomeService(IntegrationService):
     async def is_device_blocked(
         self,
         mac_address: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> bool:
         """Check if a device is currently blocked in AdGuard Home."""
         if not self.is_enabled:
@@ -405,7 +406,7 @@ class AdGuardHomeService(IntegrationService):
             )
             return False
 
-    async def get_blocked_devices(self) -> List[Dict[str, Any]]:
+    async def get_blocked_devices(self) -> list[dict[str, Any]]:
         """Get all devices currently blocked via AdGuard Home."""
         if not self.is_enabled:
             return []
@@ -432,7 +433,7 @@ class AdGuardHomeService(IntegrationService):
 
 
 # Global service instance
-_adguard_service: Optional[AdGuardHomeService] = None
+_adguard_service: AdGuardHomeService | None = None
 
 
 def get_adguard_service() -> AdGuardHomeService:

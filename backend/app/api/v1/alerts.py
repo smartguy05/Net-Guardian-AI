@@ -1,13 +1,13 @@
 """Alert management API endpoints."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_operator
@@ -17,12 +17,12 @@ from app.models.device import Device
 from app.models.device_baseline import DeviceBaseline
 from app.models.raw_event import RawEvent
 from app.models.user import User
-from app.services.llm_service import get_llm_service, LLMModel
 from app.services.export_service import (
-    ExportService,
     ALERTS_COLUMNS,
     ALERTS_HEADERS,
+    ExportService,
 )
+from app.services.llm_service import LLMModel, get_llm_service
 
 router = APIRouter()
 
@@ -31,25 +31,25 @@ router = APIRouter()
 class AlertResponse(BaseModel):
     id: str
     timestamp: str
-    device_id: Optional[str]
+    device_id: str | None
     rule_id: str
     severity: str
     title: str
     description: str
-    llm_analysis: Optional[Dict[str, Any]]
+    llm_analysis: dict[str, Any] | None
     status: str
-    actions_taken: List[Dict[str, Any]]
-    acknowledged_by: Optional[str]
-    acknowledged_at: Optional[str]
-    resolved_by: Optional[str]
-    resolved_at: Optional[str]
+    actions_taken: list[dict[str, Any]]
+    acknowledged_by: str | None
+    acknowledged_at: str | None
+    resolved_by: str | None
+    resolved_at: str | None
 
     class Config:
         from_attributes = True
 
 
 class AlertListResponse(BaseModel):
-    items: List[AlertResponse]
+    items: list[AlertResponse]
     total: int
 
 
@@ -80,10 +80,10 @@ def _alert_to_response(alert: Alert) -> AlertResponse:
 async def list_alerts(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[AlertStatus] = Query(None, alias="status"),
-    severity: Optional[AlertSeverity] = None,
-    device_id: Optional[UUID] = None,
-    rule_id: Optional[str] = None,
+    status_filter: AlertStatus | None = Query(None, alias="status"),
+    severity: AlertSeverity | None = None,
+    device_id: UUID | None = None,
+    rule_id: str | None = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> AlertListResponse:
@@ -152,7 +152,7 @@ async def update_alert_status(
             detail="Alert not found",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     # Update status and audit fields
     alert.status = update.status
@@ -174,7 +174,7 @@ async def update_alert_status(
 
 
 class AnalyzeAlertRequest(BaseModel):
-    model: Optional[str] = None  # fast, default, or deep
+    model: str | None = None  # fast, default, or deep
 
 
 @router.post("/{alert_id}/analyze", response_model=AlertResponse)
@@ -182,7 +182,7 @@ async def analyze_alert(
     alert_id: UUID,
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    request: Optional[AnalyzeAlertRequest] = None,
+    request: AnalyzeAlertRequest | None = None,
 ) -> AlertResponse:
     """Request LLM analysis for an alert.
 
@@ -259,7 +259,7 @@ async def analyze_alert(
                     }
 
             # Fetch recent events for this device (last 24 hours)
-            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            cutoff = datetime.now(UTC) - timedelta(hours=24)
             events_result = await session.execute(
                 select(RawEvent)
                 .where(RawEvent.device_id == device.id)
@@ -301,11 +301,11 @@ async def analyze_alert(
 
 async def _get_alerts_for_export(
     session: AsyncSession,
-    status_filter: Optional[AlertStatus] = None,
-    severity: Optional[AlertSeverity] = None,
-    device_id: Optional[UUID] = None,
+    status_filter: AlertStatus | None = None,
+    severity: AlertSeverity | None = None,
+    device_id: UUID | None = None,
     limit: int = 10000,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Get alerts formatted for export."""
     query = select(Alert).outerjoin(Device, Alert.device_id == Device.id)
 
@@ -347,9 +347,9 @@ async def _get_alerts_for_export(
 async def export_alerts_csv(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[AlertStatus] = Query(None, alias="status"),
-    severity: Optional[AlertSeverity] = None,
-    device_id: Optional[UUID] = None,
+    status_filter: AlertStatus | None = Query(None, alias="status"),
+    severity: AlertSeverity | None = None,
+    device_id: UUID | None = None,
     limit: int = Query(10000, ge=1, le=100000),
 ) -> Response:
     """Export alerts to CSV format."""
@@ -375,9 +375,9 @@ async def export_alerts_csv(
 async def export_alerts_pdf(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[AlertStatus] = Query(None, alias="status"),
-    severity: Optional[AlertSeverity] = None,
-    device_id: Optional[UUID] = None,
+    status_filter: AlertStatus | None = Query(None, alias="status"),
+    severity: AlertSeverity | None = None,
+    device_id: UUID | None = None,
     limit: int = Query(1000, ge=1, le=10000),
 ) -> Response:
     """Export alerts to PDF format."""

@@ -1,7 +1,8 @@
 """Base collector interface for data collection."""
 
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator, Dict, Optional
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import structlog
 
@@ -39,7 +40,7 @@ class BaseCollector(ABC):
         return self.source.id
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """Get the source configuration."""
         return self.source.config
 

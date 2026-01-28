@@ -43,7 +43,8 @@
       "Bash(powershell -Command:*)",
       "Bash(uvicorn app.main:app:*)",
       "Bash(tasklist:*)",
-      "Bash(alembic revision:*)"
+      "Bash(alembic revision:*)",
+      "Bash(ruff check:*)"
     ]
   }
 }

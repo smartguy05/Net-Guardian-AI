@@ -1,9 +1,8 @@
 """Notification preferences model for user notification settings."""
 
-from typing import Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -57,7 +56,7 @@ class NotificationPreferences(Base, TimestampMixin):
         default=False,
         nullable=False,
     )
-    email_address: Mapped[Optional[str]] = mapped_column(
+    email_address: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
@@ -98,7 +97,7 @@ class NotificationPreferences(Base, TimestampMixin):
         default=False,
         nullable=False,
     )
-    ntfy_topic: Mapped[Optional[str]] = mapped_column(
+    ntfy_topic: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )

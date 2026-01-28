@@ -5,14 +5,13 @@ frequently-accessed data like device lists, event summaries, and stats.
 """
 
 import json
+from collections.abc import Callable
 from datetime import timedelta
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 import structlog
 from redis.asyncio import Redis
-
-from app.config import settings
 
 logger = structlog.get_logger()
 
@@ -42,7 +41,7 @@ class CacheService:
         """Create a full cache key with prefix."""
         return f"{self._prefix}:{key}"
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get a value from cache.
 
         Args:
@@ -68,7 +67,7 @@ class CacheService:
         self,
         key: str,
         value: Any,
-        ttl: Union[int, timedelta] = CACHE_TTL_MEDIUM,
+        ttl: int | timedelta = CACHE_TTL_MEDIUM,
     ) -> bool:
         """Set a value in cache.
 
@@ -157,10 +156,10 @@ class CacheService:
 
 
 # Global cache service instance
-_cache_service: Optional[CacheService] = None
+_cache_service: CacheService | None = None
 
 
-def get_cache_service() -> Optional[CacheService]:
+def get_cache_service() -> CacheService | None:
     """Get the global cache service instance."""
     return _cache_service
 
@@ -173,7 +172,7 @@ def set_cache_service(cache: CacheService) -> None:
 
 def cached(
     key_template: str,
-    ttl: Union[int, timedelta] = CACHE_TTL_MEDIUM,
+    ttl: int | timedelta = CACHE_TTL_MEDIUM,
 ):
     """Decorator to cache function results.
 

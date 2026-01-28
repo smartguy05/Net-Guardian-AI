@@ -1,10 +1,9 @@
 """Email notification service using SMTP."""
 
-import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiosmtplib
 import structlog
@@ -23,13 +22,13 @@ class EmailService:
 
     def __init__(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        use_tls: Optional[bool] = None,
-        sender_email: Optional[str] = None,
-        sender_name: Optional[str] = None,
+        host: str | None = None,
+        port: int | None = None,
+        username: str | None = None,
+        password: str | None = None,
+        use_tls: bool | None = None,
+        sender_email: str | None = None,
+        sender_name: str | None = None,
     ):
         """Initialize the email service.
 
@@ -60,7 +59,7 @@ class EmailService:
         to_email: str,
         subject: str,
         body_html: str,
-        body_text: Optional[str] = None,
+        body_text: str | None = None,
     ) -> bool:
         """Send an email.
 
@@ -126,8 +125,8 @@ class EmailService:
         alert_title: str,
         alert_description: str,
         severity: str,
-        device_name: Optional[str] = None,
-        alert_id: Optional[str] = None,
+        device_name: str | None = None,
+        alert_id: str | None = None,
     ) -> bool:
         """Send an alert notification email.
 
@@ -180,7 +179,7 @@ class EmailService:
                     <p>{alert_description}</p>
                     {f'<div class="detail"><span class="label">Device:</span> {device_name}</div>' if device_name else ''}
                     {f'<div class="detail"><span class="label">Alert ID:</span> {alert_id}</div>' if alert_id else ''}
-                    <div class="detail"><span class="label">Time:</span> {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}</div>
+                    <div class="detail"><span class="label">Time:</span> {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</div>
                 </div>
                 <div class="footer">
                     This is an automated message from NetGuardian AI.
@@ -199,7 +198,7 @@ NetGuardian AI Alert - {severity.upper()}
 
 {'Device: ' + device_name if device_name else ''}
 {'Alert ID: ' + alert_id if alert_id else ''}
-Time: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}
+Time: {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}
 
 This is an automated message from NetGuardian AI.
         """
@@ -211,8 +210,8 @@ This is an automated message from NetGuardian AI.
         to_email: str,
         anomaly_type: str,
         description: str,
-        device_name: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        device_name: str | None = None,
+        details: dict[str, Any] | None = None,
     ) -> bool:
         """Send an anomaly detection notification email."""
         subject = f"[NetGuardian] Anomaly Detected: {anomaly_type}"
@@ -246,7 +245,7 @@ This is an automated message from NetGuardian AI.
                     <p>{description}</p>
                     {f'<p><strong>Device:</strong> {device_name}</p>' if device_name else ''}
                     {details_html}
-                    <p><strong>Time:</strong> {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
+                    <p><strong>Time:</strong> {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
                 </div>
                 <div class="footer">
                     This is an automated message from NetGuardian AI.
@@ -263,8 +262,8 @@ This is an automated message from NetGuardian AI.
         to_email: str,
         device_name: str,
         action: str,  # "quarantined" or "released"
-        reason: Optional[str] = None,
-        performed_by: Optional[str] = None,
+        reason: str | None = None,
+        performed_by: str | None = None,
     ) -> bool:
         """Send a device quarantine/release notification email."""
         is_quarantine = action.lower() == "quarantined"
@@ -294,7 +293,7 @@ This is an automated message from NetGuardian AI.
                     <p>The device <strong>{device_name}</strong> has been {action_text}.</p>
                     {f'<p><strong>Reason:</strong> {reason}</p>' if reason else ''}
                     {f'<p><strong>Performed by:</strong> {performed_by}</p>' if performed_by else ''}
-                    <p><strong>Time:</strong> {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
+                    <p><strong>Time:</strong> {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
                 </div>
                 <div class="footer">
                     This is an automated message from NetGuardian AI.
@@ -306,7 +305,7 @@ This is an automated message from NetGuardian AI.
 
         return await self.send_email(to_email, subject, body_html)
 
-    async def test_connection(self) -> Dict[str, Any]:
+    async def test_connection(self) -> dict[str, Any]:
         """Test SMTP connection.
 
         Returns:
@@ -345,7 +344,7 @@ This is an automated message from NetGuardian AI.
 
 
 # Global service instance
-_email_service: Optional[EmailService] = None
+_email_service: EmailService | None = None
 
 
 def get_email_service() -> EmailService:

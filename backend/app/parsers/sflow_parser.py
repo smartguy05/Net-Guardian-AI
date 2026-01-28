@@ -5,8 +5,8 @@ sFlow provides sampled packet headers and counter data.
 """
 
 import struct
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -48,7 +48,7 @@ class SFlowParser(BaseParser):
     Can parse raw binary sFlow datagrams or pre-parsed JSON data.
     """
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize sFlow parser.
 
         Config options:
@@ -59,7 +59,7 @@ class SFlowParser(BaseParser):
         self.include_counters = self.config.get("include_counters", False)
         self.exporter_ip = self.config.get("exporter_ip")
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse sFlow data.
 
         Args:
@@ -85,7 +85,7 @@ class SFlowParser(BaseParser):
             logger.warning("sflow_parser_invalid_data", data_type=type(raw_data).__name__)
             return []
 
-    def _parse_binary(self, data: bytes) -> List[ParseResult]:
+    def _parse_binary(self, data: bytes) -> list[ParseResult]:
         """Parse binary sFlow v5 datagram.
 
         sFlow v5 Datagram Header:
@@ -133,7 +133,7 @@ class SFlowParser(BaseParser):
         num_samples = struct.unpack("!I", data[offset:offset + 4])[0]
         offset += 4
 
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         results = []
 
         # Parse samples
@@ -187,7 +187,7 @@ class SFlowParser(BaseParser):
 
         # Flow sample header
         sequence = struct.unpack("!I", data[0:4])[0]
-        source_id = struct.unpack("!I", data[4:8])[0]
+        _source_id = struct.unpack("!I", data[4:8])[0]  # Available for future use
         sampling_rate = struct.unpack("!I", data[8:12])[0]
         sample_pool = struct.unpack("!I", data[12:16])[0]
         drops = struct.unpack("!I", data[16:20])[0]
@@ -296,7 +296,7 @@ class SFlowParser(BaseParser):
             parsed_fields=parsed_fields,
         )
 
-    def _parse_raw_packet_header(self, data: bytes) -> Dict[str, Any] | None:
+    def _parse_raw_packet_header(self, data: bytes) -> dict[str, Any] | None:
         """Parse raw packet header record.
 
         Record format:
@@ -311,7 +311,7 @@ class SFlowParser(BaseParser):
 
         protocol = struct.unpack("!I", data[0:4])[0]
         frame_length = struct.unpack("!I", data[4:8])[0]
-        stripped = struct.unpack("!I", data[8:12])[0]
+        _stripped = struct.unpack("!I", data[8:12])[0]  # Bytes stripped from end
         header_length = struct.unpack("!I", data[12:16])[0]
 
         if len(data) < 16 + header_length:
@@ -331,7 +331,7 @@ class SFlowParser(BaseParser):
 
         return result
 
-    def _parse_ethernet(self, data: bytes) -> Dict[str, Any] | None:
+    def _parse_ethernet(self, data: bytes) -> dict[str, Any] | None:
         """Parse Ethernet header."""
         if len(data) < 14:
             return None
@@ -367,7 +367,7 @@ class SFlowParser(BaseParser):
 
         return result
 
-    def _parse_ipv4(self, data: bytes, offset: int) -> Dict[str, Any] | None:
+    def _parse_ipv4(self, data: bytes, offset: int) -> dict[str, Any] | None:
         """Parse IPv4 header."""
         if len(data) < offset + 20:
             return None
@@ -402,7 +402,7 @@ class SFlowParser(BaseParser):
 
         return result
 
-    def _parse_ipv6(self, data: bytes, offset: int) -> Dict[str, Any] | None:
+    def _parse_ipv6(self, data: bytes, offset: int) -> dict[str, Any] | None:
         """Parse IPv6 header."""
         if len(data) < offset + 40:
             return None
@@ -430,7 +430,7 @@ class SFlowParser(BaseParser):
 
         return result
 
-    def _parse_tcp(self, data: bytes, offset: int) -> Dict[str, Any]:
+    def _parse_tcp(self, data: bytes, offset: int) -> dict[str, Any]:
         """Parse TCP header."""
         tcp_data = data[offset:]
         src_port, dst_port = struct.unpack("!HH", tcp_data[0:4])
@@ -442,7 +442,7 @@ class SFlowParser(BaseParser):
             "tcp_flags": flags,
         }
 
-    def _parse_udp(self, data: bytes, offset: int) -> Dict[str, Any]:
+    def _parse_udp(self, data: bytes, offset: int) -> dict[str, Any]:
         """Parse UDP header."""
         udp_data = data[offset:]
         src_port, dst_port = struct.unpack("!HH", udp_data[0:4])
@@ -452,14 +452,14 @@ class SFlowParser(BaseParser):
             "dst_port": dst_port,
         }
 
-    def _parse_json_entry(self, entry: Dict[str, Any]) -> ParseResult | None:
+    def _parse_json_entry(self, entry: dict[str, Any]) -> ParseResult | None:
         """Parse pre-parsed JSON sFlow entry."""
         try:
             ts_str = entry.get("timestamp")
             if ts_str:
                 timestamp = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
             else:
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             src_ip = entry.get("src_ip") or entry.get("source_ip")
             dst_ip = entry.get("dst_ip") or entry.get("destination_ip")
@@ -501,7 +501,7 @@ class SFlowParser(BaseParser):
         parts = struct.unpack("!HHHHHHHH", data[:16])
         return ":".join(f"{p:x}" for p in parts)
 
-    def _build_message(self, info: Dict[str, Any]) -> str:
+    def _build_message(self, info: dict[str, Any]) -> str:
         """Build human-readable message from packet info."""
         src = info.get("src_ip", "?")
         dst = info.get("dst_ip", "?")
@@ -515,10 +515,10 @@ class SFlowParser(BaseParser):
         else:
             return f"sFlow sample: {src} -> {dst} ({proto}) {frame_len} bytes"
 
-    def _get_sample_severity(self, info: Dict[str, Any]) -> EventSeverity:
+    def _get_sample_severity(self, info: dict[str, Any]) -> EventSeverity:
         """Determine severity based on sampled packet characteristics."""
         dst_port = info.get("dst_port", 0)
-        protocol = info.get("protocol", "")
+        _protocol = info.get("protocol", "")  # Available for protocol-based severity
 
         # Suspicious ports
         suspicious_ports = {4444, 5555, 6666, 31337, 1337, 8080, 9001, 12345}

@@ -1,13 +1,12 @@
 """LLM service for Claude API integration with prompt caching."""
 
 import json
-from datetime import datetime
+from collections.abc import AsyncGenerator
 from enum import Enum
-from typing import Any, Dict, List, Optional, AsyncGenerator
-from uuid import UUID
+from typing import Any
 
 import structlog
-from anthropic import AsyncAnthropic, APIError
+from anthropic import APIError, AsyncAnthropic
 
 from app.config import settings
 
@@ -83,7 +82,7 @@ class LLMService:
     """Service for interacting with Claude API."""
 
     def __init__(self):
-        self._client: Optional[AsyncAnthropic] = None
+        self._client: AsyncAnthropic | None = None
         self._enabled = settings.llm_enabled and bool(settings.anthropic_api_key)
 
     @property
@@ -110,12 +109,12 @@ class LLMService:
 
     async def analyze_alert(
         self,
-        alert_data: Dict[str, Any],
-        device_data: Optional[Dict[str, Any]] = None,
-        baseline_data: Optional[Dict[str, Any]] = None,
-        recent_events: Optional[List[Dict[str, Any]]] = None,
+        alert_data: dict[str, Any],
+        device_data: dict[str, Any] | None = None,
+        baseline_data: dict[str, Any] | None = None,
+        recent_events: list[dict[str, Any]] | None = None,
         model_type: LLMModel = LLMModel.DEFAULT,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Analyze an alert using Claude.
 
         Args:
@@ -194,10 +193,10 @@ class LLMService:
 
     def _build_alert_analysis_prompt(
         self,
-        alert_data: Dict[str, Any],
-        device_data: Optional[Dict[str, Any]],
-        baseline_data: Optional[Dict[str, Any]],
-        recent_events: Optional[List[Dict[str, Any]]],
+        alert_data: dict[str, Any],
+        device_data: dict[str, Any] | None,
+        baseline_data: dict[str, Any] | None,
+        recent_events: list[dict[str, Any]] | None,
     ) -> str:
         """Build the alert analysis prompt."""
         prompt_parts = ["## Alert to Analyze\n"]
@@ -274,7 +273,7 @@ Format your response as JSON:
 
         return "\n".join(prompt_parts)
 
-    def _parse_analysis_response(self, response_text: str) -> Dict[str, Any]:
+    def _parse_analysis_response(self, response_text: str) -> dict[str, Any]:
         """Parse the analysis response, extracting JSON if present."""
         # Try to extract JSON from the response
         try:
@@ -304,7 +303,7 @@ Format your response as JSON:
     async def query_network(
         self,
         query: str,
-        context: Dict[str, Any],
+        context: dict[str, Any],
         model_type: LLMModel = LLMModel.DEFAULT,
     ) -> str:
         """Process a natural language query about the network.
@@ -347,7 +346,7 @@ Format your response as JSON:
             logger.error("llm_query_error", error=str(e))
             return f"Sorry, I couldn't process your query: {e}"
 
-    def _build_query_prompt(self, query: str, context: Dict[str, Any]) -> str:
+    def _build_query_prompt(self, query: str, context: dict[str, Any]) -> str:
         """Build the query prompt with context."""
         prompt_parts = ["## Current Network Context\n"]
 
@@ -394,11 +393,11 @@ Format your response as JSON:
 
     async def summarize_incident(
         self,
-        alerts: List[Dict[str, Any]],
-        anomalies: List[Dict[str, Any]],
-        events: List[Dict[str, Any]],
-        device_data: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        alerts: list[dict[str, Any]],
+        anomalies: list[dict[str, Any]],
+        events: list[dict[str, Any]],
+        device_data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Generate an incident summary from related alerts and events.
 
         Args:
@@ -444,10 +443,10 @@ Format your response as JSON:
 
     def _build_incident_summary_prompt(
         self,
-        alerts: List[Dict[str, Any]],
-        anomalies: List[Dict[str, Any]],
-        events: List[Dict[str, Any]],
-        device_data: Optional[Dict[str, Any]],
+        alerts: list[dict[str, Any]],
+        anomalies: list[dict[str, Any]],
+        events: list[dict[str, Any]],
+        device_data: dict[str, Any] | None,
     ) -> str:
         """Build the incident summary prompt."""
         prompt_parts = ["## Incident Data for Summary\n"]
@@ -494,7 +493,7 @@ Please provide an incident summary:
 
         return "\n".join(prompt_parts)
 
-    def _parse_incident_summary(self, response_text: str) -> Dict[str, Any]:
+    def _parse_incident_summary(self, response_text: str) -> dict[str, Any]:
         """Parse incident summary response."""
         try:
             if "```json" in response_text:
@@ -517,8 +516,8 @@ Please provide an incident summary:
 
     async def stream_chat(
         self,
-        messages: List[Dict[str, str]],
-        context: Dict[str, Any],
+        messages: list[dict[str, str]],
+        context: dict[str, Any],
     ) -> AsyncGenerator[str, None]:
         """Stream a chat response.
 
@@ -567,7 +566,7 @@ Please provide an incident summary:
 
 
 # Global service instance
-_llm_service: Optional[LLMService] = None
+_llm_service: LLMService | None = None
 
 
 def get_llm_service() -> LLMService:

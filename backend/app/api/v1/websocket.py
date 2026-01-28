@@ -1,14 +1,12 @@
 """WebSocket endpoint for real-time updates."""
 
 import asyncio
-import json
-from datetime import datetime, timezone
-from typing import Any, Dict, Set
-from uuid import UUID
+from datetime import UTC, datetime
+from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from jose import JWTError, jwt
 import structlog
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from jose import JWTError, jwt
 
 from app.config import settings
 
@@ -21,7 +19,7 @@ class ConnectionManager:
     """Manages WebSocket connections and broadcasts messages to connected clients."""
 
     def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
+        self.active_connections: dict[str, WebSocket] = {}
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, client_id: str) -> None:
@@ -46,7 +44,7 @@ class ConnectionManager:
             total_connections=len(self.active_connections),
         )
 
-    async def send_personal_message(self, message: Dict[str, Any], client_id: str) -> None:
+    async def send_personal_message(self, message: dict[str, Any], client_id: str) -> None:
         """Send a message to a specific client."""
         async with self._lock:
             websocket = self.active_connections.get(client_id)
@@ -61,7 +59,7 @@ class ConnectionManager:
                 )
                 await self.disconnect(client_id)
 
-    async def broadcast(self, message: Dict[str, Any]) -> None:
+    async def broadcast(self, message: dict[str, Any]) -> None:
         """Broadcast a message to all connected clients."""
         async with self._lock:
             connections = list(self.active_connections.items())
@@ -97,7 +95,7 @@ def get_connection_manager() -> ConnectionManager:
     return manager
 
 
-def verify_ws_token(token: str) -> Dict[str, Any]:
+def verify_ws_token(token: str) -> dict[str, Any]:
     """Verify JWT token for WebSocket authentication.
 
     Args:
@@ -162,7 +160,7 @@ async def websocket_endpoint(
             "data": {
                 "status": "connected",
                 "client_id": client_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         },
         client_id,
@@ -179,16 +177,16 @@ async def websocket_endpoint(
                     await manager.send_personal_message(
                         {
                             "type": "pong",
-                            "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                            "data": {"timestamp": datetime.now(UTC).isoformat()},
                         },
                         client_id,
                     )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Send heartbeat
                 await manager.send_personal_message(
                     {
                         "type": "heartbeat",
-                        "data": {"timestamp": datetime.now(timezone.utc).isoformat()},
+                        "data": {"timestamp": datetime.now(UTC).isoformat()},
                     },
                     client_id,
                 )
@@ -199,26 +197,26 @@ async def websocket_endpoint(
         await manager.disconnect(client_id)
 
 
-async def broadcast_alert_created(alert_data: Dict[str, Any]) -> None:
+async def broadcast_alert_created(alert_data: dict[str, Any]) -> None:
     """Broadcast a new alert to all connected clients."""
     await manager.broadcast({
         "type": "alert_created",
         "data": alert_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
 
-async def broadcast_alert_updated(alert_id: str, update_data: Dict[str, Any]) -> None:
+async def broadcast_alert_updated(alert_id: str, update_data: dict[str, Any]) -> None:
     """Broadcast an alert update to all connected clients."""
     await manager.broadcast({
         "type": "alert_updated",
         "data": {"alert_id": alert_id, **update_data},
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
 
 async def broadcast_device_status_changed(
-    device_id: str, new_status: str, details: Dict[str, Any] | None = None
+    device_id: str, new_status: str, details: dict[str, Any] | None = None
 ) -> None:
     """Broadcast a device status change to all connected clients."""
     await manager.broadcast({
@@ -228,16 +226,16 @@ async def broadcast_device_status_changed(
             "new_status": new_status,
             **(details or {}),
         },
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
 
-async def broadcast_anomaly_detected(anomaly_data: Dict[str, Any]) -> None:
+async def broadcast_anomaly_detected(anomaly_data: dict[str, Any]) -> None:
     """Broadcast a new anomaly detection to all connected clients."""
     await manager.broadcast({
         "type": "anomaly_detected",
         "data": anomaly_data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })
 
 
@@ -252,5 +250,5 @@ async def broadcast_system_notification(
             "message": message,
             "severity": severity,
         },
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     })

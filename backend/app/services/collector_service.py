@@ -3,8 +3,8 @@
 import asyncio
 import hashlib
 import time
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
@@ -36,10 +36,10 @@ class DeviceCache:
     """TTL-based cache for IP address to device ID mappings."""
 
     def __init__(self, ttl: int = DEVICE_CACHE_TTL):
-        self._cache: Dict[str, Tuple[Optional[UUID], float]] = {}
+        self._cache: dict[str, tuple[UUID | None, float]] = {}
         self._ttl = ttl
 
-    def get(self, ip_address: str) -> Tuple[Optional[UUID], bool]:
+    def get(self, ip_address: str) -> tuple[UUID | None, bool]:
         """Get device ID for IP. Returns (device_id, cache_hit)."""
         if ip_address in self._cache:
             device_id, timestamp = self._cache[ip_address]
@@ -49,7 +49,7 @@ class DeviceCache:
             del self._cache[ip_address]
         return None, False
 
-    def set(self, ip_address: str, device_id: Optional[UUID]) -> None:
+    def set(self, ip_address: str, device_id: UUID | None) -> None:
         """Cache device ID for IP."""
         self._cache[ip_address] = (device_id, time.time())
 
@@ -80,11 +80,11 @@ class CollectorService:
     - Device cache: IP->device mappings cached to reduce DB queries
     """
 
-    def __init__(self):
-        self._collectors: Dict[str, BaseCollector] = {}
-        self._collector_tasks: Dict[str, asyncio.Task] = {}
+    def __init__(self) -> None:
+        self._collectors: dict[str, BaseCollector] = {}
+        self._collector_tasks: dict[str, asyncio.Task[None]] = {}
         self._running = False
-        self._event_bus: Optional[EventBus] = None
+        self._event_bus: EventBus | None = None
 
         # Batch processing
         self._batch_semaphore = asyncio.Semaphore(MAX_CONCURRENT_BATCHES)
@@ -93,8 +93,8 @@ class CollectorService:
         self._device_cache = DeviceCache()
 
         # Deferred semantic analysis
-        self._semantic_queue: asyncio.Queue = asyncio.Queue(maxsize=SEMANTIC_QUEUE_SIZE)
-        self._semantic_task: Optional[asyncio.Task] = None
+        self._semantic_queue: asyncio.Queue[RawEvent] = asyncio.Queue(maxsize=SEMANTIC_QUEUE_SIZE)
+        self._semantic_task: asyncio.Task[None] | None = None
 
     async def start(self) -> None:
         """Start the collector service."""
@@ -145,7 +145,7 @@ class CollectorService:
         """Load all enabled log sources and start collectors."""
         async with AsyncSessionLocal() as session:
             result = await session.execute(
-                select(LogSource).where(LogSource.enabled == True)
+                select(LogSource).where(LogSource.enabled.is_(True))
             )
             sources = result.scalars().all()
 
@@ -227,7 +227,7 @@ class CollectorService:
         collector: BaseCollector,
     ) -> None:
         """Process events from a collector with batching."""
-        batch: List[ParseResult] = []
+        batch: list[ParseResult] = []
         last_flush = time.time()
 
         async for event in collector.collect():
@@ -257,7 +257,7 @@ class CollectorService:
     async def _process_batch(
         self,
         source_id: str,
-        events: List[ParseResult],
+        events: list[ParseResult],
     ) -> None:
         """Process a batch of events with a single database transaction."""
         if not events:
@@ -277,15 +277,15 @@ class CollectorService:
     async def _handle_event_batch(
         self,
         source_id: str,
-        events: List[ParseResult],
+        events: list[ParseResult],
     ) -> None:
         """Handle a batch of parsed events with optimized DB operations."""
         async with AsyncSessionLocal() as session:
-            raw_events: List[RawEvent] = []
-            event_data_for_bus: List[dict] = []
+            raw_events: list[RawEvent] = []
+            event_data_for_bus: list[dict[str, Any]] = []
 
             # Collect unique IPs that need device lookup
-            ips_to_lookup: Dict[str, Optional[UUID]] = {}
+            ips_to_lookup: dict[str, UUID | None] = {}
             for event in events:
                 if event.client_ip and event.client_ip not in ips_to_lookup:
                     # Check cache first
@@ -343,7 +343,7 @@ class CollectorService:
             # Update source metadata (single update for the whole batch)
             source = await session.get(LogSource, source_id)
             if source:
-                source.last_event_at = datetime.now(timezone.utc)
+                source.last_event_at = datetime.now(UTC)
                 source.event_count += len(events)
                 source.last_error = None
 
@@ -381,15 +381,15 @@ class CollectorService:
     async def _batch_get_or_create_devices(
         self,
         session: AsyncSession,
-        ip_addresses: List[str],
-    ) -> Dict[str, Optional[UUID]]:
+        ip_addresses: list[str],
+    ) -> dict[str, UUID | None]:
         """Batch get or create devices by IP addresses.
 
         Handles race conditions from concurrent batch processing by:
         1. Looking up by both IP and placeholder MAC
         2. Catching IntegrityError on insert and retrying lookup
         """
-        result_map: Dict[str, Optional[UUID]] = {}
+        result_map: dict[str, UUID | None] = {}
 
         if not ip_addresses:
             return result_map
@@ -411,11 +411,11 @@ class CollectorService:
         existing_devices = result.scalars().all()
 
         # Map IPs to existing devices
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for device in existing_devices:
             for ip in ip_addresses:
                 if ip in device.ip_addresses or device.mac_address == ip_to_mac.get(ip):
-                    result_map[ip] = device.id
+                    result_map[ip] = UUID(str(device.id))
                     # Update last seen
                     device.last_seen = now
 
@@ -424,8 +424,9 @@ class CollectorService:
             if ip not in result_map:
                 placeholder_mac = ip_to_mac[ip]
 
-                device = Device(
-                    id=uuid4(),
+                new_device_id = uuid4()
+                new_device = Device(
+                    id=new_device_id,
                     mac_address=placeholder_mac,
                     ip_addresses=[ip],
                     hostname=None,
@@ -435,12 +436,12 @@ class CollectorService:
                     first_seen=now,
                     last_seen=now,
                 )
-                session.add(device)
-                result_map[ip] = device.id
+                session.add(new_device)
+                result_map[ip] = new_device_id
 
                 logger.info(
                     "device_auto_created",
-                    device_id=str(device.id),
+                    device_id=str(new_device_id),
                     ip_address=ip,
                 )
 
@@ -462,7 +463,7 @@ class CollectorService:
             for device in existing_devices:
                 for ip in ip_addresses:
                     if ip in device.ip_addresses or device.mac_address == ip_to_mac.get(ip):
-                        result_map[ip] = device.id
+                        result_map[ip] = UUID(str(device.id))
                         device.last_seen = now
 
             logger.debug(
@@ -481,7 +482,7 @@ class CollectorService:
         while self._running:
             try:
                 # Collect a batch of events
-                batch: List[RawEvent] = []
+                batch: list[RawEvent] = []
 
                 # Wait for first event (with timeout to check running flag)
                 try:
@@ -490,7 +491,7 @@ class CollectorService:
                         timeout=1.0
                     )
                     batch.append(event)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
 
                 # Try to get more events without waiting (up to batch size)
@@ -563,14 +564,14 @@ class CollectorService:
         """Remove and stop a source."""
         await self._stop_collector(source_id)
 
-    def get_status(self) -> Dict[str, bool]:
+    def get_status(self) -> dict[str, bool]:
         """Get status of all collectors."""
         return {
             source_id: collector.is_running()
             for source_id, collector in self._collectors.items()
         }
 
-    def get_stats(self) -> Dict[str, any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get collector service statistics."""
         return {
             "active_collectors": len(self._collectors),
@@ -580,7 +581,7 @@ class CollectorService:
 
 
 # Global service instance
-_collector_service: Optional[CollectorService] = None
+_collector_service: CollectorService | None = None
 
 
 async def get_collector_service() -> CollectorService:

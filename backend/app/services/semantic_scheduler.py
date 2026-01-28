@@ -1,8 +1,7 @@
 """Scheduler for periodic semantic analysis runs."""
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 import structlog
 from sqlalchemy import select
@@ -21,7 +20,7 @@ class SemanticAnalysisScheduler:
 
     def __init__(self):
         self._running = False
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._check_interval_seconds = 60  # Check every minute
 
     async def start(self) -> None:
@@ -94,7 +93,7 @@ class SemanticAnalysisScheduler:
         if not config.last_run_at:
             return True
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_run_time = config.last_run_at + timedelta(
             minutes=config.batch_interval_minutes
         )
@@ -133,7 +132,7 @@ class SemanticAnalysisScheduler:
 
 
 # Global scheduler instance
-_scheduler: Optional[SemanticAnalysisScheduler] = None
+_scheduler: SemanticAnalysisScheduler | None = None
 
 
 def get_scheduler() -> SemanticAnalysisScheduler:

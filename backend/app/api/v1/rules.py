@@ -1,20 +1,19 @@
 """Detection rules API endpoints."""
 
 import re
-from typing import Annotated, List, Optional, Any, Dict
-from uuid import UUID
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin
 from app.db.session import get_async_session
-from app.models.user import User
-from app.models.detection_rule import DetectionRule
 from app.models.alert import AlertSeverity
+from app.models.detection_rule import DetectionRule
 from app.models.raw_event import EventType
+from app.models.user import User
 
 router = APIRouter()
 
@@ -42,7 +41,7 @@ class RuleConditionGroup(BaseModel):
     """Group of conditions with logical operator."""
 
     logic: str = Field("and", description="Logical operator: 'and' or 'or'")
-    conditions: List[RuleCondition] = Field(..., description="List of conditions")
+    conditions: list[RuleCondition] = Field(..., description="List of conditions")
 
     @field_validator("logic")
     @classmethod
@@ -56,7 +55,7 @@ class RuleAction(BaseModel):
     """Action to take when rule triggers."""
 
     type: str = Field(..., description="Action type (create_alert, quarantine_device, tag_device, send_notification, execute_webhook)")
-    config: Dict[str, Any] = Field(default_factory=dict, description="Action-specific configuration")
+    config: dict[str, Any] = Field(default_factory=dict, description="Action-specific configuration")
 
     @field_validator("type")
     @classmethod
@@ -72,11 +71,11 @@ class CreateRuleRequest(BaseModel):
 
     id: str = Field(..., min_length=1, max_length=100, description="Unique rule ID (slug)")
     name: str = Field(..., min_length=1, max_length=255, description="Rule display name")
-    description: Optional[str] = Field(None, description="Rule description")
+    description: str | None = Field(None, description="Rule description")
     severity: AlertSeverity = Field(..., description="Alert severity when triggered")
     enabled: bool = Field(True, description="Whether rule is active")
     conditions: RuleConditionGroup = Field(..., description="Rule conditions")
-    response_actions: List[RuleAction] = Field(default_factory=list, description="Actions when triggered")
+    response_actions: list[RuleAction] = Field(default_factory=list, description="Actions when triggered")
     cooldown_minutes: int = Field(60, ge=0, le=10080, description="Cooldown between alerts (0-10080 mins)")
 
     @field_validator("id")
@@ -90,13 +89,13 @@ class CreateRuleRequest(BaseModel):
 class UpdateRuleRequest(BaseModel):
     """Request to update a detection rule."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    severity: Optional[AlertSeverity] = None
-    enabled: Optional[bool] = None
-    conditions: Optional[RuleConditionGroup] = None
-    response_actions: Optional[List[RuleAction]] = None
-    cooldown_minutes: Optional[int] = Field(None, ge=0, le=10080)
+    name: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    severity: AlertSeverity | None = None
+    enabled: bool | None = None
+    conditions: RuleConditionGroup | None = None
+    response_actions: list[RuleAction] | None = None
+    cooldown_minutes: int | None = Field(None, ge=0, le=10080)
 
 
 class RuleResponse(BaseModel):
@@ -104,11 +103,11 @@ class RuleResponse(BaseModel):
 
     id: str
     name: str
-    description: Optional[str]
+    description: str | None
     severity: AlertSeverity
     enabled: bool
-    conditions: Dict[str, Any]
-    response_actions: List[Dict[str, Any]]
+    conditions: dict[str, Any]
+    response_actions: list[dict[str, Any]]
     cooldown_minutes: int
     created_at: str
     updated_at: str
@@ -119,7 +118,7 @@ class RuleResponse(BaseModel):
 class RuleListResponse(BaseModel):
     """List of detection rules."""
 
-    items: List[RuleResponse]
+    items: list[RuleResponse]
     total: int
 
 
@@ -127,14 +126,14 @@ class TestRuleRequest(BaseModel):
     """Request to test a rule against sample event."""
 
     conditions: RuleConditionGroup
-    event: Dict[str, Any] = Field(..., description="Sample event data to test against")
+    event: dict[str, Any] = Field(..., description="Sample event data to test against")
 
 
 class TestRuleResponse(BaseModel):
     """Result of testing a rule."""
 
     matches: bool
-    condition_results: List[Dict[str, Any]]
+    condition_results: list[dict[str, Any]]
 
 
 class ConditionFieldInfo(BaseModel):
@@ -143,13 +142,13 @@ class ConditionFieldInfo(BaseModel):
     name: str
     description: str
     type: str
-    example_values: Optional[List[str]] = None
+    example_values: list[str] | None = None
 
 
 # --- Helper Functions ---
 
 
-def _normalize_response_actions(actions: List[Any]) -> List[Dict[str, Any]]:
+def _normalize_response_actions(actions: list[Any]) -> list[dict[str, Any]]:
     """Normalize response_actions to expected format.
 
     Handles legacy format (list of strings) and new format (list of dicts).
@@ -186,7 +185,7 @@ def _rule_to_response(rule: DetectionRule) -> RuleResponse:
     )
 
 
-def _evaluate_condition(condition: RuleCondition, event: Dict[str, Any]) -> Dict[str, Any]:
+def _evaluate_condition(condition: RuleCondition, event: dict[str, Any]) -> dict[str, Any]:
     """Evaluate a single condition against an event."""
     field_value = event.get(condition.field)
     result = False
@@ -231,7 +230,7 @@ def _evaluate_condition(condition: RuleCondition, event: Dict[str, Any]) -> Dict
     }
 
 
-def _evaluate_conditions(group: RuleConditionGroup, event: Dict[str, Any]) -> tuple[bool, List[Dict[str, Any]]]:
+def _evaluate_conditions(group: RuleConditionGroup, event: dict[str, Any]) -> tuple[bool, list[dict[str, Any]]]:
     """Evaluate a condition group against an event."""
     results = [_evaluate_condition(c, event) for c in group.conditions]
 
@@ -250,9 +249,9 @@ def _evaluate_conditions(group: RuleConditionGroup, event: Dict[str, Any]) -> tu
 async def list_rules(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    enabled: Optional[bool] = Query(None, description="Filter by enabled status"),
-    severity: Optional[AlertSeverity] = Query(None, description="Filter by severity"),
-    search: Optional[str] = Query(None, description="Search in name/description"),
+    enabled: bool | None = Query(None, description="Filter by enabled status"),
+    severity: AlertSeverity | None = Query(None, description="Filter by severity"),
+    search: str | None = Query(None, description="Search in name/description"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ) -> RuleListResponse:
@@ -287,10 +286,10 @@ async def list_rules(
     )
 
 
-@router.get("/fields", response_model=List[ConditionFieldInfo])
+@router.get("/fields", response_model=list[ConditionFieldInfo])
 async def get_condition_fields(
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[ConditionFieldInfo]:
+) -> list[ConditionFieldInfo]:
     """Get available fields for rule conditions."""
     return [
         ConditionFieldInfo(

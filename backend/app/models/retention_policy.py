@@ -1,7 +1,6 @@
 """Retention policy model for data lifecycle management."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
@@ -44,7 +43,7 @@ class RetentionPolicy(Base, TimestampMixin):
         String(128),
         nullable=False,
     )
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         Text(),
         nullable=True,
     )
@@ -58,7 +57,7 @@ class RetentionPolicy(Base, TimestampMixin):
         default=True,
         nullable=False,
     )
-    last_run: Mapped[Optional[datetime]] = mapped_column(
+    last_run: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

@@ -1,8 +1,7 @@
 """Quarantine service for managing device isolation."""
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -16,9 +15,9 @@ from app.models.device import Device, DeviceStatus
 from app.models.user import User
 from app.services.audit_service import AuditService, get_audit_service
 from app.services.integrations.adguard import AdGuardHomeService, get_adguard_service
-from app.services.integrations.base import IntegrationResult, IntegrationService
-from app.services.integrations.pfsense import PfSenseService, get_pfsense_service
-from app.services.integrations.unifi import UniFiService, get_unifi_service
+from app.services.integrations.base import IntegrationService
+from app.services.integrations.pfsense import get_pfsense_service
+from app.services.integrations.unifi import get_unifi_service
 
 logger = structlog.get_logger()
 
@@ -32,10 +31,10 @@ class QuarantineResult:
     device_name: str
     mac_address: str
     message: str
-    integration_results: List[Dict[str, Any]]
-    errors: List[str]
+    integration_results: list[dict[str, Any]]
+    errors: list[str]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "success": self.success,
@@ -58,10 +57,10 @@ class QuarantineService:
 
     def __init__(
         self,
-        session: Optional[AsyncSession] = None,
-        adguard_service: Optional[AdGuardHomeService] = None,
-        router_service: Optional[IntegrationService] = None,
-        audit_service: Optional[AuditService] = None,
+        session: AsyncSession | None = None,
+        adguard_service: AdGuardHomeService | None = None,
+        router_service: IntegrationService | None = None,
+        audit_service: AuditService | None = None,
     ):
         """Initialize the quarantine service.
 
@@ -79,7 +78,7 @@ class QuarantineService:
         if router_service:
             self._router = router_service
         elif settings.router_integration_type == "unifi":
-            self._router: Optional[IntegrationService] = get_unifi_service()
+            self._router: IntegrationService | None = get_unifi_service()
         elif settings.router_integration_type in ("pfsense", "opnsense"):
             self._router = get_pfsense_service()
         else:
@@ -100,8 +99,8 @@ class QuarantineService:
         self,
         device_id: UUID,
         user: User,
-        reason: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        reason: str | None = None,
+        ip_address: str | None = None,
     ) -> QuarantineResult:
         """Quarantine a device.
 
@@ -121,8 +120,8 @@ class QuarantineService:
             QuarantineResult with operation outcome
         """
         session = await self._get_session()
-        integration_results: List[Dict[str, Any]] = []
-        errors: List[str] = []
+        integration_results: list[dict[str, Any]] = []
+        errors: list[str] = []
 
         try:
             # Get the device
@@ -235,7 +234,7 @@ class QuarantineService:
                 device_id=device.id,
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
-                message=f"Device quarantined successfully" + (
+                message="Device quarantined successfully" + (
                     f" with {len(errors)} integration warning(s)" if errors else ""
                 ),
                 integration_results=integration_results,
@@ -265,8 +264,8 @@ class QuarantineService:
         self,
         device_id: UUID,
         user: User,
-        reason: Optional[str] = None,
-        ip_address: Optional[str] = None,
+        reason: str | None = None,
+        ip_address: str | None = None,
     ) -> QuarantineResult:
         """Release a device from quarantine.
 
@@ -286,8 +285,8 @@ class QuarantineService:
             QuarantineResult with operation outcome
         """
         session = await self._get_session()
-        integration_results: List[Dict[str, Any]] = []
-        errors: List[str] = []
+        integration_results: list[dict[str, Any]] = []
+        errors: list[str] = []
 
         try:
             # Get the device
@@ -397,7 +396,7 @@ class QuarantineService:
                 device_id=device.id,
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
-                message=f"Device released from quarantine" + (
+                message="Device released from quarantine" + (
                     f" with {len(errors)} integration warning(s)" if errors else ""
                 ),
                 integration_results=integration_results,
@@ -423,7 +422,7 @@ class QuarantineService:
         finally:
             await self._close_session(session)
 
-    async def get_quarantined_devices(self) -> List[Dict[str, Any]]:
+    async def get_quarantined_devices(self) -> list[dict[str, Any]]:
         """Get all quarantined devices with their status."""
         session = await self._get_session()
         try:
@@ -466,7 +465,7 @@ class QuarantineService:
         finally:
             await self._close_session(session)
 
-    async def sync_quarantine_status(self) -> Dict[str, Any]:
+    async def sync_quarantine_status(self) -> dict[str, Any]:
         """Sync quarantine status between database and integrations.
 
         This ensures that devices marked as quarantined in the DB
@@ -549,7 +548,7 @@ class QuarantineService:
 
 
 # Global service instance
-_quarantine_service: Optional[QuarantineService] = None
+_quarantine_service: QuarantineService | None = None
 
 
 def get_quarantine_service() -> QuarantineService:

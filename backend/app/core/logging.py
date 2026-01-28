@@ -2,7 +2,6 @@
 
 import logging
 import sys
-from typing import Optional
 
 import structlog
 
@@ -58,7 +57,7 @@ def setup_logging() -> None:
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
-def get_logger(name: Optional[str] = None) -> structlog.BoundLogger:
+def get_logger(name: str | None = None) -> structlog.BoundLogger:
     """Get a logger instance.
 
     Args:

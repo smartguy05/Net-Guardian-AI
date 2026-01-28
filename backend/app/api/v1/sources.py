@@ -1,7 +1,7 @@
 """Log source management API endpoints (Admin only)."""
 
 import secrets
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import require_admin
-from app.collectors.registry import get_collector, CollectorRegistry
+from app.collectors.registry import CollectorRegistry, get_collector
 from app.db.session import get_async_session
 from app.models.log_source import LogSource, ParserType, SourceType
 from app.models.user import User
@@ -24,33 +24,33 @@ router = APIRouter()
 class LogSourceCreate(BaseModel):
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     source_type: SourceType
     parser_type: ParserType
-    config: Dict[str, Any] = {}
-    parser_config: Dict[str, Any] = {}
+    config: dict[str, Any] = {}
+    parser_config: dict[str, Any] = {}
 
 
 class LogSourceUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    enabled: Optional[bool] = None
-    config: Optional[Dict[str, Any]] = None
-    parser_config: Optional[Dict[str, Any]] = None
+    name: str | None = None
+    description: str | None = None
+    enabled: bool | None = None
+    config: dict[str, Any] | None = None
+    parser_config: dict[str, Any] | None = None
 
 
 class LogSourceResponse(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: str | None
     source_type: str
     enabled: bool
-    config: Dict[str, Any]
+    config: dict[str, Any]
     parser_type: str
-    parser_config: Dict[str, Any]
-    api_key: Optional[str]
-    last_event_at: Optional[str]
-    last_error: Optional[str]
+    parser_config: dict[str, Any]
+    api_key: str | None
+    last_event_at: str | None
+    last_error: str | None
     event_count: int
     created_at: str
 
@@ -59,14 +59,14 @@ class LogSourceResponse(BaseModel):
 
 
 class LogSourceListResponse(BaseModel):
-    items: List[LogSourceResponse]
+    items: list[LogSourceResponse]
     total: int
 
 
 class TestSourceResult(BaseModel):
     success: bool
     message: str
-    sample_events: List[Dict[str, Any]] = []
+    sample_events: list[dict[str, Any]] = []
 
 
 def _source_to_response(source: LogSource) -> LogSourceResponse:

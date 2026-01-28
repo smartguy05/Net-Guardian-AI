@@ -2,11 +2,12 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY, ENUM, JSON, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import ENUM, JSON
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -69,7 +70,7 @@ class Playbook(Base):
         default=uuid4,
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[PlaybookStatus] = mapped_column(
         ENUM(PlaybookStatus, name="playbookstatus", create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
@@ -81,14 +82,14 @@ class Playbook(Base):
         ENUM(PlaybookTriggerType, name="playbooktriggertype", create_type=False, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
-    trigger_conditions: Mapped[Dict[str, Any]] = mapped_column(
+    trigger_conditions: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
         default=dict,
     )
 
     # Actions to perform (ordered list)
-    actions: Mapped[List[Dict[str, Any]]] = mapped_column(
+    actions: Mapped[list[dict[str, Any]]] = mapped_column(
         JSON,
         nullable=False,
         default=list,
@@ -121,14 +122,14 @@ class Playbook(Base):
         server_default=func.current_timestamp(),
         onupdate=func.current_timestamp(),
     )
-    created_by: Mapped[Optional[UUID]] = mapped_column(
+    created_by: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # Relationships
-    executions: Mapped[List["PlaybookExecution"]] = relationship(
+    executions: Mapped[list["PlaybookExecution"]] = relationship(
         "PlaybookExecution",
         back_populates="playbook",
         cascade="all, delete-orphan",
@@ -162,35 +163,35 @@ class PlaybookExecution(Base):
     )
 
     # Trigger information
-    trigger_event: Mapped[Dict[str, Any]] = mapped_column(
+    trigger_event: Mapped[dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
         default=dict,
     )
-    trigger_device_id: Mapped[Optional[UUID]] = mapped_column(
+    trigger_device_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="SET NULL"),
         nullable=True,
     )
 
     # Execution details
-    started_at: Mapped[Optional[datetime]] = mapped_column(
+    started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
+    completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    action_results: Mapped[List[Dict[str, Any]]] = mapped_column(
+    action_results: Mapped[list[dict[str, Any]]] = mapped_column(
         JSON,
         nullable=False,
         default=list,
     )
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Who triggered it (null for automatic)
-    triggered_by: Mapped[Optional[UUID]] = mapped_column(
+    triggered_by: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

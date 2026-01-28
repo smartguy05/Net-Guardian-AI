@@ -2,12 +2,12 @@
 
 import statistics
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
@@ -46,7 +46,7 @@ class BaselineCalculator:
         Returns:
             Updated or created DeviceBaseline.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
 
         # Fetch DNS events for this device
         result = await self._session.execute(
@@ -70,7 +70,7 @@ class BaselineCalculator:
         # Update baseline
         baseline.metrics = metrics
         baseline.sample_count = sample_count
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.status = self._determine_status(sample_count, min_samples, baseline)
 
         await self._session.flush()
@@ -84,7 +84,7 @@ class BaselineCalculator:
 
         return baseline
 
-    def _calculate_dns_metrics(self, events: List[RawEvent]) -> Dict[str, Any]:
+    def _calculate_dns_metrics(self, events: list[RawEvent]) -> dict[str, Any]:
         """Calculate DNS-specific metrics from events."""
         if not events:
             return {
@@ -100,7 +100,7 @@ class BaselineCalculator:
         # Track domains
         domain_counter: Counter = Counter()
         hourly_distribution = [0] * 24
-        daily_volumes: Dict[str, int] = defaultdict(int)
+        daily_volumes: dict[str, int] = defaultdict(int)
         blocked_count = 0
 
         for event in events:
@@ -152,7 +152,7 @@ class BaselineCalculator:
         Returns:
             Updated or created DeviceBaseline.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
 
         # Fetch firewall/HTTP events for this device
         result = await self._session.execute(
@@ -176,7 +176,7 @@ class BaselineCalculator:
         # Update baseline
         baseline.metrics = metrics
         baseline.sample_count = sample_count
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.status = self._determine_status(sample_count, min_samples, baseline)
 
         await self._session.flush()
@@ -190,7 +190,7 @@ class BaselineCalculator:
 
         return baseline
 
-    def _calculate_traffic_metrics(self, events: List[RawEvent]) -> Dict[str, Any]:
+    def _calculate_traffic_metrics(self, events: list[RawEvent]) -> dict[str, Any]:
         """Calculate traffic-specific metrics from events."""
         if not events:
             return {
@@ -207,7 +207,7 @@ class BaselineCalculator:
         protocol_counter: Counter = Counter()
         port_counter: Counter = Counter()
         hourly_distribution = [0] * 24
-        daily_volumes: Dict[str, int] = defaultdict(int)
+        daily_volumes: dict[str, int] = defaultdict(int)
         blocked_count = 0
 
         for event in events:
@@ -258,7 +258,7 @@ class BaselineCalculator:
         Returns:
             Updated or created DeviceBaseline.
         """
-        cutoff = datetime.now(timezone.utc) - timedelta(days=window_days)
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
 
         # Fetch all events with target IPs for this device
         result = await self._session.execute(
@@ -282,7 +282,7 @@ class BaselineCalculator:
         # Update baseline
         baseline.metrics = metrics
         baseline.sample_count = sample_count
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.status = self._determine_status(sample_count, min_samples, baseline)
 
         await self._session.flush()
@@ -296,7 +296,7 @@ class BaselineCalculator:
 
         return baseline
 
-    def _calculate_connection_metrics(self, events: List[RawEvent]) -> Dict[str, Any]:
+    def _calculate_connection_metrics(self, events: list[RawEvent]) -> dict[str, Any]:
         """Calculate connection-specific metrics from events."""
         if not events:
             return {
@@ -314,7 +314,7 @@ class BaselineCalculator:
         dest_counter: Counter = Counter()
         port_counter: Counter = Counter()
         hourly_distribution = [0] * 24
-        daily_connections: Dict[str, int] = defaultdict(int)
+        daily_connections: dict[str, int] = defaultdict(int)
         internal_count = 0
 
         for event in events:
@@ -412,7 +412,7 @@ class BaselineCalculator:
 
         # Check if baseline is stale (not updated in window period)
         if baseline.last_calculated:
-            stale_threshold = datetime.now(timezone.utc) - timedelta(
+            stale_threshold = datetime.now(UTC) - timedelta(
                 days=baseline.baseline_window_days * 2
             )
             if baseline.last_calculated < stale_threshold:
@@ -425,7 +425,7 @@ class BaselineCalculator:
         device_id: UUID,
         window_days: int = 7,
         min_samples: int = 100,
-    ) -> Dict[str, DeviceBaseline]:
+    ) -> dict[str, DeviceBaseline]:
         """Calculate all baseline types for a device.
 
         Args:
@@ -467,8 +467,8 @@ class BaselineService:
     async def update_device_baseline(
         self,
         device_id: UUID,
-        baseline_type: Optional[BaselineType] = None,
-    ) -> Dict[str, DeviceBaseline]:
+        baseline_type: BaselineType | None = None,
+    ) -> dict[str, DeviceBaseline]:
         """Update baselines for a specific device.
 
         Args:
@@ -495,7 +495,7 @@ class BaselineService:
             await session.commit()
             return result
 
-    async def update_all_device_baselines(self) -> Dict[str, int]:
+    async def update_all_device_baselines(self) -> dict[str, int]:
         """Update baselines for all active devices.
 
         Returns:
@@ -543,7 +543,7 @@ class BaselineService:
     async def get_device_baselines(
         self,
         device_id: UUID,
-    ) -> List[DeviceBaseline]:
+    ) -> list[DeviceBaseline]:
         """Get all baselines for a device.
 
         Args:
@@ -562,7 +562,7 @@ class BaselineService:
         self,
         device_id: UUID,
         baseline_type: BaselineType,
-    ) -> Optional[DeviceBaseline]:
+    ) -> DeviceBaseline | None:
         """Get a specific baseline for a device.
 
         Args:
@@ -582,7 +582,7 @@ class BaselineService:
 
 
 # Global service instance
-_baseline_service: Optional[BaselineService] = None
+_baseline_service: BaselineService | None = None
 
 
 def get_baseline_service() -> BaselineService:

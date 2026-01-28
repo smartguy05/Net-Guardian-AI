@@ -1,7 +1,7 @@
 """pfSense/OPNsense integration for device blocking via firewall rules."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 
@@ -27,7 +27,7 @@ class PfSenseService(IntegrationService):
     """
 
     def __init__(self):
-        self._is_opnsense: Optional[bool] = None
+        self._is_opnsense: bool | None = None
 
     @property
     def integration_type(self) -> IntegrationType:
@@ -149,7 +149,7 @@ class PfSenseService(IntegrationService):
         self,
         client: httpx.AsyncClient,
         mac_address: str,
-        device_name: Optional[str] = None,
+        device_name: str | None = None,
     ) -> bool:
         """Create a firewall rule to block traffic from MAC address.
 
@@ -191,8 +191,8 @@ class PfSenseService(IntegrationService):
     async def block_device(
         self,
         mac_address: str,
-        reason: Optional[str] = None,
-        device_name: Optional[str] = None,
+        reason: str | None = None,
+        device_name: str | None = None,
     ) -> IntegrationResult:
         """Block a device by creating a firewall rule.
 
@@ -306,8 +306,8 @@ class PfSenseService(IntegrationService):
     async def unblock_device(
         self,
         mac_address: str,
-        reason: Optional[str] = None,
-        device_name: Optional[str] = None,
+        reason: str | None = None,
+        device_name: str | None = None,
     ) -> IntegrationResult:
         """Unblock a device by removing the firewall rule."""
         if not self.is_enabled:
@@ -369,7 +369,7 @@ class PfSenseService(IntegrationService):
 
                         # Find the rule for this MAC
                         for rule in rules:
-                            if f"NetGuardian Block:" in rule.get("descr", ""):
+                            if "NetGuardian Block:" in rule.get("descr", ""):
                                 if mac_address.lower() in str(rule).lower():
                                     # Delete this rule
                                     rule_id = rule.get("id")
@@ -422,7 +422,7 @@ class PfSenseService(IntegrationService):
                 error=str(e),
             )
 
-    async def is_device_blocked(self, mac_address: str) -> Optional[bool]:
+    async def is_device_blocked(self, mac_address: str) -> bool | None:
         """Check if a device is currently blocked."""
         if not self.is_enabled:
             return None
@@ -462,7 +462,7 @@ class PfSenseService(IntegrationService):
             )
             return None
 
-    async def get_blocked_devices(self) -> List[Dict[str, Any]]:
+    async def get_blocked_devices(self) -> list[dict[str, Any]]:
         """Get list of all devices blocked by NetGuardian rules."""
         if not self.is_enabled:
             return []
@@ -474,7 +474,7 @@ class PfSenseService(IntegrationService):
 
 
 # Singleton instance
-_pfsense_service: Optional[PfSenseService] = None
+_pfsense_service: PfSenseService | None = None
 
 
 def get_pfsense_service() -> PfSenseService:

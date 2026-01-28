@@ -1,8 +1,8 @@
 """Custom regex-based parser for arbitrary log formats."""
 
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -42,11 +42,11 @@ class CustomParser(BaseParser):
         "emerg": EventSeverity.CRITICAL,
     }
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
 
         # Compile patterns
-        self.patterns: List[re.Pattern] = []
+        self.patterns: list[re.Pattern] = []
 
         if "pattern" in self.config:
             self.patterns.append(re.compile(self.config["pattern"]))
@@ -69,16 +69,16 @@ class CustomParser(BaseParser):
         }
         self.field_map = self.config.get("field_map", {})
 
-    def _parse_timestamp(self, value: Optional[str]) -> datetime:
+    def _parse_timestamp(self, value: str | None) -> datetime:
         """Parse timestamp string to datetime."""
         if not value:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
         try:
             if self.timestamp_format:
                 dt = datetime.strptime(value, self.timestamp_format)
                 if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = dt.replace(tzinfo=UTC)
                 return dt
             else:
                 # Try ISO format
@@ -99,14 +99,14 @@ class CustomParser(BaseParser):
             try:
                 dt = datetime.strptime(value, fmt)
                 if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = dt.replace(tzinfo=UTC)
                 return dt
             except ValueError:
                 continue
 
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
-    def _get_severity(self, groups: Dict[str, Any]) -> EventSeverity:
+    def _get_severity(self, groups: dict[str, Any]) -> EventSeverity:
         """Get severity from captured groups."""
         severity_value = groups.get(self.severity_field)
         if severity_value:
@@ -114,7 +114,7 @@ class CustomParser(BaseParser):
             return self.severity_map.get(severity_str, EventSeverity.INFO)
         return EventSeverity.INFO
 
-    def _map_field(self, groups: Dict[str, Any], field: str) -> Optional[Any]:
+    def _map_field(self, groups: dict[str, Any], field: str) -> Any | None:
         """Get a field value using the field map."""
         # Check field map first
         if field in self.field_map:
@@ -125,7 +125,7 @@ class CustomParser(BaseParser):
         # Fall back to direct group name
         return groups.get(field)
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse log lines using configured regex patterns."""
         results = []
 
@@ -154,8 +154,8 @@ class CustomParser(BaseParser):
                         timestamp_str = groups.get(self.timestamp_field)
                         timestamp = self._parse_timestamp(timestamp_str)
 
-                        # Get message
-                        message = groups.get("message", line)
+                        # Get message (available for custom use cases)
+                        _message = groups.get("message", line)
 
                         # Get optional integer fields
                         port = self._map_field(groups, "port")
@@ -193,7 +193,7 @@ class CustomParser(BaseParser):
             if not matched:
                 # No pattern matched - create fallback result
                 result = ParseResult(
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     event_type=self.default_event_type,
                     severity=EventSeverity.INFO,
                     raw_message=line,

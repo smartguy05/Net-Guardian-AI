@@ -1,7 +1,7 @@
 """UniFi Controller integration for device blocking."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 
@@ -24,8 +24,8 @@ class UniFiService(IntegrationService):
     """
 
     def __init__(self):
-        self._session_cookie: Optional[str] = None
-        self._csrf_token: Optional[str] = None
+        self._session_cookie: str | None = None
+        self._csrf_token: str | None = None
 
     @property
     def integration_type(self) -> IntegrationType:
@@ -158,8 +158,8 @@ class UniFiService(IntegrationService):
     async def block_device(
         self,
         mac_address: str,
-        reason: Optional[str] = None,
-        device_name: Optional[str] = None,
+        reason: str | None = None,
+        device_name: str | None = None,
     ) -> IntegrationResult:
         """Block a device by MAC address using UniFi Controller.
 
@@ -249,8 +249,8 @@ class UniFiService(IntegrationService):
     async def unblock_device(
         self,
         mac_address: str,
-        reason: Optional[str] = None,
-        device_name: Optional[str] = None,
+        reason: str | None = None,
+        device_name: str | None = None,
     ) -> IntegrationResult:
         """Unblock a device by MAC address."""
         if not self.is_enabled:
@@ -332,7 +332,7 @@ class UniFiService(IntegrationService):
                 error=str(e),
             )
 
-    async def is_device_blocked(self, mac_address: str) -> Optional[bool]:
+    async def is_device_blocked(self, mac_address: str) -> bool | None:
         """Check if a device is currently blocked."""
         if not self.is_enabled:
             return None
@@ -364,7 +364,7 @@ class UniFiService(IntegrationService):
             )
             return None
 
-    async def get_blocked_devices(self) -> List[Dict[str, Any]]:
+    async def get_blocked_devices(self) -> list[dict[str, Any]]:
         """Get list of all blocked devices."""
         if not self.is_enabled:
             return []
@@ -410,7 +410,7 @@ class UniFiService(IntegrationService):
 
 
 # Singleton instance
-_unifi_service: Optional[UniFiService] = None
+_unifi_service: UniFiService | None = None
 
 
 def get_unifi_service() -> UniFiService:

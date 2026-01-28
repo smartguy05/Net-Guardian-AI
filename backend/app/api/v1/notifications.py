@@ -1,10 +1,9 @@
 """Notification preferences API endpoints."""
 
-from typing import Annotated, Optional
-from uuid import UUID
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +25,7 @@ class NotificationPreferencesResponse(BaseModel):
 
     # Email settings
     email_enabled: bool
-    email_address: Optional[str]
+    email_address: str | None
     email_on_critical: bool
     email_on_high: bool
     email_on_medium: bool
@@ -36,7 +35,7 @@ class NotificationPreferencesResponse(BaseModel):
 
     # ntfy settings
     ntfy_enabled: bool
-    ntfy_topic: Optional[str]
+    ntfy_topic: str | None
     ntfy_on_critical: bool
     ntfy_on_high: bool
     ntfy_on_medium: bool
@@ -52,24 +51,24 @@ class NotificationPreferencesUpdate(BaseModel):
     """Request model for updating notification preferences."""
 
     # Email settings
-    email_enabled: Optional[bool] = None
-    email_address: Optional[str] = None
-    email_on_critical: Optional[bool] = None
-    email_on_high: Optional[bool] = None
-    email_on_medium: Optional[bool] = None
-    email_on_low: Optional[bool] = None
-    email_on_anomaly: Optional[bool] = None
-    email_on_quarantine: Optional[bool] = None
+    email_enabled: bool | None = None
+    email_address: str | None = None
+    email_on_critical: bool | None = None
+    email_on_high: bool | None = None
+    email_on_medium: bool | None = None
+    email_on_low: bool | None = None
+    email_on_anomaly: bool | None = None
+    email_on_quarantine: bool | None = None
 
     # ntfy settings
-    ntfy_enabled: Optional[bool] = None
-    ntfy_topic: Optional[str] = None
-    ntfy_on_critical: Optional[bool] = None
-    ntfy_on_high: Optional[bool] = None
-    ntfy_on_medium: Optional[bool] = None
-    ntfy_on_low: Optional[bool] = None
-    ntfy_on_anomaly: Optional[bool] = None
-    ntfy_on_quarantine: Optional[bool] = None
+    ntfy_enabled: bool | None = None
+    ntfy_topic: str | None = None
+    ntfy_on_critical: bool | None = None
+    ntfy_on_high: bool | None = None
+    ntfy_on_medium: bool | None = None
+    ntfy_on_low: bool | None = None
+    ntfy_on_anomaly: bool | None = None
+    ntfy_on_quarantine: bool | None = None
 
 
 class NotificationStatusResponse(BaseModel):
@@ -84,16 +83,16 @@ class TestNotificationRequest(BaseModel):
     """Request model for sending test notifications."""
 
     type: str  # "email" or "ntfy"
-    email_address: Optional[str] = None
-    ntfy_topic: Optional[str] = None
+    email_address: str | None = None
+    ntfy_topic: str | None = None
 
 
 class TestNotificationResponse(BaseModel):
     """Response model for test notification result."""
 
     success: bool
-    message: Optional[str] = None
-    error: Optional[str] = None
+    message: str | None = None
+    error: str | None = None
 
 
 def _prefs_to_response(prefs: NotificationPreferences) -> NotificationPreferencesResponse:
@@ -271,7 +270,7 @@ async def test_email_connection(
 @router.post("/test/ntfy")
 async def test_ntfy_connection(
     current_user: Annotated[User, Depends(get_current_user)],
-    topic: Optional[str] = None,
+    topic: str | None = None,
 ) -> dict:
     """Test ntfy.sh connection by sending a test notification."""
     ntfy_service = get_ntfy_service()

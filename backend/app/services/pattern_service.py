@@ -1,8 +1,8 @@
 """Pattern service for managing learned log patterns."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, func, select, update
@@ -32,11 +32,11 @@ class PatternStats:
 class PatternFilters:
     """Filters for pattern queries."""
 
-    source_id: Optional[str] = None
-    is_ignored: Optional[bool] = None
+    source_id: str | None = None
+    is_ignored: bool | None = None
     rare_only: bool = False
     rarity_threshold: int = 3
-    search: Optional[str] = None
+    search: str | None = None
     limit: int = 100
     offset: int = 0
 
@@ -44,7 +44,7 @@ class PatternFilters:
 class PatternService:
     """Service for managing learned log patterns."""
 
-    def __init__(self, session: Optional[AsyncSession] = None):
+    def __init__(self, session: AsyncSession | None = None):
         """Initialize the pattern service.
 
         Args:
@@ -62,7 +62,7 @@ class PatternService:
         self,
         source_id: str,
         message: str,
-        timestamp: Optional[datetime] = None,
+        timestamp: datetime | None = None,
     ) -> LogPattern:
         """Record a pattern from a log message.
 
@@ -115,7 +115,7 @@ class PatternService:
         self,
         source_id: str,
         pattern_hash: str,
-    ) -> Optional[LogPattern]:
+    ) -> LogPattern | None:
         """Get a pattern by its hash.
 
         Args:
@@ -142,7 +142,7 @@ class PatternService:
             if should_close:
                 await session.close()
 
-    async def get_pattern_by_id(self, pattern_id: UUID) -> Optional[LogPattern]:
+    async def get_pattern_by_id(self, pattern_id: UUID) -> LogPattern | None:
         """Get a pattern by its ID.
 
         Args:
@@ -184,7 +184,7 @@ class PatternService:
             # Get all stats in one query
             stmt = select(
                 func.count(LogPattern.id).label("total"),
-                func.count(LogPattern.id).filter(LogPattern.is_ignored == True).label("ignored"),
+                func.count(LogPattern.id).filter(LogPattern.is_ignored.is_(True)).label("ignored"),
                 func.count(LogPattern.id).filter(LogPattern.occurrence_count < rarity_threshold).label("rare"),
                 func.coalesce(func.sum(LogPattern.occurrence_count), 0).label("total_occurrences"),
                 func.coalesce(func.avg(LogPattern.occurrence_count), 0).label("avg_occurrences"),
@@ -208,7 +208,7 @@ class PatternService:
     async def is_pattern_rare(
         self,
         pattern: LogPattern,
-        config: Optional[SemanticAnalysisConfig] = None,
+        config: SemanticAnalysisConfig | None = None,
         default_threshold: int = 3,
     ) -> bool:
         """Check if a pattern is considered rare.
@@ -228,7 +228,7 @@ class PatternService:
         self,
         pattern_id: UUID,
         ignored: bool = True,
-    ) -> Optional[LogPattern]:
+    ) -> LogPattern | None:
         """Mark a pattern as ignored or not ignored.
 
         Args:
@@ -369,7 +369,7 @@ class PatternService:
                 await session.close()
 
 
-def get_pattern_service(session: Optional[AsyncSession] = None) -> PatternService:
+def get_pattern_service(session: AsyncSession | None = None) -> PatternService:
     """Factory function to get a PatternService instance.
 
     Args:

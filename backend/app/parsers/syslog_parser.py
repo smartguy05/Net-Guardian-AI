@@ -1,8 +1,8 @@
 """Syslog format parser (RFC 3164 and RFC 5424)."""
 
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -78,7 +78,7 @@ class SyslogParser(BaseParser):
         year: Year to use for RFC 3164 timestamps (default: current year)
     """
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.default_facility = self.config.get("default_facility", 1)  # user
         self.default_severity = self.config.get("default_severity", 6)   # info
@@ -99,23 +99,23 @@ class SyslogParser(BaseParser):
             # Add year since RFC 3164 doesn't include it
             timestamp_with_year = f"{self.year} {timestamp_str}"
             dt = datetime.strptime(timestamp_with_year, "%Y %b %d %H:%M:%S")
-            return dt.replace(tzinfo=timezone.utc)
+            return dt.replace(tzinfo=UTC)
         except ValueError:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
     def _parse_rfc5424_timestamp(self, timestamp_str: str) -> datetime:
         """Parse RFC 5424 timestamp (ISO 8601)."""
         if timestamp_str == "-":
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
         try:
             # Handle various ISO 8601 formats
             timestamp_str = timestamp_str.replace("Z", "+00:00")
             return datetime.fromisoformat(timestamp_str)
         except ValueError:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
-    def _parse_rfc3164(self, line: str, match: re.Match) -> Optional[ParseResult]:
+    def _parse_rfc3164(self, line: str, match: re.Match) -> ParseResult | None:
         """Parse RFC 3164 format message."""
         pri = int(match.group("pri"))
         facility, severity = self._parse_pri(pri)
@@ -142,7 +142,7 @@ class SyslogParser(BaseParser):
             },
         )
 
-    def _parse_rfc5424(self, line: str, match: re.Match) -> Optional[ParseResult]:
+    def _parse_rfc5424(self, line: str, match: re.Match) -> ParseResult | None:
         """Parse RFC 5424 format message."""
         pri = int(match.group("pri"))
         facility, severity = self._parse_pri(pri)
@@ -186,7 +186,7 @@ class SyslogParser(BaseParser):
             parsed_fields=parsed_fields,
         )
 
-    def _parse_simple(self, line: str, match: re.Match) -> Optional[ParseResult]:
+    def _parse_simple(self, line: str, match: re.Match) -> ParseResult | None:
         """Parse simple syslog format without PRI."""
         timestamp = self._parse_rfc3164_timestamp(match.group("timestamp"))
         hostname = match.group("hostname")
@@ -210,7 +210,7 @@ class SyslogParser(BaseParser):
             },
         )
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse syslog messages."""
         results = []
 
@@ -247,7 +247,7 @@ class SyslogParser(BaseParser):
                         else:
                             # Fallback: treat entire line as message
                             result = ParseResult(
-                                timestamp=datetime.now(timezone.utc),
+                                timestamp=datetime.now(UTC),
                                 event_type=EventType.SYSTEM,
                                 severity=EventSeverity.INFO,
                                 raw_message=line,

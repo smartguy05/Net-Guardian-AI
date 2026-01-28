@@ -1,11 +1,22 @@
 """Prometheus metrics service for application monitoring."""
 
-from prometheus_client import Counter, Gauge, Histogram, Info, generate_latest, CONTENT_TYPE_LATEST
-from prometheus_client import CollectorRegistry, multiprocess, REGISTRY
-import time
-from functools import wraps
-from typing import Callable, Any
 import os
+import time
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
+
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    REGISTRY,
+    CollectorRegistry,
+    Counter,
+    Gauge,
+    Histogram,
+    Info,
+    generate_latest,
+    multiprocess,
+)
 
 
 # Check if we're in multiprocess mode

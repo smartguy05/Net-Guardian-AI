@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.models.raw_event import EventSeverity, EventType
 
@@ -16,14 +16,14 @@ class ParseResult:
     event_type: EventType
     severity: EventSeverity
     raw_message: str
-    client_ip: Optional[str] = None
-    target_ip: Optional[str] = None
-    domain: Optional[str] = None
-    port: Optional[int] = None
-    protocol: Optional[str] = None
-    action: Optional[str] = None
-    response_status: Optional[str] = None
-    parsed_fields: Dict[str, Any] = field(default_factory=dict)
+    client_ip: str | None = None
+    target_ip: str | None = None
+    domain: str | None = None
+    port: int | None = None
+    protocol: str | None = None
+    action: str | None = None
+    response_status: str | None = None
+    parsed_fields: dict[str, Any] = field(default_factory=dict)
 
 
 class BaseParser(ABC):
@@ -33,7 +33,7 @@ class BaseParser(ABC):
     data into normalized ParseResult objects.
     """
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize the parser with optional configuration.
 
         Args:
@@ -42,7 +42,7 @@ class BaseParser(ABC):
         self.config = config or {}
 
     @abstractmethod
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse raw log data into normalized events.
 
         Args:
@@ -53,7 +53,7 @@ class BaseParser(ABC):
         """
         pass
 
-    def parse_single(self, raw_data: Any) -> Optional[ParseResult]:
+    def parse_single(self, raw_data: Any) -> ParseResult | None:
         """Parse a single log entry.
 
         Args:

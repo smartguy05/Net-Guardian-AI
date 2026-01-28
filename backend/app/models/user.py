@@ -1,10 +1,10 @@
 """User model for authentication and authorization."""
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -68,11 +68,11 @@ class User(Base, TimestampMixin):
         default=False,
         nullable=False,
     )
-    last_login: Mapped[Optional[datetime]] = mapped_column(
+    last_login: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    created_by: Mapped[Optional[UUID]] = mapped_column(
+    created_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
@@ -84,23 +84,23 @@ class User(Base, TimestampMixin):
         default=False,
         nullable=False,
     )
-    totp_secret: Mapped[Optional[str]] = mapped_column(
+    totp_secret: Mapped[str | None] = mapped_column(
         String(64),
         nullable=True,
     )
-    backup_codes: Mapped[Optional[List[str]]] = mapped_column(
+    backup_codes: Mapped[list[str] | None] = mapped_column(
         ARRAY(String(16)),
         nullable=True,
     )
 
     # External authentication (Authentik SSO)
-    external_id: Mapped[Optional[str]] = mapped_column(
+    external_id: Mapped[str | None] = mapped_column(
         String(255),
         unique=True,
         nullable=True,
         index=True,
     )
-    external_provider: Mapped[Optional[str]] = mapped_column(
+    external_provider: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
     )

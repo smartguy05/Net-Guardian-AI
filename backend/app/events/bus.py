@@ -2,8 +2,9 @@
 
 import asyncio
 import json
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 import redis.asyncio as redis
@@ -31,7 +32,7 @@ class EventBus:
         """
         self.redis_url = redis_url or settings.redis_url
         self._redis: redis.Redis | None = None
-        self._consumer_tasks: List[asyncio.Task] = []
+        self._consumer_tasks: list[asyncio.Task] = []
         self._running = False
 
     async def connect(self) -> None:
@@ -74,7 +75,7 @@ class EventBus:
         self,
         stream: str,
         event_type: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         maxlen: int = 10000,
     ) -> str:
         """Publish an event to a stream.
@@ -93,7 +94,7 @@ class EventBus:
         message = {
             "id": str(uuid4()),
             "type": event_type,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps(data),
         }
 
@@ -108,7 +109,7 @@ class EventBus:
 
         return message_id
 
-    async def publish_raw_event(self, event_data: Dict[str, Any]) -> str:
+    async def publish_raw_event(self, event_data: dict[str, Any]) -> str:
         """Publish a raw event for processing."""
         return await self.publish(
             self.STREAM_RAW_EVENTS,
@@ -116,7 +117,7 @@ class EventBus:
             event_data,
         )
 
-    async def publish_alert(self, alert_data: Dict[str, Any]) -> str:
+    async def publish_alert(self, alert_data: dict[str, Any]) -> str:
         """Publish an alert event."""
         # Broadcast to WebSocket clients
         try:
@@ -135,7 +136,7 @@ class EventBus:
         self,
         device_id: str,
         update_type: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> str:
         """Publish a device update event."""
         # Broadcast device status changes to WebSocket clients
@@ -159,7 +160,7 @@ class EventBus:
     async def publish_system_event(
         self,
         event_type: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
     ) -> str:
         """Publish a system event."""
         return await self.publish(
@@ -216,7 +217,7 @@ class EventBus:
         stream: str,
         group: str,
         consumer: str,
-        handler: Callable[[str, str, Dict[str, Any]], Any],
+        handler: Callable[[str, str, dict[str, Any]], Any],
         batch_size: int = 10,
         block_ms: int = 5000,
     ) -> None:
@@ -323,7 +324,7 @@ class EventBus:
         stream: str,
         group: str,
         consumer: str,
-        handler: Callable[[str, str, Dict[str, Any]], Any],
+        handler: Callable[[str, str, dict[str, Any]], Any],
         batch_size: int = 10,
         block_ms: int = 5000,
     ) -> asyncio.Task:
@@ -353,7 +354,7 @@ class EventBus:
         self._consumer_tasks.append(task)
         return task
 
-    async def get_stream_info(self, stream: str) -> Dict[str, Any]:
+    async def get_stream_info(self, stream: str) -> dict[str, Any]:
         """Get information about a stream.
 
         Args:
@@ -379,7 +380,7 @@ class EventBus:
         self,
         stream: str,
         group: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get information about a consumer group.
 
         Args:

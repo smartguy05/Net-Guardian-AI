@@ -4,9 +4,8 @@ This module provides security-focused validation for user inputs,
 passwords, and other potentially dangerous data.
 """
 
-import re
 import ipaddress
-from typing import List, Optional, Tuple
+import re
 
 import structlog
 
@@ -33,7 +32,7 @@ COMMON_PASSWORDS = {
 }
 
 
-def validate_password_strength(password: str) -> Tuple[bool, List[str]]:
+def validate_password_strength(password: str) -> tuple[bool, list[str]]:
     """Validate password meets security requirements.
 
     Args:
@@ -72,7 +71,7 @@ def validate_password_strength(password: str) -> Tuple[bool, List[str]]:
     return len(errors) == 0, errors
 
 
-def validate_username(username: str) -> Tuple[bool, Optional[str]]:
+def validate_username(username: str) -> tuple[bool, str | None]:
     """Validate username format.
 
     Args:
@@ -95,7 +94,7 @@ def validate_username(username: str) -> Tuple[bool, Optional[str]]:
     return True, None
 
 
-def validate_ip_address(ip: str) -> Tuple[bool, Optional[str]]:
+def validate_ip_address(ip: str) -> tuple[bool, str | None]:
     """Validate an IP address.
 
     Args:
@@ -114,7 +113,7 @@ def validate_ip_address(ip: str) -> Tuple[bool, Optional[str]]:
         return False, "Invalid IP address format"
 
 
-def validate_domain(domain: str) -> Tuple[bool, Optional[str]]:
+def validate_domain(domain: str) -> tuple[bool, str | None]:
     """Validate a domain name.
 
     Args:
@@ -135,7 +134,7 @@ def validate_domain(domain: str) -> Tuple[bool, Optional[str]]:
     return True, None
 
 
-def validate_mac_address(mac: str) -> Tuple[bool, Optional[str]]:
+def validate_mac_address(mac: str) -> tuple[bool, str | None]:
     """Validate a MAC address.
 
     Args:

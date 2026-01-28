@@ -1,16 +1,23 @@
 """Anomaly detection model for storing detected anomalies."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Enum as SQLEnum, Float, ForeignKey, String, Text
+if TYPE_CHECKING:
+    from app.models.alert import Alert
+    from app.models.device import Device
+
+from sqlalchemy import DateTime, Float, ForeignKey, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin
 from app.models.alert import AlertSeverity
+from app.models.base import Base, TimestampMixin
 
 
 class AnomalyType(str, Enum):
@@ -93,12 +100,12 @@ class AnomalyDetection(Base, TimestampMixin):
         Text,
         nullable=False,
     )
-    details: Mapped[Dict[str, Any]] = mapped_column(
+    details: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
     )
-    baseline_comparison: Mapped[Dict[str, Any]] = mapped_column(
+    baseline_comparison: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
@@ -108,7 +115,7 @@ class AnomalyDetection(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    alert_id: Mapped[Optional[UUID]] = mapped_column(
+    alert_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("alerts.id", ondelete="SET NULL"),
         nullable=True,
@@ -116,22 +123,22 @@ class AnomalyDetection(Base, TimestampMixin):
     )
 
     # Review tracking
-    reviewed_by: Mapped[Optional[UUID]] = mapped_column(
+    reviewed_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    reviewed_at: Mapped[Optional[datetime]] = mapped_column(
+    reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     # Relationships
-    device: Mapped["Device"] = relationship(
+    device: Mapped[Device] = relationship(
         "Device",
         back_populates="anomalies",
     )
-    alert: Mapped[Optional["Alert"]] = relationship(
+    alert: Mapped[Alert | None] = relationship(
         "Alert",
         back_populates="anomaly",
     )

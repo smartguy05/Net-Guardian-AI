@@ -2,13 +2,14 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Dict, Any
+from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
 
@@ -67,7 +68,7 @@ class ThreatIntelFeed(Base, TimestampMixin):
         String(255),
         nullable=False,
     )
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -94,25 +95,25 @@ class ThreatIntelFeed(Base, TimestampMixin):
         default="none",
         nullable=False,
     )
-    auth_config: Mapped[Dict[str, Any]] = mapped_column(
+    auth_config: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
     )
-    field_mapping: Mapped[Dict[str, Any]] = mapped_column(
+    field_mapping: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
     )
-    last_fetch_at: Mapped[Optional[datetime]] = mapped_column(
+    last_fetch_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    last_fetch_status: Mapped[Optional[str]] = mapped_column(
+    last_fetch_status: Mapped[str | None] = mapped_column(
         String(32),
         nullable=True,
     )
-    last_fetch_message: Mapped[Optional[str]] = mapped_column(
+    last_fetch_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -190,27 +191,27 @@ class ThreatIndicator(Base, TimestampMixin):
         default=list,
         nullable=False,
     )
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    source_ref: Mapped[Optional[str]] = mapped_column(
+    source_ref: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
-    first_seen_at: Mapped[Optional[datetime]] = mapped_column(
+    first_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    last_seen_at: Mapped[Optional[datetime]] = mapped_column(
+    last_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    expires_at: Mapped[Optional[datetime]] = mapped_column(
+    expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    extra_data: Mapped[Dict[str, Any]] = mapped_column(
+    extra_data: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
@@ -220,7 +221,7 @@ class ThreatIndicator(Base, TimestampMixin):
         default=0,
         nullable=False,
     )
-    last_hit_at: Mapped[Optional[datetime]] = mapped_column(
+    last_hit_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )

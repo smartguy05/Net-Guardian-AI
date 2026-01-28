@@ -5,23 +5,26 @@ This module runs as a separate process to collect logs from configured sources.
 
 import asyncio
 import signal
-import sys
-from typing import Optional
 
 import structlog
 
+# Import collectors and parsers to register them
+from app.collectors import api_pull_collector, file_collector  # noqa: F401
 from app.config import settings
 from app.core.logging import setup_logging
-from app.db.session import init_db, close_db
-from app.events.bus import get_event_bus, close_event_bus
+from app.db.session import close_db, init_db
+from app.events.bus import close_event_bus, get_event_bus
+from app.parsers import (  # noqa: F401
+    adguard_parser,
+    custom_parser,
+    json_parser,
+    nginx_parser,
+    syslog_parser,
+)
 from app.services.collector_service import (
     start_collector_service,
     stop_collector_service,
 )
-
-# Import collectors and parsers to register them
-from app.collectors import api_pull_collector, file_collector  # noqa: F401
-from app.parsers import json_parser, syslog_parser, adguard_parser, custom_parser, nginx_parser  # noqa: F401
 
 logger = structlog.get_logger()
 
@@ -31,7 +34,7 @@ class CollectorWorker:
 
     def __init__(self):
         self._shutdown_event: asyncio.Event = asyncio.Event()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     def _signal_handler(self, sig: signal.Signals) -> None:
         """Handle shutdown signals."""

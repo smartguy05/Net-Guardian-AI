@@ -1,23 +1,24 @@
 """API pull collector for fetching logs from REST APIs."""
 
 import asyncio
-from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Dict, Optional
+from collections.abc import AsyncGenerator
+from datetime import datetime
+from typing import Any
 
 import httpx
 import structlog
 
 from app.collectors.base import BaseCollector
-from app.collectors.registry import register_collector
 from app.collectors.error_handler import (
+    CircuitBreaker,
+    CollectorCircuitOpenError,
+    CollectorError,
+    ErrorTracker,
     RetryConfig,
     RetryHandler,
-    CircuitBreaker,
-    ErrorTracker,
-    CollectorError,
-    CollectorCircuitOpenError,
     categorize_error,
 )
+from app.collectors.registry import register_collector
 from app.models.log_source import LogSource, SourceType
 from app.parsers.base import BaseParser, ParseResult
 from app.services.metrics_service import COLLECTOR_CIRCUIT_STATE
@@ -54,10 +55,10 @@ class ApiPullCollector(BaseCollector):
 
     def __init__(self, source: LogSource, parser: BaseParser):
         super().__init__(source, parser)
-        self._client: Optional[httpx.AsyncClient] = None
-        self._poll_task: Optional[asyncio.Task] = None
-        self._last_cursor: Optional[str] = None
-        self._last_timestamp: Optional[datetime] = None
+        self._client: httpx.AsyncClient | None = None
+        self._poll_task: asyncio.Task | None = None
+        self._last_cursor: str | None = None
+        self._last_timestamp: datetime | None = None
         self._event_queue: asyncio.Queue = asyncio.Queue()
 
         # Error handling setup
@@ -82,7 +83,7 @@ class ApiPullCollector(BaseCollector):
             return f"{base_url}/{endpoint}"
         return base_url
 
-    def _build_headers(self) -> Dict[str, str]:
+    def _build_headers(self) -> dict[str, str]:
         """Build request headers including authentication."""
         headers = dict(self.config.get("headers", {}))
         auth_type = self.config.get("auth_type", "none")
@@ -97,7 +98,7 @@ class ApiPullCollector(BaseCollector):
 
         return headers
 
-    def _build_auth(self) -> Optional[tuple[str, str]]:
+    def _build_auth(self) -> tuple[str, str] | None:
         """Build basic auth tuple if needed."""
         auth_type = self.config.get("auth_type", "none")
         if auth_type == "basic":
@@ -106,7 +107,7 @@ class ApiPullCollector(BaseCollector):
             return (username, password)
         return None
 
-    def _build_params(self) -> Dict[str, Any]:
+    def _build_params(self) -> dict[str, Any]:
         """Build query parameters including pagination."""
         params = dict(self.config.get("query_params", {}))
         pagination = self.config.get("pagination", {})
@@ -119,7 +120,7 @@ class ApiPullCollector(BaseCollector):
                 params[cursor_param] = self._last_cursor
 
             elif pag_type == "offset":
-                offset_param = pagination.get("offset_param", "offset")
+                _offset_param = pagination.get("offset_param", "offset")  # TODO: Track offset
                 limit_param = pagination.get("limit_param", "limit")
                 limit = pagination.get("limit", 100)
                 # Note: offset tracking would need to be maintained
@@ -131,7 +132,7 @@ class ApiPullCollector(BaseCollector):
 
         return params
 
-    def _extract_pagination_cursor(self, response_data: Any) -> Optional[str]:
+    def _extract_pagination_cursor(self, response_data: Any) -> str | None:
         """Extract pagination cursor from response."""
         pagination = self.config.get("pagination", {})
         if not pagination or pagination.get("type") != "cursor":
@@ -316,7 +317,7 @@ class ApiPullCollector(BaseCollector):
                     timeout=1.0,
                 )
                 yield result
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except asyncio.CancelledError:
                 break

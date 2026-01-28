@@ -5,7 +5,6 @@ creating new connections for each request, improving performance and
 reducing resource usage.
 """
 
-from typing import Dict, Optional
 
 import httpx
 import structlog
@@ -24,7 +23,7 @@ class HttpClientPool:
 
     def __init__(self):
         """Initialize the client pool."""
-        self._clients: Dict[str, httpx.AsyncClient] = {}
+        self._clients: dict[str, httpx.AsyncClient] = {}
 
     def _create_limits(self) -> httpx.Limits:
         """Create connection limits from settings."""
@@ -44,10 +43,10 @@ class HttpClientPool:
     async def get_client(
         self,
         key: str,
-        base_url: Optional[str] = None,
-        auth: Optional[tuple] = None,
+        base_url: str | None = None,
+        auth: tuple | None = None,
         verify: bool = True,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ) -> httpx.AsyncClient:
         """Get or create an HTTP client for the given service key.
 
@@ -110,7 +109,7 @@ class HttpClientPool:
 
 
 # Global client pool instance
-_client_pool: Optional[HttpClientPool] = None
+_client_pool: HttpClientPool | None = None
 
 
 def get_http_client_pool() -> HttpClientPool:

@@ -3,11 +3,11 @@
 import csv
 import io
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import structlog
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.pagesizes import landscape, letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (
@@ -26,9 +26,9 @@ class ExportService:
 
     @staticmethod
     def to_csv(
-        data: List[Dict[str, Any]],
-        columns: Optional[List[str]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        data: list[dict[str, Any]],
+        columns: list[str] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> str:
         """Convert data to CSV format.
 
@@ -68,11 +68,11 @@ class ExportService:
 
     @staticmethod
     def to_pdf(
-        data: List[Dict[str, Any]],
+        data: list[dict[str, Any]],
         title: str,
-        columns: Optional[List[str]] = None,
-        headers: Optional[Dict[str, str]] = None,
-        subtitle: Optional[str] = None,
+        columns: list[str] | None = None,
+        headers: dict[str, str] | None = None,
+        subtitle: str | None = None,
     ) -> bytes:
         """Convert data to PDF format.
 
@@ -215,7 +215,7 @@ class ExportService:
         return buffer.read()
 
     @staticmethod
-    def _format_value(value: Any, max_length: Optional[int] = None) -> str:
+    def _format_value(value: Any, max_length: int | None = None) -> str:
         """Format a value for export.
 
         Args:

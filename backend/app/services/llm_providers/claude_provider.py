@@ -1,15 +1,15 @@
 """Claude (Anthropic) LLM provider for semantic log analysis."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import structlog
-from anthropic import AsyncAnthropic, APIError
+from anthropic import APIError, AsyncAnthropic
 
 from app.config import settings
 from app.services.llm_providers.base import (
+    SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
     BaseLLMProvider,
     LLMAnalysisResult,
-    SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
 )
 
 logger = structlog.get_logger()
@@ -20,8 +20,8 @@ class ClaudeLLMProvider(BaseLLMProvider):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
+        api_key: str | None = None,
+        model: str | None = None,
         max_tokens: int = 4096,
         temperature: float = 0.3,
         enable_cache: bool = True,
@@ -40,7 +40,7 @@ class ClaudeLLMProvider(BaseLLMProvider):
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._enable_cache = enable_cache and settings.llm_cache_enabled
-        self._client: Optional[AsyncAnthropic] = None
+        self._client: AsyncAnthropic | None = None
 
     @property
     def client(self) -> AsyncAnthropic:
@@ -69,8 +69,8 @@ class ClaudeLLMProvider(BaseLLMProvider):
 
     async def analyze_logs(
         self,
-        logs: List[Dict[str, Any]],
-        context: Optional[str] = None,
+        logs: list[dict[str, Any]],
+        context: str | None = None,
     ) -> LLMAnalysisResult:
         """Analyze logs using Claude.
 

@@ -1,8 +1,8 @@
 """Grafana Loki log parser."""
 
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -111,7 +111,7 @@ class LokiParser(BaseParser):
         "sflow": EventType.FLOW,
     }
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize the Loki parser with configuration.
 
         Args:
@@ -154,11 +154,11 @@ class LokiParser(BaseParser):
         try:
             ns = int(timestamp_ns)
             seconds = ns / 1_000_000_000
-            return datetime.fromtimestamp(seconds, tz=timezone.utc)
+            return datetime.fromtimestamp(seconds, tz=UTC)
         except (ValueError, TypeError, OSError):
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
-    def _determine_severity(self, labels: Dict[str, str], log_line: str) -> EventSeverity:
+    def _determine_severity(self, labels: dict[str, str], log_line: str) -> EventSeverity:
         """Determine event severity from labels or log content.
 
         Args:
@@ -190,7 +190,7 @@ class LokiParser(BaseParser):
 
         return EventSeverity.INFO
 
-    def _determine_event_type(self, labels: Dict[str, str]) -> EventType:
+    def _determine_event_type(self, labels: dict[str, str]) -> EventType:
         """Determine event type from labels.
 
         Args:
@@ -217,7 +217,7 @@ class LokiParser(BaseParser):
 
         return EventType.SYSTEM
 
-    def _extract_ips_from_line(self, log_line: str) -> tuple[Optional[str], Optional[str]]:
+    def _extract_ips_from_line(self, log_line: str) -> tuple[str | None, str | None]:
         """Extract IP addresses from log line.
 
         Args:
@@ -246,7 +246,7 @@ class LokiParser(BaseParser):
 
         return None, None
 
-    def _parse_stream(self, stream_data: Dict[str, Any]) -> List[ParseResult]:
+    def _parse_stream(self, stream_data: dict[str, Any]) -> list[ParseResult]:
         """Parse a single Loki stream with its values.
 
         Args:
@@ -323,7 +323,7 @@ class LokiParser(BaseParser):
 
         return results
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse Loki log data into normalized events.
 
         Args:

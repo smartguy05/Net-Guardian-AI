@@ -1,6 +1,6 @@
 """Integration management API endpoints."""
 
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -20,19 +20,19 @@ class IntegrationStatus(BaseModel):
     type: str
     enabled: bool
     configured: bool
-    connected: Optional[bool] = None
-    details: Dict[str, Any] = {}
+    connected: bool | None = None
+    details: dict[str, Any] = {}
 
 
 class IntegrationStatusResponse(BaseModel):
-    integrations: List[IntegrationStatus]
+    integrations: list[IntegrationStatus]
 
 
 class TestConnectionResponse(BaseModel):
     success: bool
     message: str
-    details: Dict[str, Any] = {}
-    error: Optional[str] = None
+    details: dict[str, Any] = {}
+    error: str | None = None
 
 
 @router.get("/status", response_model=IntegrationStatusResponse)
@@ -102,10 +102,10 @@ async def test_adguard_connection(
     )
 
 
-@router.get("/adguard/blocked", response_model=List[Dict[str, Any]])
+@router.get("/adguard/blocked", response_model=list[dict[str, Any]])
 async def get_adguard_blocked_devices(
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Get list of devices blocked in AdGuard Home."""
     adguard = get_adguard_service()
 
@@ -158,10 +158,10 @@ async def test_router_connection(
     )
 
 
-@router.get("/router/blocked", response_model=List[Dict[str, Any]])
+@router.get("/router/blocked", response_model=list[dict[str, Any]])
 async def get_router_blocked_devices(
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Get list of devices blocked via router integration."""
     router_type = settings.router_integration_type
 
@@ -182,10 +182,10 @@ async def get_router_blocked_devices(
     return await router_service.get_blocked_devices()
 
 
-@router.post("/sync-quarantine", response_model=Dict[str, Any])
+@router.post("/sync-quarantine", response_model=dict[str, Any])
 async def sync_quarantine_status(
     _admin: Annotated[User, Depends(require_admin)],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Sync quarantine status between database and integrations.
 
     This ensures devices marked as quarantined in the database

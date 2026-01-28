@@ -1,25 +1,25 @@
 """Device management API endpoints."""
 
-from typing import Annotated, Any, Dict, List, Optional
+from datetime import datetime
+from typing import Annotated, Any
 from uuid import UUID
 
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_operator
 from app.db.session import get_async_session
 from app.models.device import Device, DeviceStatus, DeviceType
 from app.models.user import User
-from app.services.quarantine_service import get_quarantine_service
 from app.services.export_service import (
-    ExportService,
     DEVICES_COLUMNS,
     DEVICES_HEADERS,
+    ExportService,
 )
+from app.services.quarantine_service import get_quarantine_service
 
 router = APIRouter()
 
@@ -28,11 +28,11 @@ router = APIRouter()
 class DeviceResponse(BaseModel):
     id: str
     mac_address: str
-    ip_addresses: List[str]
-    hostname: Optional[str]
-    manufacturer: Optional[str]
+    ip_addresses: list[str]
+    hostname: str | None
+    manufacturer: str | None
     device_type: str
-    profile_tags: List[str]
+    profile_tags: list[str]
     first_seen: str
     last_seen: str
     status: str
@@ -43,20 +43,20 @@ class DeviceResponse(BaseModel):
 
 
 class DeviceListResponse(BaseModel):
-    items: List[DeviceResponse]
+    items: list[DeviceResponse]
     total: int
     page: int
     page_size: int
 
 
 class DeviceUpdate(BaseModel):
-    hostname: Optional[str] = None
-    device_type: Optional[DeviceType] = None
-    profile_tags: Optional[List[str]] = None
+    hostname: str | None = None
+    device_type: DeviceType | None = None
+    profile_tags: list[str] | None = None
 
 
 class QuarantineRequest(BaseModel):
-    reason: Optional[str] = Field(None, description="Reason for quarantine")
+    reason: str | None = Field(None, description="Reason for quarantine")
 
 
 class QuarantineResponse(BaseModel):
@@ -65,8 +65,8 @@ class QuarantineResponse(BaseModel):
     device_name: str
     mac_address: str
     message: str
-    integration_results: List[Dict[str, Any]]
-    errors: List[str]
+    integration_results: list[dict[str, Any]]
+    errors: list[str]
 
 
 def _device_to_response(device: Device) -> DeviceResponse:
@@ -91,10 +91,10 @@ async def list_devices(
     _current_user: Annotated[User, Depends(get_current_user)],
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
-    status: Optional[DeviceStatus] = None,
-    device_type: Optional[DeviceType] = None,
-    search: Optional[str] = None,
-    tags: Optional[str] = Query(None, description="Comma-separated list of tags to filter by"),
+    status: DeviceStatus | None = None,
+    device_type: DeviceType | None = None,
+    search: str | None = None,
+    tags: str | None = Query(None, description="Comma-separated list of tags to filter by"),
 ) -> DeviceListResponse:
     """List all devices with filtering and pagination."""
     # Build query
@@ -142,10 +142,10 @@ async def list_devices(
 # =============================================================================
 
 
-@router.get("/quarantined", response_model=List[Dict[str, Any]])
+@router.get("/quarantined", response_model=list[dict[str, Any]])
 async def list_quarantined_devices(
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Get all quarantined devices with their blocking status."""
     quarantine_service = get_quarantine_service()
     return await quarantine_service.get_quarantined_devices()
@@ -153,10 +153,10 @@ async def list_quarantined_devices(
 
 async def _get_devices_for_export(
     session: AsyncSession,
-    status_filter: Optional[DeviceStatus] = None,
-    device_type: Optional[DeviceType] = None,
+    status_filter: DeviceStatus | None = None,
+    device_type: DeviceType | None = None,
     limit: int = 10000,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Get devices formatted for export."""
     query = select(Device)
 
@@ -187,8 +187,8 @@ async def _get_devices_for_export(
 async def export_devices_csv(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[DeviceStatus] = Query(None, alias="status"),
-    device_type: Optional[DeviceType] = None,
+    status_filter: DeviceStatus | None = Query(None, alias="status"),
+    device_type: DeviceType | None = None,
     limit: int = Query(10000, ge=1, le=100000),
 ) -> Response:
     """Export devices to CSV format."""
@@ -213,8 +213,8 @@ async def export_devices_csv(
 async def export_devices_pdf(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[DeviceStatus] = Query(None, alias="status"),
-    device_type: Optional[DeviceType] = None,
+    status_filter: DeviceStatus | None = Query(None, alias="status"),
+    device_type: DeviceType | None = None,
     limit: int = Query(1000, ge=1, le=10000),
 ) -> Response:
     """Export devices to PDF format."""
@@ -251,19 +251,19 @@ async def export_devices_pdf(
 
 # Tag management schemas
 class TagsResponse(BaseModel):
-    tags: List[str]
-    counts: Dict[str, int]
+    tags: list[str]
+    counts: dict[str, int]
 
 
 class BulkTagRequest(BaseModel):
-    device_ids: List[UUID]
-    tags_to_add: Optional[List[str]] = None
-    tags_to_remove: Optional[List[str]] = None
+    device_ids: list[UUID]
+    tags_to_add: list[str] | None = None
+    tags_to_remove: list[str] | None = None
 
 
 class BulkTagResponse(BaseModel):
     updated_count: int
-    devices: List[DeviceResponse]
+    devices: list[DeviceResponse]
 
 
 @router.get("/tags/all", response_model=TagsResponse)
@@ -275,7 +275,7 @@ async def get_all_tags(
     result = await session.execute(select(Device))
     devices = result.scalars().all()
 
-    tag_counts: Dict[str, int] = {}
+    tag_counts: dict[str, int] = {}
     for device in devices:
         for tag in device.profile_tags or []:
             tag_counts[tag] = tag_counts.get(tag, 0) + 1
@@ -394,7 +394,7 @@ async def quarantine_device(
     device_id: UUID,
     request: Request,
     operator: Annotated[User, Depends(require_operator)],
-    quarantine_request: Optional[QuarantineRequest] = None,
+    quarantine_request: QuarantineRequest | None = None,
 ) -> QuarantineResponse:
     """Quarantine a device.
 
@@ -442,7 +442,7 @@ async def release_device(
     device_id: UUID,
     request: Request,
     operator: Annotated[User, Depends(require_operator)],
-    reason: Optional[str] = Query(None, description="Reason for release"),
+    reason: str | None = Query(None, description="Reason for release"),
 ) -> QuarantineResponse:
     """Release a device from quarantine.
 
@@ -488,7 +488,7 @@ async def release_device(
 @router.put("/{device_id}/tags", response_model=DeviceResponse)
 async def set_device_tags(
     device_id: UUID,
-    tags: List[str],
+    tags: list[str],
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _operator: Annotated[User, Depends(require_operator)],
 ) -> DeviceResponse:

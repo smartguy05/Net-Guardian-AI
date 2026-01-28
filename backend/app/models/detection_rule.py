@@ -1,13 +1,14 @@
 """Detection rule model for configurable alert triggers."""
 
-from typing import Any, Dict, List
+from typing import Any
+
 from sqlalchemy import Boolean, Integer, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, TimestampMixin
 from app.models.alert import AlertSeverity
-from sqlalchemy import Enum as SQLEnum
+from app.models.base import Base, TimestampMixin
 
 
 class DetectionRule(Base, TimestampMixin):
@@ -47,11 +48,11 @@ class DetectionRule(Base, TimestampMixin):
         default=True,
         nullable=False,
     )
-    conditions: Mapped[Dict[str, Any]] = mapped_column(
+    conditions: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
     )
-    response_actions: Mapped[List[Dict[str, Any]]] = mapped_column(
+    response_actions: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB,
         default=list,
         nullable=False,

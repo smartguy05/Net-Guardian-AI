@@ -3,21 +3,20 @@
 import csv
 import io
 import ipaddress
-import re
-from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 import httpx
 import structlog
-from sqlalchemy import select, func, delete
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.threat_intel import (
-    ThreatIntelFeed,
-    ThreatIndicator,
     FeedType,
     IndicatorType,
+    ThreatIndicator,
+    ThreatIntelFeed,
 )
 
 logger = structlog.get_logger()
@@ -33,8 +32,8 @@ class ThreatIntelService:
 
     async def get_feeds(
         self,
-        enabled: Optional[bool] = None,
-        feed_type: Optional[FeedType] = None,
+        enabled: bool | None = None,
+        feed_type: FeedType | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[ThreatIntelFeed], int]:
@@ -58,7 +57,7 @@ class ThreatIntelService:
 
         return feeds, total
 
-    async def get_feed(self, feed_id: UUID) -> Optional[ThreatIntelFeed]:
+    async def get_feed(self, feed_id: UUID) -> ThreatIntelFeed | None:
         """Get a specific feed by ID."""
         result = await self.session.execute(
             select(ThreatIntelFeed).where(ThreatIntelFeed.id == feed_id)
@@ -70,12 +69,12 @@ class ThreatIntelService:
         name: str,
         url: str,
         feed_type: FeedType,
-        description: Optional[str] = None,
+        description: str | None = None,
         enabled: bool = True,
         update_interval_hours: int = 24,
         auth_type: str = "none",
-        auth_config: Optional[Dict[str, Any]] = None,
-        field_mapping: Optional[Dict[str, Any]] = None,
+        auth_config: dict[str, Any] | None = None,
+        field_mapping: dict[str, Any] | None = None,
     ) -> ThreatIntelFeed:
         """Create a new threat intelligence feed."""
         feed = ThreatIntelFeed(
@@ -98,7 +97,7 @@ class ThreatIntelService:
         self,
         feed_id: UUID,
         **updates: Any,
-    ) -> Optional[ThreatIntelFeed]:
+    ) -> ThreatIntelFeed | None:
         """Update a feed's configuration."""
         feed = await self.get_feed(feed_id)
         if not feed:
@@ -124,7 +123,7 @@ class ThreatIntelService:
 
     # --- Feed Fetching ---
 
-    async def fetch_feed(self, feed_id: UUID) -> Dict[str, Any]:
+    async def fetch_feed(self, feed_id: UUID) -> dict[str, Any]:
         """Fetch and parse a threat intelligence feed."""
         feed = await self.get_feed(feed_id)
         if not feed:
@@ -162,7 +161,7 @@ class ThreatIntelService:
             added, updated = await self._update_indicators(feed, indicators)
 
             # Update feed status
-            feed.last_fetch_at = datetime.now(timezone.utc)
+            feed.last_fetch_at = datetime.now(UTC)
             feed.last_fetch_status = "success"
             feed.last_fetch_message = f"Added {added}, updated {updated} indicators"
             feed.indicator_count = await self._count_feed_indicators(feed.id)
@@ -184,7 +183,7 @@ class ThreatIntelService:
             }
 
         except Exception as e:
-            feed.last_fetch_at = datetime.now(timezone.utc)
+            feed.last_fetch_at = datetime.now(UTC)
             feed.last_fetch_status = "error"
             feed.last_fetch_message = str(e)
             await self.session.commit()
@@ -202,7 +201,7 @@ class ThreatIntelService:
         self,
         feed: ThreatIntelFeed,
         content: str,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Parse feed content based on feed type."""
         indicators = []
 
@@ -221,8 +220,8 @@ class ThreatIntelService:
     def _parse_ip_list(
         self,
         content: str,
-        field_mapping: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        field_mapping: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Parse a simple IP address list (one per line)."""
         indicators = []
         default_severity = field_mapping.get("default_severity", "medium")
@@ -256,8 +255,8 @@ class ThreatIntelService:
     def _parse_url_list(
         self,
         content: str,
-        field_mapping: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        field_mapping: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Parse a URL/domain list (one per line)."""
         indicators = []
         default_severity = field_mapping.get("default_severity", "medium")
@@ -286,8 +285,8 @@ class ThreatIntelService:
     def _parse_csv(
         self,
         content: str,
-        field_mapping: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        field_mapping: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Parse CSV format threat intelligence."""
         indicators = []
 
@@ -367,8 +366,8 @@ class ThreatIntelService:
     def _parse_json(
         self,
         content: str,
-        field_mapping: Dict[str, Any],
-    ) -> List[Dict[str, Any]]:
+        field_mapping: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """Parse JSON format threat intelligence."""
         import json
 
@@ -438,12 +437,12 @@ class ThreatIntelService:
     async def _update_indicators(
         self,
         feed: ThreatIntelFeed,
-        indicators: List[Dict[str, Any]],
+        indicators: list[dict[str, Any]],
     ) -> tuple[int, int]:
         """Update indicators in the database."""
         added = 0
         updated = 0
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Get existing indicators for this feed
         result = await self.session.execute(
@@ -502,8 +501,8 @@ class ThreatIntelService:
     async def check_indicator(
         self,
         value: str,
-        indicator_type: Optional[IndicatorType] = None,
-    ) -> List[ThreatIndicator]:
+        indicator_type: IndicatorType | None = None,
+    ) -> list[ThreatIndicator]:
         """Check if a value matches any known indicators."""
         from sqlalchemy.orm import selectinload
 
@@ -519,7 +518,7 @@ class ThreatIntelService:
         indicators = list(result.scalars().all())
 
         # Record hits
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         for indicator in indicators:
             indicator.hit_count += 1
             indicator.last_hit_at = now
@@ -530,10 +529,10 @@ class ThreatIntelService:
 
     async def search_indicators(
         self,
-        value_contains: Optional[str] = None,
-        indicator_type: Optional[IndicatorType] = None,
-        severity: Optional[str] = None,
-        feed_id: Optional[UUID] = None,
+        value_contains: str | None = None,
+        indicator_type: IndicatorType | None = None,
+        severity: str | None = None,
+        feed_id: UUID | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[ThreatIndicator], int]:
@@ -572,12 +571,12 @@ class ThreatIntelService:
         indicator = result.scalar_one_or_none()
         if indicator:
             indicator.hit_count += 1
-            indicator.last_hit_at = datetime.now(timezone.utc)
+            indicator.last_hit_at = datetime.now(UTC)
             await self.session.commit()
 
     # --- Statistics ---
 
-    async def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> dict[str, Any]:
         """Get threat intelligence statistics."""
         # Feed counts
         feeds_result = await self.session.execute(
@@ -586,7 +585,7 @@ class ThreatIntelService:
         total_feeds = feeds_result.scalar() or 0
 
         enabled_feeds_result = await self.session.execute(
-            select(func.count()).where(ThreatIntelFeed.enabled == True)
+            select(func.count()).where(ThreatIntelFeed.enabled.is_(True))
         )
         enabled_feeds = enabled_feeds_result.scalar() or 0
 

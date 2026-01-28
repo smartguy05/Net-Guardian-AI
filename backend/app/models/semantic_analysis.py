@@ -2,19 +2,21 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from sqlalchemy import (
     Boolean,
     DateTime,
-    Enum as SQLEnum,
     Float,
     ForeignKey,
     Index,
     Integer,
     String,
     Text,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -160,7 +162,7 @@ class SemanticAnalysisConfig(Base, TimestampMixin):
         default=LLMProvider.CLAUDE,
         nullable=False,
     )
-    ollama_model: Mapped[Optional[str]] = mapped_column(
+    ollama_model: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
     )
@@ -179,7 +181,7 @@ class SemanticAnalysisConfig(Base, TimestampMixin):
         default=60,
         nullable=False,
     )
-    last_run_at: Mapped[Optional[datetime]] = mapped_column(
+    last_run_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -227,7 +229,7 @@ class IrregularLog(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    pattern_id: Mapped[Optional[UUID]] = mapped_column(
+    pattern_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("log_patterns.id", ondelete="SET NULL"),
         nullable=True,
@@ -241,11 +243,11 @@ class IrregularLog(Base, TimestampMixin):
         default=False,
         nullable=False,
     )
-    llm_response: Mapped[Optional[str]] = mapped_column(
+    llm_response: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    severity_score: Mapped[Optional[float]] = mapped_column(
+    severity_score: Mapped[float | None] = mapped_column(
         Float,
         nullable=True,
     )
@@ -254,7 +256,7 @@ class IrregularLog(Base, TimestampMixin):
         default=False,
         nullable=False,
     )
-    reviewed_at: Mapped[Optional[datetime]] = mapped_column(
+    reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -307,7 +309,7 @@ class SemanticAnalysisRun(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=False,
     )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
+    completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -339,11 +341,11 @@ class SemanticAnalysisRun(Base, TimestampMixin):
         ),
         nullable=False,
     )
-    llm_response_summary: Mapped[Optional[str]] = mapped_column(
+    llm_response_summary: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    error_message: Mapped[Optional[str]] = mapped_column(
+    error_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -385,7 +387,7 @@ class SuggestedRule(Base, TimestampMixin):
         primary_key=True,
         default=uuid4,
     )
-    source_id: Mapped[Optional[str]] = mapped_column(
+    source_id: Mapped[str | None] = mapped_column(
         String(100),
         ForeignKey("log_sources.id", ondelete="CASCADE"),
         nullable=True,
@@ -427,7 +429,7 @@ class SuggestedRule(Base, TimestampMixin):
         ),
         nullable=False,
     )
-    rule_config: Mapped[Dict[str, Any]] = mapped_column(
+    rule_config: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         nullable=False,
     )
@@ -457,16 +459,16 @@ class SuggestedRule(Base, TimestampMixin):
     )
 
     # Audit
-    reviewed_by: Mapped[Optional[UUID]] = mapped_column(
+    reviewed_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    reviewed_at: Mapped[Optional[datetime]] = mapped_column(
+    reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    rejection_reason: Mapped[Optional[str]] = mapped_column(
+    rejection_reason: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )

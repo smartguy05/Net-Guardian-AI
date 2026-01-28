@@ -1,8 +1,8 @@
 """JSON log parser with configurable field mappings."""
 
 import json
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from jsonpath_ng import parse as jsonpath_parse
@@ -41,7 +41,7 @@ class JsonParser(BaseParser):
         "fatal": EventSeverity.CRITICAL,
     }
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.events_path = self.config.get("events_path", "$")
         self.timestamp_field = self.config.get("timestamp_field", "timestamp")
@@ -63,7 +63,7 @@ class JsonParser(BaseParser):
             for field, path in self.field_mappings.items()
         }
 
-    def _extract_value(self, data: Dict, path: str) -> Any:
+    def _extract_value(self, data: dict, path: str) -> Any:
         """Extract a value using JSONPath."""
         expr = jsonpath_parse(path)
         matches = expr.find(data)
@@ -71,7 +71,7 @@ class JsonParser(BaseParser):
             return matches[0].value
         return None
 
-    def _extract_mapped_value(self, data: Dict, field: str) -> Any:
+    def _extract_mapped_value(self, data: dict, field: str) -> Any:
         """Extract a value using pre-compiled field mapping."""
         expr = self._field_exprs.get(field)
         if expr:
@@ -83,28 +83,28 @@ class JsonParser(BaseParser):
     def _parse_timestamp(self, value: Any) -> datetime:
         """Parse a timestamp value to datetime."""
         if value is None:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
         if isinstance(value, datetime):
             return value
 
         if isinstance(value, (int, float)):
             # Unix timestamp
-            return datetime.fromtimestamp(value, tz=timezone.utc)
+            return datetime.fromtimestamp(value, tz=UTC)
 
         if isinstance(value, str):
             if self.timestamp_format:
                 dt = datetime.strptime(value, self.timestamp_format)
                 if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = dt.replace(tzinfo=UTC)
                 return dt
             else:
                 # Try ISO format
                 return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
-        return datetime.now(timezone.utc)
+        return datetime.now(UTC)
 
-    def _parse_severity(self, data: Dict) -> EventSeverity:
+    def _parse_severity(self, data: dict) -> EventSeverity:
         """Parse severity from data."""
         severity_value = data.get(self.severity_field)
         if severity_value is None:
@@ -118,7 +118,7 @@ class JsonParser(BaseParser):
         severity_str = str(severity_value).lower()
         return self.severity_map.get(severity_str, EventSeverity.INFO)
 
-    def _get_field(self, data: Dict, field: str, default: Any = None) -> Any:
+    def _get_field(self, data: dict, field: str, default: Any = None) -> Any:
         """Get a field value, checking mappings first."""
         # Check field mappings
         mapped_value = self._extract_mapped_value(data, field)
@@ -128,7 +128,7 @@ class JsonParser(BaseParser):
         # Fall back to direct field access
         return data.get(field, default)
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse JSON log data."""
         results = []
 

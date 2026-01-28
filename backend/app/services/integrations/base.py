@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class IntegrationType(Enum):
@@ -44,10 +44,10 @@ class IntegrationResult:
     integration_type: IntegrationType
     target: str  # MAC address, IP, or domain
     message: str
-    details: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    details: dict[str, Any] | None = None
+    error: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "success": self.success,
@@ -86,8 +86,8 @@ class IntegrationService(ABC):
     async def block_device(
         self,
         mac_address: str,
-        ip_address: Optional[str] = None,
-        reason: Optional[str] = None,
+        ip_address: str | None = None,
+        reason: str | None = None,
     ) -> IntegrationResult:
         """Block a device from the network."""
         pass
@@ -96,7 +96,7 @@ class IntegrationService(ABC):
     async def unblock_device(
         self,
         mac_address: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> IntegrationResult:
         """Unblock a device from the network."""
         pass
@@ -105,7 +105,7 @@ class IntegrationService(ABC):
     async def is_device_blocked(
         self,
         mac_address: str,
-        ip_address: Optional[str] = None,
+        ip_address: str | None = None,
     ) -> bool:
         """Check if a device is currently blocked."""
         pass

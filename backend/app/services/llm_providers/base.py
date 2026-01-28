@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -33,7 +33,7 @@ class SuggestedRuleData:
     reason: str
     benefit: str
     rule_type: str  # "pattern_match", "threshold", "sequence"
-    rule_config: Dict[str, Any]
+    rule_config: dict[str, Any]
 
 
 @dataclass
@@ -41,11 +41,11 @@ class LLMAnalysisResult:
     """Result of LLM analysis on a batch of logs."""
 
     summary: str
-    concerns: List[LogConcern] = field(default_factory=list)
-    benign_explanations: List[BenignExplanation] = field(default_factory=list)
-    suggested_rules: List[SuggestedRuleData] = field(default_factory=list)
-    raw_response: Optional[str] = None
-    error: Optional[str] = None
+    concerns: list[LogConcern] = field(default_factory=list)
+    benign_explanations: list[BenignExplanation] = field(default_factory=list)
+    suggested_rules: list[SuggestedRuleData] = field(default_factory=list)
+    raw_response: str | None = None
+    error: str | None = None
     tokens_used: int = 0
 
     @classmethod
@@ -57,7 +57,7 @@ class LLMAnalysisResult:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], raw_response: str = None) -> "LLMAnalysisResult":
+    def from_dict(cls, data: dict[str, Any], raw_response: str = None) -> "LLMAnalysisResult":
         """Create a result from a parsed dictionary."""
         concerns = [
             LogConcern(
@@ -172,8 +172,8 @@ class BaseLLMProvider(ABC):
     @abstractmethod
     async def analyze_logs(
         self,
-        logs: List[Dict[str, Any]],
-        context: Optional[str] = None,
+        logs: list[dict[str, Any]],
+        context: str | None = None,
     ) -> LLMAnalysisResult:
         """Analyze a batch of irregular logs for security concerns.
 
@@ -208,8 +208,8 @@ class BaseLLMProvider(ABC):
 
     def _build_analysis_prompt(
         self,
-        logs: List[Dict[str, Any]],
-        context: Optional[str] = None,
+        logs: list[dict[str, Any]],
+        context: str | None = None,
     ) -> str:
         """Build the analysis prompt from logs.
 
@@ -227,10 +227,10 @@ class BaseLLMProvider(ABC):
             prompt_parts.append(f"**Source:** {log.get('source', 'Unknown')}")
             prompt_parts.append(f"**Timestamp:** {log.get('timestamp', 'Unknown')}")
             prompt_parts.append(f"**Reason Flagged:** {log.get('reason', 'Unknown')}")
-            prompt_parts.append(f"**Message:**")
-            prompt_parts.append(f"```")
+            prompt_parts.append("**Message:**")
+            prompt_parts.append("```")
             prompt_parts.append(log.get("message", ""))
-            prompt_parts.append(f"```")
+            prompt_parts.append("```")
             prompt_parts.append("")
 
         if context:
@@ -250,7 +250,7 @@ Respond ONLY with valid JSON matching the specified format.""")
 
         return "\n".join(prompt_parts)
 
-    def _parse_json_response(self, response_text: str) -> Dict[str, Any]:
+    def _parse_json_response(self, response_text: str) -> dict[str, Any]:
         """Parse JSON from LLM response text.
 
         Args:

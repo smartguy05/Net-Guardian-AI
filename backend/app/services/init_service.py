@@ -133,7 +133,7 @@ async def _ensure_admin_user(session: AsyncSession) -> None:
         "=" * 60,
     )
     logger.warning(
-        f"Username: admin",
+        "Username: admin",
     )
     logger.warning(
         f"Password: {initial_password}",

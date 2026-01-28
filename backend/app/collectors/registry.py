@@ -1,6 +1,5 @@
 """Collector registry for managing available collectors."""
 
-from typing import Any, Dict, Type
 
 import structlog
 
@@ -14,10 +13,10 @@ logger = structlog.get_logger()
 class CollectorRegistry:
     """Registry for managing collector implementations."""
 
-    _collectors: Dict[SourceType, Type[BaseCollector]] = {}
+    _collectors: dict[SourceType, type[BaseCollector]] = {}
 
     @classmethod
-    def register(cls, source_type: SourceType, collector_class: Type[BaseCollector]) -> None:
+    def register(cls, source_type: SourceType, collector_class: type[BaseCollector]) -> None:
         """Register a collector class for a source type.
 
         Args:
@@ -80,7 +79,7 @@ def register_collector(source_type: SourceType):
         class ApiPullCollector(BaseCollector):
             ...
     """
-    def decorator(cls: Type[BaseCollector]) -> Type[BaseCollector]:
+    def decorator(cls: type[BaseCollector]) -> type[BaseCollector]:
         CollectorRegistry.register(source_type, cls)
         return cls
     return decorator

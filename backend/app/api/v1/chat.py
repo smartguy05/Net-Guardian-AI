@@ -1,23 +1,23 @@
 """Chat and natural language query API endpoints."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
-from app.models.alert import Alert, AlertStatus, AlertSeverity
+from app.models.alert import Alert, AlertStatus
 from app.models.anomaly import AnomalyDetection, AnomalyStatus
 from app.models.device import Device, DeviceStatus
-from app.models.raw_event import RawEvent, EventType
+from app.models.raw_event import EventType, RawEvent
 from app.models.user import User
-from app.services.llm_service import get_llm_service, LLMModel
+from app.services.llm_service import LLMModel, get_llm_service
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ class ChatMessage(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str = Field(..., description="Natural language query about the network")
-    model: Optional[str] = Field(None, description="Model to use: fast, default, or deep")
+    model: str | None = Field(None, description="Model to use: fast, default, or deep")
 
 
 class QueryResponse(BaseModel):
@@ -40,7 +40,7 @@ class QueryResponse(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    messages: List[ChatMessage] = Field(..., description="Conversation history")
+    messages: list[ChatMessage] = Field(..., description="Conversation history")
     stream: bool = Field(False, description="Whether to stream the response")
 
 
@@ -50,20 +50,20 @@ class ChatResponse(BaseModel):
 
 
 class IncidentSummaryRequest(BaseModel):
-    alert_ids: Optional[List[UUID]] = Field(None, description="Alert IDs to include")
-    anomaly_ids: Optional[List[UUID]] = Field(None, description="Anomaly IDs to include")
-    device_id: Optional[UUID] = Field(None, description="Device to summarize incidents for")
+    alert_ids: list[UUID] | None = Field(None, description="Alert IDs to include")
+    anomaly_ids: list[UUID] | None = Field(None, description="Anomaly IDs to include")
+    device_id: UUID | None = Field(None, description="Device to summarize incidents for")
     hours: int = Field(24, description="Time range in hours", ge=1, le=720)
 
 
 class IncidentSummaryResponse(BaseModel):
     title: str
     executive_summary: str
-    technical_summary: Optional[str] = None
-    timeline: List[str] = []
-    impact_assessment: Optional[str] = None
-    root_cause: Optional[str] = None
-    recommendations: List[str] = []
+    technical_summary: str | None = None
+    timeline: list[str] = []
+    impact_assessment: str | None = None
+    root_cause: str | None = None
+    recommendations: list[str] = []
     severity: str
     confidence: int
     alert_count: int
@@ -79,12 +79,12 @@ class LLMStatusResponse(BaseModel):
     model_deep: str
 
 
-async def _build_network_context(session: AsyncSession) -> Dict[str, Any]:
+async def _build_network_context(session: AsyncSession) -> dict[str, Any]:
     """Build network context for LLM queries."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     last_24h = now - timedelta(hours=24)
 
-    context: Dict[str, Any] = {}
+    context: dict[str, Any] = {}
 
     # Get overview stats
     device_result = await session.execute(select(Device))
@@ -325,7 +325,7 @@ async def summarize_incident(
             detail="LLM service is not enabled. Please configure your Anthropic API key.",
         )
 
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=request.hours)
+    cutoff = datetime.now(UTC) - timedelta(hours=request.hours)
 
     # Gather alerts
     alerts_query = select(Alert).where(Alert.timestamp >= cutoff)

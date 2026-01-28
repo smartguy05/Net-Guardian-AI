@@ -3,8 +3,8 @@
 import hashlib
 import json
 import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from urllib.parse import urlencode
 
 import httpx
@@ -37,10 +37,10 @@ class OIDCService:
     """Service for handling OIDC authentication with Authentik."""
 
     def __init__(self):
-        self._oidc_config_cache: Optional[Dict[str, Any]] = None
-        self._oidc_config_expiry: Optional[datetime] = None
-        self._jwks_cache: Optional[Dict[str, Any]] = None
-        self._jwks_expiry: Optional[datetime] = None
+        self._oidc_config_cache: dict[str, Any] | None = None
+        self._oidc_config_expiry: datetime | None = None
+        self._jwks_cache: dict[str, Any] | None = None
+        self._jwks_expiry: datetime | None = None
 
     @property
     def is_configured(self) -> bool:
@@ -56,7 +56,7 @@ class OIDCService:
         """Get the base issuer URL (without trailing slash)."""
         return settings.authentik_issuer_url.rstrip('/')
 
-    async def get_oidc_config(self) -> Dict[str, Any]:
+    async def get_oidc_config(self) -> dict[str, Any]:
         """Fetch OIDC discovery document from issuer.
 
         Caches the configuration for 1 hour.
@@ -64,7 +64,7 @@ class OIDCService:
         if not self.is_configured:
             raise OIDCConfigError("OIDC is not configured")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Return cached config if still valid
         if self._oidc_config_cache and self._oidc_config_expiry and now < self._oidc_config_expiry:
@@ -90,12 +90,12 @@ class OIDCService:
             logger.error("oidc_config_fetch_failed", error=str(e), url=discovery_url)
             raise OIDCConfigError(f"Failed to fetch OIDC configuration: {e}")
 
-    async def _get_jwks(self) -> Dict[str, Any]:
+    async def _get_jwks(self) -> dict[str, Any]:
         """Fetch JWKS (JSON Web Key Set) for token validation.
 
         Caches the JWKS for 1 hour.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Return cached JWKS if still valid
         if self._jwks_cache and self._jwks_expiry and now < self._jwks_expiry:
@@ -173,7 +173,7 @@ class OIDCService:
 
         return f"{authorization_endpoint}?{urlencode(params)}"
 
-    async def exchange_code(self, code: str, code_verifier: str) -> Dict[str, Any]:
+    async def exchange_code(self, code: str, code_verifier: str) -> dict[str, Any]:
         """Exchange authorization code for tokens.
 
         Args:
@@ -222,7 +222,7 @@ class OIDCService:
             logger.error("oidc_token_exchange_http_error", error=str(e))
             raise OIDCTokenError(f"Token exchange HTTP error: {e}")
 
-    async def validate_id_token(self, id_token: str) -> Dict[str, Any]:
+    async def validate_id_token(self, id_token: str) -> dict[str, Any]:
         """Validate ID token signature and claims.
 
         Args:
@@ -296,7 +296,7 @@ class OIDCService:
         except ValueError:
             return UserRole.VIEWER
 
-    def extract_user_info(self, claims: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_user_info(self, claims: dict[str, Any]) -> dict[str, Any]:
         """Extract user information from ID token claims.
 
         Args:
@@ -320,7 +320,7 @@ class OIDCService:
 
 
 # Singleton instance
-_oidc_service: Optional[OIDCService] = None
+_oidc_service: OIDCService | None = None
 
 
 def get_oidc_service() -> OIDCService:

@@ -1,6 +1,6 @@
 """Parser registry for managing available parsers."""
 
-from typing import Any, Dict, Type
+from typing import Any
 
 import structlog
 
@@ -12,10 +12,10 @@ logger = structlog.get_logger()
 class ParserRegistry:
     """Registry for managing parser implementations."""
 
-    _parsers: Dict[str, Type[BaseParser]] = {}
+    _parsers: dict[str, type[BaseParser]] = {}
 
     @classmethod
-    def register(cls, name: str, parser_class: Type[BaseParser]) -> None:
+    def register(cls, name: str, parser_class: type[BaseParser]) -> None:
         """Register a parser class.
 
         Args:
@@ -26,7 +26,7 @@ class ParserRegistry:
         logger.debug("parser_registered", parser=name)
 
     @classmethod
-    def get(cls, name: str, config: Dict[str, Any] | None = None) -> BaseParser:
+    def get(cls, name: str, config: dict[str, Any] | None = None) -> BaseParser:
         """Get a parser instance by name.
 
         Args:
@@ -58,7 +58,7 @@ class ParserRegistry:
         return name in cls._parsers
 
 
-def get_parser(name: str, config: Dict[str, Any] | None = None) -> BaseParser:
+def get_parser(name: str, config: dict[str, Any] | None = None) -> BaseParser:
     """Get a parser instance by name.
 
     Convenience function wrapping ParserRegistry.get().
@@ -74,7 +74,7 @@ def register_parser(name: str):
         class MyParser(BaseParser):
             ...
     """
-    def decorator(cls: Type[BaseParser]) -> Type[BaseParser]:
+    def decorator(cls: type[BaseParser]) -> type[BaseParser]:
         ParserRegistry.register(name, cls)
         return cls
     return decorator

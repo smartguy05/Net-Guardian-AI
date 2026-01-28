@@ -1,6 +1,6 @@
 """Admin-only API endpoints for system configuration."""
 
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -22,10 +22,10 @@ class RetentionPolicyResponse(BaseModel):
     id: str
     table_name: str
     display_name: str
-    description: Optional[str]
+    description: str | None
     retention_days: int
     enabled: bool
-    last_run: Optional[str]
+    last_run: str | None
     deleted_count: int
 
     class Config:
@@ -35,14 +35,14 @@ class RetentionPolicyResponse(BaseModel):
 class RetentionPolicyUpdate(BaseModel):
     """Request model for updating a retention policy."""
 
-    retention_days: Optional[int] = None
-    enabled: Optional[bool] = None
+    retention_days: int | None = None
+    enabled: bool | None = None
 
 
 class RetentionCleanupRequest(BaseModel):
     """Request model for running cleanup."""
 
-    policy_id: Optional[str] = None
+    policy_id: str | None = None
     dry_run: bool = True
 
 
@@ -52,13 +52,13 @@ class RetentionCleanupResult(BaseModel):
     dry_run: bool
     policies_processed: int
     total_deleted: int
-    details: List[dict]
+    details: list[dict]
 
 
 class StorageStatsResponse(BaseModel):
     """Response model for storage statistics."""
 
-    tables: List[dict]
+    tables: list[dict]
     total_rows: int
 
 
@@ -76,11 +76,11 @@ def _policy_to_response(policy: RetentionPolicy) -> RetentionPolicyResponse:
     )
 
 
-@router.get("/retention/policies", response_model=List[RetentionPolicyResponse])
+@router.get("/retention/policies", response_model=list[RetentionPolicyResponse])
 async def get_retention_policies(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _admin: Annotated[User, Depends(require_admin)],
-) -> List[RetentionPolicyResponse]:
+) -> list[RetentionPolicyResponse]:
     """Get all retention policies.
 
     Admin only.

@@ -1,8 +1,8 @@
 """Semantic analysis service for intelligent log pattern detection."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 import structlog
@@ -19,8 +19,7 @@ from app.models.semantic_analysis import (
     SemanticAnalysisConfig,
     SemanticAnalysisRun,
 )
-from app.services.llm_providers import LLMProviderFactory, LLMAnalysisResult
-from app.services.pattern_normalizer import PatternNormalizer
+from app.services.llm_providers import LLMProviderFactory
 from app.services.pattern_service import PatternService
 
 logger = structlog.get_logger()
@@ -30,12 +29,12 @@ logger = structlog.get_logger()
 class IrregularLogFilters:
     """Filters for irregular log queries."""
 
-    source_id: Optional[str] = None
-    llm_reviewed: Optional[bool] = None
-    reviewed_by_user: Optional[bool] = None
-    min_severity: Optional[float] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    source_id: str | None = None
+    llm_reviewed: bool | None = None
+    reviewed_by_user: bool | None = None
+    min_severity: float | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     limit: int = 100
     offset: int = 0
 
@@ -48,14 +47,14 @@ class SemanticStats:
     total_irregular_logs: int
     pending_review: int
     high_severity_count: int  # severity >= 0.7
-    last_run_at: Optional[datetime]
-    last_run_status: Optional[str]
+    last_run_at: datetime | None
+    last_run_status: str | None
 
 
 class SemanticAnalysisService:
     """Service for semantic log analysis."""
 
-    def __init__(self, session: Optional[AsyncSession] = None):
+    def __init__(self, session: AsyncSession | None = None):
         """Initialize the service.
 
         Args:
@@ -72,7 +71,7 @@ class SemanticAnalysisService:
 
     # --- Configuration Management ---
 
-    async def get_config(self, source_id: str) -> Optional[SemanticAnalysisConfig]:
+    async def get_config(self, source_id: str) -> SemanticAnalysisConfig | None:
         """Get semantic analysis config for a source.
 
         Args:
@@ -120,7 +119,7 @@ class SemanticAnalysisService:
         source_id: str,
         enabled: bool = True,
         llm_provider: LLMProvider = LLMProvider.CLAUDE,
-        ollama_model: Optional[str] = None,
+        ollama_model: str | None = None,
         rarity_threshold: int = 3,
         batch_size: int = 50,
         batch_interval_minutes: int = 60,
@@ -184,7 +183,7 @@ class SemanticAnalysisService:
 
     # --- Event Processing ---
 
-    async def process_event(self, event: RawEvent) -> Optional[IrregularLog]:
+    async def process_event(self, event: RawEvent) -> IrregularLog | None:
         """Process a single event for pattern learning and irregularity detection.
 
         This is called for each new event when semantic analysis is enabled.
@@ -304,7 +303,7 @@ class SemanticAnalysisService:
                     .where(
                         and_(
                             IrregularLog.source_id == source_id,
-                            IrregularLog.llm_reviewed == False,
+                            IrregularLog.llm_reviewed.is_(False),
                         )
                     )
                     .order_by(IrregularLog.created_at.asc())
@@ -447,7 +446,7 @@ class SemanticAnalysisService:
 
     async def get_analysis_runs(
         self,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
         limit: int = 50,
     ) -> Sequence[SemanticAnalysisRun]:
         """Get analysis runs.
@@ -578,7 +577,7 @@ class SemanticAnalysisService:
     async def get_irregular_log_by_id(
         self,
         irregular_id: UUID,
-    ) -> Optional[IrregularLog]:
+    ) -> IrregularLog | None:
         """Get an irregular log by ID.
 
         Args:
@@ -602,8 +601,8 @@ class SemanticAnalysisService:
     async def mark_reviewed(
         self,
         irregular_id: UUID,
-        user_id: Optional[UUID] = None,
-    ) -> Optional[IrregularLog]:
+        user_id: UUID | None = None,
+    ) -> IrregularLog | None:
         """Mark an irregular log as reviewed by a user.
 
         Args:
@@ -640,7 +639,7 @@ class SemanticAnalysisService:
 
     async def get_stats(
         self,
-        source_id: Optional[str] = None,
+        source_id: str | None = None,
     ) -> SemanticStats:
         """Get semantic analysis statistics.
 
@@ -673,7 +672,7 @@ class SemanticAnalysisService:
             total_irregular = total_result.scalar_one()
 
             pending_stmt = select(func.count(IrregularLog.id)).where(
-                IrregularLog.reviewed_by_user == False
+                IrregularLog.reviewed_by_user.is_(False)
             )
             if source_id:
                 pending_stmt = pending_stmt.where(IrregularLog.source_id == source_id)
@@ -714,7 +713,7 @@ class SemanticAnalysisService:
 
 
 def get_semantic_analysis_service(
-    session: Optional[AsyncSession] = None,
+    session: AsyncSession | None = None,
 ) -> SemanticAnalysisService:
     """Factory function to get a SemanticAnalysisService instance.
 

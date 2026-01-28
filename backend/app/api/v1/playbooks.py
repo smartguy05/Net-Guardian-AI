@@ -1,6 +1,6 @@
 """Playbook management API endpoints."""
 
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,7 +16,7 @@ from app.models.playbook import (
     PlaybookTriggerType,
 )
 from app.models.user import User
-from app.services.playbook_engine import PlaybookEngine, get_playbook_engine
+from app.services.playbook_engine import get_playbook_engine
 
 router = APIRouter()
 
@@ -24,41 +24,41 @@ router = APIRouter()
 # Pydantic schemas
 class PlaybookActionCreate(BaseModel):
     type: PlaybookActionType
-    params: Dict[str, Any] = {}
+    params: dict[str, Any] = {}
     stop_on_failure: bool = False
 
 
 class PlaybookCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    description: Optional[str] = None
+    description: str | None = None
     trigger_type: PlaybookTriggerType
-    trigger_conditions: Dict[str, Any] = {}
-    actions: List[PlaybookActionCreate]
+    trigger_conditions: dict[str, Any] = {}
+    actions: list[PlaybookActionCreate]
     cooldown_minutes: int = Field(60, ge=1, le=1440)
     max_executions_per_hour: int = Field(10, ge=1, le=100)
     require_approval: bool = False
 
 
 class PlaybookUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = None
-    status: Optional[PlaybookStatus] = None
-    trigger_type: Optional[PlaybookTriggerType] = None
-    trigger_conditions: Optional[Dict[str, Any]] = None
-    actions: Optional[List[PlaybookActionCreate]] = None
-    cooldown_minutes: Optional[int] = Field(None, ge=1, le=1440)
-    max_executions_per_hour: Optional[int] = Field(None, ge=1, le=100)
-    require_approval: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = None
+    status: PlaybookStatus | None = None
+    trigger_type: PlaybookTriggerType | None = None
+    trigger_conditions: dict[str, Any] | None = None
+    actions: list[PlaybookActionCreate] | None = None
+    cooldown_minutes: int | None = Field(None, ge=1, le=1440)
+    max_executions_per_hour: int | None = Field(None, ge=1, le=100)
+    require_approval: bool | None = None
 
 
 class PlaybookResponse(BaseModel):
     id: str
     name: str
-    description: Optional[str]
+    description: str | None
     status: str
     trigger_type: str
-    trigger_conditions: Dict[str, Any]
-    actions: List[Dict[str, Any]]
+    trigger_conditions: dict[str, Any]
+    actions: list[dict[str, Any]]
     cooldown_minutes: int
     max_executions_per_hour: int
     require_approval: bool
@@ -70,7 +70,7 @@ class PlaybookResponse(BaseModel):
 
 
 class PlaybookListResponse(BaseModel):
-    items: List[PlaybookResponse]
+    items: list[PlaybookResponse]
     total: int
 
 
@@ -78,13 +78,13 @@ class ExecutionResponse(BaseModel):
     id: str
     playbook_id: str
     status: str
-    trigger_event: Dict[str, Any]
-    trigger_device_id: Optional[str]
-    started_at: Optional[str]
-    completed_at: Optional[str]
-    action_results: List[Dict[str, Any]]
-    error_message: Optional[str]
-    triggered_by: Optional[str]
+    trigger_event: dict[str, Any]
+    trigger_device_id: str | None
+    started_at: str | None
+    completed_at: str | None
+    action_results: list[dict[str, Any]]
+    error_message: str | None
+    triggered_by: str | None
     created_at: str
 
     class Config:
@@ -92,13 +92,13 @@ class ExecutionResponse(BaseModel):
 
 
 class ExecutionListResponse(BaseModel):
-    items: List[ExecutionResponse]
+    items: list[ExecutionResponse]
     total: int
 
 
 class ManualTriggerRequest(BaseModel):
-    device_id: Optional[UUID] = None
-    event_data: Dict[str, Any] = {}
+    device_id: UUID | None = None
+    event_data: dict[str, Any] = {}
 
 
 def _playbook_to_response(playbook) -> PlaybookResponse:
@@ -137,8 +137,8 @@ def _execution_to_response(execution) -> ExecutionResponse:
 @router.get("", response_model=PlaybookListResponse)
 async def list_playbooks(
     _current_user: Annotated[User, Depends(get_current_user)],
-    status: Optional[PlaybookStatus] = Query(None),
-    trigger_type: Optional[PlaybookTriggerType] = Query(None),
+    status: PlaybookStatus | None = Query(None),
+    trigger_type: PlaybookTriggerType | None = Query(None),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ) -> PlaybookListResponse:
@@ -261,7 +261,7 @@ async def delete_playbook(
 async def execute_playbook_manually(
     playbook_id: UUID,
     operator: Annotated[User, Depends(require_operator)],
-    trigger_request: Optional[ManualTriggerRequest] = None,
+    trigger_request: ManualTriggerRequest | None = None,
 ) -> ExecutionResponse:
     """Manually execute a playbook (Operator+)."""
     engine = get_playbook_engine()
@@ -342,12 +342,13 @@ async def list_playbook_executions(
     playbook_id: UUID,
     _current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    status_filter: Optional[ExecutionStatus] = Query(None, alias="status"),
+    status_filter: ExecutionStatus | None = Query(None, alias="status"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
 ) -> ExecutionListResponse:
     """List executions for a specific playbook."""
     from sqlalchemy import select
+
     from app.models.playbook import PlaybookExecution
 
     query = select(PlaybookExecution).where(
@@ -369,10 +370,10 @@ async def list_playbook_executions(
     )
 
 
-@router.get("/actions/types", response_model=List[Dict[str, str]])
+@router.get("/actions/types", response_model=list[dict[str, str]])
 async def list_action_types(
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """List available playbook action types."""
     return [
         {
@@ -384,10 +385,10 @@ async def list_action_types(
     ]
 
 
-@router.get("/triggers/types", response_model=List[Dict[str, str]])
+@router.get("/triggers/types", response_model=list[dict[str, str]])
 async def list_trigger_types(
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """List available playbook trigger types."""
     return [
         {

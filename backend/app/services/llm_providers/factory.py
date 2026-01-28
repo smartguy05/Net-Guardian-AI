@@ -1,6 +1,5 @@
 """Factory for creating LLM providers."""
 
-from typing import Optional
 
 from app.models.semantic_analysis import LLMProvider
 from app.services.llm_providers.base import BaseLLMProvider
@@ -14,8 +13,8 @@ class LLMProviderFactory:
     @staticmethod
     def get_provider(
         provider_type: LLMProvider | str,
-        ollama_model: Optional[str] = None,
-        ollama_url: Optional[str] = None,
+        ollama_model: str | None = None,
+        ollama_url: str | None = None,
         **kwargs,
     ) -> BaseLLMProvider:
         """Get an LLM provider instance.
@@ -56,8 +55,8 @@ class LLMProviderFactory:
     @staticmethod
     async def get_available_provider(
         preferred: LLMProvider | str = LLMProvider.CLAUDE,
-        ollama_model: Optional[str] = None,
-    ) -> Optional[BaseLLMProvider]:
+        ollama_model: str | None = None,
+    ) -> BaseLLMProvider | None:
         """Get an available LLM provider, falling back if preferred is unavailable.
 
         Args:

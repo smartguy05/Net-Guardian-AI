@@ -2,8 +2,7 @@
 
 import asyncio
 import signal
-from datetime import datetime, timezone
-from typing import Dict, Optional
+from datetime import UTC, datetime
 from uuid import uuid4
 
 import structlog
@@ -12,12 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collectors.base import BaseCollector
 from app.collectors.registry import get_collector
-from app.config import settings
 from app.db.session import AsyncSessionLocal, init_db
 from app.events.bus import EventBus, get_event_bus
 from app.models.device import Device, DeviceStatus, DeviceType
-from app.models.log_source import LogSource, SourceType
-from app.models.raw_event import EventSeverity, EventType, RawEvent
+from app.models.log_source import LogSource
+from app.models.raw_event import RawEvent
 from app.parsers.base import ParseResult
 
 logger = structlog.get_logger()
@@ -35,16 +33,16 @@ class CollectorWorker:
     """
 
     def __init__(self):
-        self._collectors: Dict[str, BaseCollector] = {}
-        self._tasks: Dict[str, asyncio.Task] = {}
+        self._collectors: dict[str, BaseCollector] = {}
+        self._tasks: dict[str, asyncio.Task] = {}
         self._running = False
-        self._event_bus: Optional[EventBus] = None
+        self._event_bus: EventBus | None = None
         self._shutdown_event = asyncio.Event()
 
     async def _load_sources(self, session: AsyncSession) -> list[LogSource]:
         """Load all enabled log sources from database."""
         result = await session.execute(
-            select(LogSource).where(LogSource.enabled == True)
+            select(LogSource).where(LogSource.enabled.is_(True))
         )
         return list(result.scalars().all())
 
@@ -52,7 +50,7 @@ class CollectorWorker:
         self,
         session: AsyncSession,
         ip_address: str,
-    ) -> Optional[Device]:
+    ) -> Device | None:
         """Get or create a device by IP address.
 
         This provides basic device auto-discovery from events.
@@ -68,7 +66,7 @@ class CollectorWorker:
 
         if device:
             # Update last_seen
-            device.last_seen = datetime.now(timezone.utc)
+            device.last_seen = datetime.now(UTC)
             return device
 
         # Create new device with placeholder MAC
@@ -82,7 +80,7 @@ class CollectorWorker:
         if existing.scalar_one_or_none():
             placeholder_mac = f"00:00:{uuid4().hex[:2]}:{uuid4().hex[:2]}:{uuid4().hex[:2]}:{uuid4().hex[:2]}"
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         device = Device(
             mac_address=placeholder_mac,
             ip_addresses=[ip_address],

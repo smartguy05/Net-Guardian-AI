@@ -8,15 +8,14 @@ This service monitors local Ollama instances to detect:
 """
 
 import asyncio
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
+from typing import Any
+from uuid import uuid4
 
 import httpx
 import structlog
 
 from app.config import settings
-from app.models.raw_event import EventSeverity, EventType
 from app.parsers.ollama_parser import calculate_risk_score
 
 logger = structlog.get_logger()
@@ -32,7 +31,7 @@ class OllamaMonitoringResult:
         threats_detected: int = 0,
         events_processed: int = 0,
         models_active: int = 0,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
     ):
         self.success = success
         self.message = message
@@ -52,10 +51,10 @@ class ThreatDetection:
         risk_score: int,
         prompt_snippet: str,
         model: str,
-        matched_patterns: List[str],
+        matched_patterns: list[str],
         timestamp: datetime,
-        client_ip: Optional[str] = None,
-        analysis: Optional[Dict[str, Any]] = None,
+        client_ip: str | None = None,
+        analysis: dict[str, Any] | None = None,
     ):
         self.id = uuid4()
         self.threat_type = threat_type
@@ -68,7 +67,7 @@ class ThreatDetection:
         self.client_ip = client_ip
         self.analysis = analysis
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": str(self.id),
             "threat_type": self.threat_type,
@@ -95,10 +94,10 @@ class OllamaMonitoringService:
     """
 
     def __init__(self):
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
         self._running = False
-        self._poll_task: Optional[asyncio.Task] = None
-        self._recent_threats: List[ThreatDetection] = []
+        self._poll_task: asyncio.Task | None = None
+        self._recent_threats: list[ThreatDetection] = []
         self._max_threats_cache = 100
         self._llm_service = None
 
@@ -248,7 +247,7 @@ class OllamaMonitoringService:
         self,
         prompt: str,
         model: str = "unknown",
-        client_ip: Optional[str] = None,
+        client_ip: str | None = None,
         use_llm_analysis: bool = True,
     ) -> ThreatDetection | None:
         """Analyze a prompt for potential threats.
@@ -287,7 +286,7 @@ class OllamaMonitoringService:
             prompt_snippet=prompt,
             model=model,
             matched_patterns=matched_patterns,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             client_ip=client_ip,
             analysis=analysis,
         )
@@ -308,7 +307,7 @@ class OllamaMonitoringService:
 
         return threat
 
-    def _determine_threat_type(self, patterns: List[str]) -> str:
+    def _determine_threat_type(self, patterns: list[str]) -> str:
         """Determine threat type from matched patterns."""
         for pattern in patterns:
             if pattern.startswith("injection:"):
@@ -338,8 +337,8 @@ class OllamaMonitoringService:
     async def _llm_analyze_prompt(
         self,
         prompt: str,
-        matched_patterns: List[str],
-    ) -> Optional[Dict[str, Any]]:
+        matched_patterns: list[str],
+    ) -> dict[str, Any] | None:
         """Use Claude to analyze a potentially malicious prompt.
 
         Args:
@@ -405,7 +404,7 @@ Respond in JSON:
             logger.error("llm_prompt_analysis_error", error=str(e))
             return None
 
-    def _parse_llm_analysis(self, response_text: str) -> Optional[Dict[str, Any]]:
+    def _parse_llm_analysis(self, response_text: str) -> dict[str, Any] | None:
         """Parse LLM analysis response."""
         import json
 
@@ -424,7 +423,7 @@ Respond in JSON:
 
         return {"raw_analysis": response_text[:500]}
 
-    async def get_status(self) -> Dict[str, Any]:
+    async def get_status(self) -> dict[str, Any]:
         """Get current monitoring status.
 
         Returns:
@@ -445,7 +444,7 @@ Respond in JSON:
             "recent_threats": [t.to_dict() for t in self._recent_threats[-10:]],
         }
 
-    def get_recent_threats(self, limit: int = 50) -> List[Dict[str, Any]]:
+    def get_recent_threats(self, limit: int = 50) -> list[dict[str, Any]]:
         """Get recent detected threats.
 
         Args:
@@ -458,9 +457,9 @@ Respond in JSON:
 
     async def process_request(
         self,
-        request_data: Dict[str, Any],
+        request_data: dict[str, Any],
         source: str = "api",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Process an Ollama request for threat detection.
 
         This can be called by a webhook/proxy intercepting Ollama requests.
@@ -503,7 +502,7 @@ Respond in JSON:
 
 
 # Global service instance
-_ollama_service: Optional[OllamaMonitoringService] = None
+_ollama_service: OllamaMonitoringService | None = None
 
 
 def get_ollama_service() -> OllamaMonitoringService:

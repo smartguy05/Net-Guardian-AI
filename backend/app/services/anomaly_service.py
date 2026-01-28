@@ -1,13 +1,11 @@
 """Anomaly detection service for identifying behavioral deviations."""
 
-import statistics
-from collections import Counter
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID, uuid4
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
@@ -38,7 +36,7 @@ class AnomalyDetector:
         device_id: UUID,
         time_window_hours: int = 1,
         auto_create_alerts: bool = True,
-    ) -> List[AnomalyDetection]:
+    ) -> list[AnomalyDetection]:
         """Detect anomalies for a device by comparing recent activity to baseline.
 
         Args:
@@ -49,7 +47,7 @@ class AnomalyDetector:
         Returns:
             List of detected AnomalyDetection objects.
         """
-        anomalies: List[AnomalyDetection] = []
+        anomalies: list[AnomalyDetection] = []
 
         # Get device baselines
         result = await self._session.execute(
@@ -111,10 +109,10 @@ class AnomalyDetector:
         device_id: UUID,
         baseline: DeviceBaseline,
         time_window_hours: int,
-    ) -> List[AnomalyDetection]:
+    ) -> list[AnomalyDetection]:
         """Detect DNS-related anomalies."""
-        anomalies: List[AnomalyDetection] = []
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
+        anomalies: list[AnomalyDetection] = []
+        cutoff = datetime.now(UTC) - timedelta(hours=time_window_hours)
 
         # Get recent DNS events
         result = await self._session.execute(
@@ -192,7 +190,7 @@ class AnomalyDetector:
                 anomalies.append(anomaly)
 
         # Detect time anomaly (unusual activity hours)
-        current_hour = datetime.now(timezone.utc).hour
+        current_hour = datetime.now(UTC).hour
         current_count = sum(1 for e in recent_events if e.timestamp.hour == current_hour)
 
         if baseline_hourly:
@@ -269,10 +267,10 @@ class AnomalyDetector:
         device_id: UUID,
         baseline: DeviceBaseline,
         time_window_hours: int,
-    ) -> List[AnomalyDetection]:
+    ) -> list[AnomalyDetection]:
         """Detect traffic-related anomalies."""
-        anomalies: List[AnomalyDetection] = []
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
+        anomalies: list[AnomalyDetection] = []
+        cutoff = datetime.now(UTC) - timedelta(hours=time_window_hours)
 
         # Get recent traffic events
         result = await self._session.execute(
@@ -352,10 +350,10 @@ class AnomalyDetector:
         device_id: UUID,
         baseline: DeviceBaseline,
         time_window_hours: int,
-    ) -> List[AnomalyDetection]:
+    ) -> list[AnomalyDetection]:
         """Detect connection-related anomalies."""
-        anomalies: List[AnomalyDetection] = []
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=time_window_hours)
+        anomalies: list[AnomalyDetection] = []
+        cutoff = datetime.now(UTC) - timedelta(hours=time_window_hours)
 
         # Get recent events with target IPs
         result = await self._session.execute(
@@ -464,8 +462,8 @@ class AnomalyDetector:
         anomaly_type: AnomalyType,
         score: float,
         description: str,
-        details: Dict[str, Any],
-        baseline_comparison: Dict[str, Any],
+        details: dict[str, Any],
+        baseline_comparison: dict[str, Any],
     ) -> AnomalyDetection:
         """Create an AnomalyDetection object."""
         severity = AnomalyDetection.calculate_severity(score, anomaly_type)
@@ -480,7 +478,7 @@ class AnomalyDetector:
             description=description,
             details=details,
             baseline_comparison=baseline_comparison,
-            detected_at=datetime.now(timezone.utc),
+            detected_at=datetime.now(UTC),
         )
 
     async def _create_alert_for_anomaly(
@@ -583,7 +581,7 @@ class AnomalyService:
         device_id: UUID,
         time_window_hours: int = 1,
         auto_create_alerts: bool = True,
-    ) -> List[AnomalyDetection]:
+    ) -> list[AnomalyDetection]:
         """Run anomaly detection for a specific device.
 
         Args:
@@ -606,7 +604,7 @@ class AnomalyService:
         self,
         time_window_hours: int = 1,
         auto_create_alerts: bool = True,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run anomaly detection for all active devices.
 
         Args:
@@ -623,7 +621,7 @@ class AnomalyService:
             result = await session.execute(
                 select(Device)
                 .where(Device.status == DeviceStatus.ACTIVE)
-                .where(Device.baseline_ready == True)
+                .where(Device.baseline_ready.is_(True))
             )
             devices = result.scalars().all()
 
@@ -679,10 +677,10 @@ class AnomalyService:
     async def get_device_anomalies(
         self,
         device_id: UUID,
-        status: Optional[AnomalyStatus] = None,
-        anomaly_type: Optional[AnomalyType] = None,
+        status: AnomalyStatus | None = None,
+        anomaly_type: AnomalyType | None = None,
         limit: int = 100,
-    ) -> List[AnomalyDetection]:
+    ) -> list[AnomalyDetection]:
         """Get anomalies for a device.
 
         Args:
@@ -714,8 +712,8 @@ class AnomalyService:
     async def get_active_anomalies(
         self,
         limit: int = 100,
-        min_severity: Optional[AlertSeverity] = None,
-    ) -> List[AnomalyDetection]:
+        min_severity: AlertSeverity | None = None,
+    ) -> list[AnomalyDetection]:
         """Get all active anomalies.
 
         Args:
@@ -753,8 +751,8 @@ class AnomalyService:
         self,
         anomaly_id: UUID,
         status: AnomalyStatus,
-        reviewed_by: Optional[UUID] = None,
-    ) -> Optional[AnomalyDetection]:
+        reviewed_by: UUID | None = None,
+    ) -> AnomalyDetection | None:
         """Update anomaly status.
 
         Args:
@@ -777,7 +775,7 @@ class AnomalyService:
             anomaly.status = status
             if reviewed_by:
                 anomaly.reviewed_by = reviewed_by
-                anomaly.reviewed_at = datetime.now(timezone.utc)
+                anomaly.reviewed_at = datetime.now(UTC)
 
             await session.commit()
 
@@ -791,7 +789,7 @@ class AnomalyService:
 
 
 # Global service instance
-_anomaly_service: Optional[AnomalyService] = None
+_anomaly_service: AnomalyService | None = None
 
 
 def get_anomaly_service() -> AnomalyService:

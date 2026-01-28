@@ -1,8 +1,8 @@
 """Ollama LLM server log parser for detecting LLM-based threats."""
 
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -58,7 +58,7 @@ EXFILTRATION_PATTERNS = [
 ]
 
 
-def calculate_risk_score(prompt: str) -> tuple[int, List[str]]:
+def calculate_risk_score(prompt: str) -> tuple[int, list[str]]:
     """Calculate risk score based on detected patterns.
 
     Returns:
@@ -112,7 +112,7 @@ class OllamaParser(BaseParser):
     - Detects potential prompt injection and jailbreak attempts
     """
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize the Ollama parser.
 
         Config options:
@@ -123,7 +123,7 @@ class OllamaParser(BaseParser):
         self.enable_threat_detection = self.config.get("enable_threat_detection", True)
         self.risk_threshold = self.config.get("risk_threshold", 30)
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse Ollama API response data.
 
         Handles various Ollama API responses:
@@ -150,7 +150,7 @@ class OllamaParser(BaseParser):
 
         return results
 
-    def _parse_single_event(self, data: Dict[str, Any]) -> Optional[ParseResult]:
+    def _parse_single_event(self, data: dict[str, Any]) -> ParseResult | None:
         """Parse a single Ollama event."""
         if not isinstance(data, dict):
             return None
@@ -167,7 +167,7 @@ class OllamaParser(BaseParser):
         else:
             return self._parse_generic_event(data)
 
-    def _parse_generate_event(self, data: Dict[str, Any]) -> ParseResult:
+    def _parse_generate_event(self, data: dict[str, Any]) -> ParseResult:
         """Parse a generate API event."""
         prompt = data.get("prompt", "")
         model = data.get("model", "unknown")
@@ -197,11 +197,11 @@ class OllamaParser(BaseParser):
                 try:
                     timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                 except ValueError:
-                    timestamp = datetime.now(timezone.utc)
+                    timestamp = datetime.now(UTC)
             elif isinstance(timestamp, (int, float)):
-                timestamp = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                timestamp = datetime.fromtimestamp(timestamp, tz=UTC)
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         return ParseResult(
             timestamp=timestamp,
@@ -224,7 +224,7 @@ class OllamaParser(BaseParser):
             }
         )
 
-    def _parse_chat_event(self, data: Dict[str, Any]) -> ParseResult:
+    def _parse_chat_event(self, data: dict[str, Any]) -> ParseResult:
         """Parse a chat API event."""
         messages = data.get("messages", [])
         model = data.get("model", "unknown")
@@ -258,9 +258,9 @@ class OllamaParser(BaseParser):
                 try:
                     timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                 except ValueError:
-                    timestamp = datetime.now(timezone.utc)
+                    timestamp = datetime.now(UTC)
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         return ParseResult(
             timestamp=timestamp,
@@ -281,11 +281,11 @@ class OllamaParser(BaseParser):
             }
         )
 
-    def _parse_model_status(self, data: Dict[str, Any]) -> ParseResult:
+    def _parse_model_status(self, data: dict[str, Any]) -> ParseResult:
         """Parse model status event (from /api/ps or /api/tags)."""
         models = data.get("models", [])
 
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
 
         return ParseResult(
             timestamp=timestamp,
@@ -301,7 +301,7 @@ class OllamaParser(BaseParser):
             }
         )
 
-    def _parse_generic_event(self, data: Dict[str, Any]) -> ParseResult:
+    def _parse_generic_event(self, data: dict[str, Any]) -> ParseResult:
         """Parse a generic Ollama event."""
         timestamp = data.get("timestamp")
         if timestamp:
@@ -309,9 +309,9 @@ class OllamaParser(BaseParser):
                 try:
                     timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                 except ValueError:
-                    timestamp = datetime.now(timezone.utc)
+                    timestamp = datetime.now(UTC)
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         return ParseResult(
             timestamp=timestamp,

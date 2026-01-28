@@ -6,8 +6,8 @@ Parses NetFlow data from network devices. Supports:
 """
 
 import struct
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -68,7 +68,7 @@ class NetFlowParser(BaseParser):
     Can parse raw binary NetFlow packets or pre-parsed JSON data.
     """
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize NetFlow parser.
 
         Config options:
@@ -77,12 +77,12 @@ class NetFlowParser(BaseParser):
             exporter_ip: IP address of the exporter for context
         """
         super().__init__(config)
-        self._templates: Dict[int, Dict[int, tuple]] = {}  # NetFlow v9 templates
+        self._templates: dict[int, dict[int, tuple]] = {}  # NetFlow v9 templates
         self.min_bytes = self.config.get("min_bytes", 0)
         self.min_packets = self.config.get("min_packets", 0)
         self.exporter_ip = self.config.get("exporter_ip")
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse NetFlow data.
 
         Args:
@@ -108,7 +108,7 @@ class NetFlowParser(BaseParser):
             logger.warning("netflow_parser_invalid_data", data_type=type(raw_data).__name__)
             return []
 
-    def _parse_binary(self, data: bytes) -> List[ParseResult]:
+    def _parse_binary(self, data: bytes) -> list[ParseResult]:
         """Parse binary NetFlow packet."""
         if len(data) < 4:
             logger.warning("netflow_packet_too_short", length=len(data))
@@ -125,7 +125,7 @@ class NetFlowParser(BaseParser):
             logger.warning("netflow_unsupported_version", version=version)
             return []
 
-    def _parse_v5(self, data: bytes) -> List[ParseResult]:
+    def _parse_v5(self, data: bytes) -> list[ParseResult]:
         """Parse NetFlow v5 packet.
 
         NetFlow v5 Header (24 bytes):
@@ -179,7 +179,7 @@ class NetFlowParser(BaseParser):
             count = (len(data) - 24) // 48
 
         # Base timestamp from header
-        base_timestamp = datetime.fromtimestamp(unix_secs, tz=timezone.utc)
+        base_timestamp = datetime.fromtimestamp(unix_secs, tz=UTC)
 
         results = []
         offset = 24
@@ -239,7 +239,7 @@ class NetFlowParser(BaseParser):
             )
 
             # Build raw message
-            port_service = WELL_KNOWN_PORTS.get(dst_port, str(dst_port))
+            _port_service = WELL_KNOWN_PORTS.get(dst_port, str(dst_port))  # Available for enrichment
             raw_message = (
                 f"Flow: {src_ip}:{src_port} -> {dst_ip}:{dst_port} "
                 f"({proto_name}) {packets} pkts / {octets} bytes"
@@ -262,7 +262,7 @@ class NetFlowParser(BaseParser):
 
         return results
 
-    def _parse_v9(self, data: bytes) -> List[ParseResult]:
+    def _parse_v9(self, data: bytes) -> list[ParseResult]:
         """Parse NetFlow v9 packet (basic support).
 
         NetFlow v9 uses templates to define record formats. This implementation
@@ -276,7 +276,7 @@ class NetFlowParser(BaseParser):
         header = struct.unpack("!HHIIII", data[0:20])
         version, count, sys_uptime, unix_secs, seq, source_id = header
 
-        base_timestamp = datetime.fromtimestamp(unix_secs, tz=timezone.utc)
+        base_timestamp = datetime.fromtimestamp(unix_secs, tz=UTC)
 
         results = []
         offset = 20
@@ -333,7 +333,7 @@ class NetFlowParser(BaseParser):
         data: bytes,
         template: tuple,
         timestamp: datetime,
-    ) -> List[ParseResult]:
+    ) -> list[ParseResult]:
         """Parse NetFlow v9 data records using template."""
         # Calculate record size
         record_size = sum(length for _, length in template)
@@ -368,10 +368,10 @@ class NetFlowParser(BaseParser):
 
         return results
 
-    def _parse_v9_record(self, data: bytes, template: tuple) -> Dict[str, Any] | None:
+    def _parse_v9_record(self, data: bytes, template: tuple) -> dict[str, Any] | None:
         """Parse a single NetFlow v9 record."""
         # Common field type mappings
-        FIELD_TYPES = {
+        field_types = {
             1: ("bytes", "I"),
             2: ("packets", "I"),
             4: ("protocol", "B"),
@@ -390,8 +390,8 @@ class NetFlowParser(BaseParser):
 
             field_data = data[offset:offset + field_length]
 
-            if field_type in FIELD_TYPES:
-                name, fmt = FIELD_TYPES[field_type]
+            if field_type in field_types:
+                name, fmt = field_types[field_type]
                 try:
                     if fmt == "4s":
                         value = self._int_to_ip(struct.unpack("!I", field_data)[0])
@@ -409,7 +409,7 @@ class NetFlowParser(BaseParser):
 
         return result if result else None
 
-    def _build_v9_message(self, parsed: Dict[str, Any]) -> str:
+    def _build_v9_message(self, parsed: dict[str, Any]) -> str:
         """Build raw message for NetFlow v9 record."""
         src = parsed.get("src_ip", "?")
         dst = parsed.get("dst_ip", "?")
@@ -421,14 +421,14 @@ class NetFlowParser(BaseParser):
 
         return f"Flow: {src}:{src_port} -> {dst}:{dst_port} ({proto}) {packets} pkts / {bytes_val} bytes"
 
-    def _parse_json_entry(self, entry: Dict[str, Any]) -> ParseResult | None:
+    def _parse_json_entry(self, entry: dict[str, Any]) -> ParseResult | None:
         """Parse pre-parsed JSON NetFlow entry."""
         try:
             ts_str = entry.get("timestamp")
             if ts_str:
                 timestamp = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
             else:
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             src_ip = entry.get("src_ip") or entry.get("source_ip")
             dst_ip = entry.get("dst_ip") or entry.get("destination_ip")

@@ -1,7 +1,7 @@
 """AdGuard Home query log parser."""
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -25,9 +25,9 @@ class AdGuardParser(BaseParser):
             # AdGuard uses RFC 3339 / ISO 8601 format
             return datetime.fromisoformat(time_str.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
-    def _determine_severity(self, entry: Dict) -> EventSeverity:
+    def _determine_severity(self, entry: dict) -> EventSeverity:
         """Determine event severity based on the query result."""
         reason = entry.get("reason", "")
 
@@ -42,7 +42,7 @@ class AdGuardParser(BaseParser):
 
         return EventSeverity.INFO
 
-    def _determine_action(self, entry: Dict) -> str:
+    def _determine_action(self, entry: dict) -> str:
         """Determine the action taken on the query."""
         reason = entry.get("reason", "")
 
@@ -63,7 +63,7 @@ class AdGuardParser(BaseParser):
 
         return reason_actions.get(reason, "unknown")
 
-    def _get_response_status(self, entry: Dict) -> str:
+    def _get_response_status(self, entry: dict) -> str:
         """Get the response status for the query."""
         reason = entry.get("reason", "")
 
@@ -76,7 +76,7 @@ class AdGuardParser(BaseParser):
 
         return "unknown"
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse AdGuard Home query log data.
 
         Args:

@@ -1,13 +1,12 @@
 """Data retention service for automatic cleanup of old data."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import structlog
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.models.retention_policy import RetentionPolicy
 
 logger = structlog.get_logger()
@@ -94,7 +93,7 @@ class RetentionService:
 
         return created
 
-    async def get_all_policies(self) -> List[RetentionPolicy]:
+    async def get_all_policies(self) -> list[RetentionPolicy]:
         """Get all retention policies.
 
         Returns:
@@ -105,7 +104,7 @@ class RetentionService:
         )
         return list(result.scalars().all())
 
-    async def get_policy(self, policy_id: str) -> Optional[RetentionPolicy]:
+    async def get_policy(self, policy_id: str) -> RetentionPolicy | None:
         """Get a specific retention policy.
 
         Args:
@@ -119,7 +118,7 @@ class RetentionService:
         )
         return result.scalar_one_or_none()
 
-    async def get_policy_by_table(self, table_name: str) -> Optional[RetentionPolicy]:
+    async def get_policy_by_table(self, table_name: str) -> RetentionPolicy | None:
         """Get a retention policy by table name.
 
         Args:
@@ -136,9 +135,9 @@ class RetentionService:
     async def update_policy(
         self,
         policy_id: str,
-        retention_days: Optional[int] = None,
-        enabled: Optional[bool] = None,
-    ) -> Optional[RetentionPolicy]:
+        retention_days: int | None = None,
+        enabled: bool | None = None,
+    ) -> RetentionPolicy | None:
         """Update a retention policy.
 
         Args:
@@ -172,8 +171,8 @@ class RetentionService:
         return policy
 
     async def run_cleanup(
-        self, policy_id: Optional[str] = None, dry_run: bool = False
-    ) -> Dict[str, Any]:
+        self, policy_id: str | None = None, dry_run: bool = False
+    ) -> dict[str, Any]:
         """Run data cleanup based on retention policies.
 
         Args:
@@ -188,7 +187,7 @@ class RetentionService:
             policies = [p for p in policies if p]
         else:
             result = await self.session.execute(
-                select(RetentionPolicy).where(RetentionPolicy.enabled == True)
+                select(RetentionPolicy).where(RetentionPolicy.enabled.is_(True))
             )
             policies = list(result.scalars().all())
 
@@ -211,7 +210,7 @@ class RetentionService:
                 )
                 continue
 
-            cutoff_date = datetime.now(timezone.utc) - timedelta(
+            cutoff_date = datetime.now(UTC) - timedelta(
                 days=policy.retention_days
             )
 
@@ -221,7 +220,7 @@ class RetentionService:
                 )
 
                 if not dry_run:
-                    policy.last_run = datetime.now(timezone.utc)
+                    policy.last_run = datetime.now(UTC)
                     policy.deleted_count = deleted
 
                 results["policies_processed"] += 1
@@ -306,7 +305,7 @@ class RetentionService:
             )
             return result.rowcount
 
-    async def get_storage_stats(self) -> Dict[str, Any]:
+    async def get_storage_stats(self) -> dict[str, Any]:
         """Get storage statistics for all retention-managed tables.
 
         Returns:

@@ -126,6 +126,22 @@ Condensed summary of completed implementation work.
 
 ---
 
+## Codebase Lint Fixes (January 2026)
+
+- Auto-fixed 1783 lint errors with ruff (UP006, UP035, UP045 deprecated typing patterns)
+- Fixed 29 remaining errors manually:
+  - E712: SQLAlchemy boolean comparisons (`== True` → `.is_(True)`)
+  - F821: Forward references in models (added TYPE_CHECKING imports)
+  - F841: Unused variables (prefixed with `_`)
+  - N806: Constant naming in function (`FIELD_TYPES` → `field_types`)
+  - N818: Exception naming (`NetGuardianException` → `NetGuardianError` with alias)
+- Models updated: alert.py, anomaly.py, device.py, device_baseline.py, raw_event.py
+- Services updated: collector_service.py, anomaly_service.py, pattern_service.py, retention_service.py, semantic_analysis_service.py, threat_intel_service.py
+- Parsers updated: custom_parser.py, netflow_parser.py, sflow_parser.py
+- Device creation race condition fix: `_batch_get_or_create_devices` handles concurrent batches
+
+---
+
 ## Key Bug Fixes
 
 - Route ordering: Static routes before dynamic `/{id}` routes in devices.py

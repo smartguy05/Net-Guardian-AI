@@ -2,11 +2,11 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
-from uuid import uuid4
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Boolean, DateTime, String, Text
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
@@ -70,7 +70,7 @@ class LogSource(Base, TimestampMixin):
         String(255),
         nullable=False,
     )
-    description: Mapped[Optional[str]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -83,7 +83,7 @@ class LogSource(Base, TimestampMixin):
         default=True,
         nullable=False,
     )
-    config: Mapped[Dict[str, Any]] = mapped_column(
+    config: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
@@ -92,22 +92,22 @@ class LogSource(Base, TimestampMixin):
         SQLEnum(ParserType, name="parsertype", values_callable=lambda x: [e.value for e in x]),
         nullable=False,
     )
-    parser_config: Mapped[Dict[str, Any]] = mapped_column(
+    parser_config: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
     )
-    api_key: Mapped[Optional[str]] = mapped_column(
+    api_key: Mapped[str | None] = mapped_column(
         String(64),
         unique=True,
         nullable=True,
         index=True,
     )
-    last_event_at: Mapped[Optional[datetime]] = mapped_column(
+    last_event_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    last_error: Mapped[Optional[str]] = mapped_column(
+    last_error: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )

@@ -1,11 +1,18 @@
 """Alert model for security alerts."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Enum as SQLEnum, ForeignKey, String, Text
+if TYPE_CHECKING:
+    from app.models.anomaly import AnomalyDetection
+    from app.models.device import Device
+
+from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -63,7 +70,7 @@ class Alert(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    device_id: Mapped[Optional[UUID]] = mapped_column(
+    device_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="SET NULL"),
         nullable=True,
@@ -87,7 +94,7 @@ class Alert(Base, TimestampMixin):
         Text,
         nullable=False,
     )
-    llm_analysis: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+    llm_analysis: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB,
         nullable=True,
     )
@@ -97,38 +104,38 @@ class Alert(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    actions_taken: Mapped[List[Dict[str, Any]]] = mapped_column(
+    actions_taken: Mapped[list[dict[str, Any]]] = mapped_column(
         JSONB,
         default=list,
         nullable=False,
     )
 
     # Audit fields
-    acknowledged_by: Mapped[Optional[UUID]] = mapped_column(
+    acknowledged_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    acknowledged_at: Mapped[Optional[datetime]] = mapped_column(
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    resolved_by: Mapped[Optional[UUID]] = mapped_column(
+    resolved_by: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
-    resolved_at: Mapped[Optional[datetime]] = mapped_column(
+    resolved_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     # Relationships
-    device: Mapped[Optional["Device"]] = relationship(
+    device: Mapped[Device | None] = relationship(
         "Device",
         back_populates="alerts",
     )
-    anomaly: Mapped[Optional["AnomalyDetection"]] = relationship(
+    anomaly: Mapped[AnomalyDetection | None] = relationship(
         "AnomalyDetection",
         back_populates="alert",
         uselist=False,

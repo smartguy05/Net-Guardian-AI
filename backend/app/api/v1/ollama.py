@@ -1,6 +1,6 @@
 """API endpoints for Ollama LLM monitoring."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -19,12 +19,12 @@ class OllamaStatusResponse(BaseModel):
     running: bool
     connected: bool
     connection_message: str
-    url: Optional[str] = None
+    url: str | None = None
     detection_enabled: bool
     prompt_analysis_enabled: bool
     poll_interval_seconds: int
     recent_threats_count: int
-    recent_threats: List[Dict[str, Any]] = Field(default_factory=list)
+    recent_threats: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class AnalyzePromptRequest(BaseModel):
@@ -32,7 +32,7 @@ class AnalyzePromptRequest(BaseModel):
 
     prompt: str = Field(..., description="The prompt to analyze")
     model: str = Field(default="unknown", description="The model name")
-    client_ip: Optional[str] = Field(default=None, description="Client IP if known")
+    client_ip: str | None = Field(default=None, description="Client IP if known")
     use_llm_analysis: bool = Field(
         default=True,
         description="Use Claude for deeper analysis"
@@ -43,38 +43,38 @@ class AnalyzePromptResponse(BaseModel):
     """Response from prompt analysis."""
 
     is_threat: bool
-    threat_type: Optional[str] = None
-    severity: Optional[str] = None
+    threat_type: str | None = None
+    severity: str | None = None
     risk_score: int = 0
-    matched_patterns: List[str] = Field(default_factory=list)
-    analysis: Optional[Dict[str, Any]] = None
+    matched_patterns: list[str] = Field(default_factory=list)
+    analysis: dict[str, Any] | None = None
     message: str
 
 
 class ProcessRequestInput(BaseModel):
     """Input for processing an Ollama request."""
 
-    prompt: Optional[str] = Field(default=None, description="Prompt for /api/generate")
-    messages: Optional[List[Dict[str, str]]] = Field(
+    prompt: str | None = Field(default=None, description="Prompt for /api/generate")
+    messages: list[dict[str, str]] | None = Field(
         default=None,
         description="Messages for /api/chat"
     )
     model: str = Field(default="unknown", description="Model name")
-    client_ip: Optional[str] = Field(default=None, description="Client IP")
+    client_ip: str | None = Field(default=None, description="Client IP")
 
 
 class ProcessRequestResponse(BaseModel):
     """Response from processing an Ollama request."""
 
     processed: bool
-    threat: Optional[Dict[str, Any]] = None
-    action: Optional[str] = None
+    threat: dict[str, Any] | None = None
+    action: str | None = None
 
 
 class ThreatListResponse(BaseModel):
     """List of detected threats."""
 
-    threats: List[Dict[str, Any]]
+    threats: list[dict[str, Any]]
     total: int
 
 
@@ -97,7 +97,7 @@ async def get_ollama_status(
 @router.post("/test-connection")
 async def test_ollama_connection(
     current_user: User = Depends(require_admin),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Test connection to Ollama instance.
 
     Admin only. Tests connectivity and returns model information.
@@ -120,7 +120,7 @@ async def test_ollama_connection(
 @router.post("/check")
 async def check_ollama(
     current_user: User = Depends(get_current_user),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Manually trigger Ollama check.
 
     Performs an immediate check of Ollama status and returns results.
@@ -230,7 +230,7 @@ async def get_recent_threats(
 @router.post("/start")
 async def start_monitoring(
     current_user: User = Depends(require_admin),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Start Ollama monitoring.
 
     Admin only. Starts the background polling loop.
@@ -253,7 +253,7 @@ async def start_monitoring(
 @router.post("/stop")
 async def stop_monitoring(
     current_user: User = Depends(require_admin),
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """Stop Ollama monitoring.
 
     Admin only. Stops the background polling loop.

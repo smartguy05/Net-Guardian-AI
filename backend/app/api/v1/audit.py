@@ -1,7 +1,7 @@
 """Audit log API endpoints."""
 
 from datetime import datetime
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -15,9 +15,9 @@ from app.models.audit_log import AuditAction
 from app.models.user import User
 from app.services.audit_service import AuditService
 from app.services.export_service import (
-    ExportService,
     AUDIT_COLUMNS,
     AUDIT_HEADERS,
+    ExportService,
 )
 
 router = APIRouter()
@@ -27,23 +27,23 @@ class AuditLogResponse(BaseModel):
     id: str
     timestamp: str
     action: str
-    user_id: Optional[str]
-    username: Optional[str]
+    user_id: str | None
+    username: str | None
     target_type: str
-    target_id: Optional[str]
-    target_name: Optional[str]
+    target_id: str | None
+    target_name: str | None
     description: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
     success: bool
-    error_message: Optional[str]
-    ip_address: Optional[str]
+    error_message: str | None
+    ip_address: str | None
 
     class Config:
         from_attributes = True
 
 
 class AuditLogListResponse(BaseModel):
-    items: List[AuditLogResponse]
+    items: list[AuditLogResponse]
     total: int
 
 
@@ -76,11 +76,11 @@ def _audit_to_response(audit) -> AuditLogResponse:
 async def list_audit_logs(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _admin: Annotated[User, Depends(require_admin)],
-    action: Optional[str] = Query(None, description="Filter by action type"),
-    target_type: Optional[str] = Query(None, description="Filter by target type"),
-    target_id: Optional[str] = Query(None, description="Filter by target ID"),
-    user_id: Optional[UUID] = Query(None, description="Filter by user who performed action"),
-    success_only: Optional[bool] = Query(None, description="Filter by success status"),
+    action: str | None = Query(None, description="Filter by action type"),
+    target_type: str | None = Query(None, description="Filter by target type"),
+    target_id: str | None = Query(None, description="Filter by target ID"),
+    user_id: UUID | None = Query(None, description="Filter by user who performed action"),
+    success_only: bool | None = Query(None, description="Filter by success status"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> AuditLogListResponse:
@@ -179,10 +179,10 @@ async def get_audit_stats(
 async def export_audit_csv(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _admin: Annotated[User, Depends(require_admin)],
-    action: Optional[str] = Query(None, description="Filter by action type"),
-    target_type: Optional[str] = Query(None, description="Filter by target type"),
-    user_id: Optional[UUID] = Query(None, description="Filter by user"),
-    success_only: Optional[bool] = Query(None, description="Filter by success status"),
+    action: str | None = Query(None, description="Filter by action type"),
+    target_type: str | None = Query(None, description="Filter by target type"),
+    user_id: UUID | None = Query(None, description="Filter by user"),
+    success_only: bool | None = Query(None, description="Filter by success status"),
     limit: int = Query(10000, ge=1, le=100000),
 ) -> Response:
     """Export audit logs to CSV format (Admin only)."""
@@ -231,10 +231,10 @@ async def export_audit_csv(
 async def export_audit_pdf(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _admin: Annotated[User, Depends(require_admin)],
-    action: Optional[str] = Query(None, description="Filter by action type"),
-    target_type: Optional[str] = Query(None, description="Filter by target type"),
-    user_id: Optional[UUID] = Query(None, description="Filter by user"),
-    success_only: Optional[bool] = Query(None, description="Filter by success status"),
+    action: str | None = Query(None, description="Filter by action type"),
+    target_type: str | None = Query(None, description="Filter by target type"),
+    user_id: UUID | None = Query(None, description="Filter by user"),
+    success_only: bool | None = Query(None, description="Filter by success status"),
     limit: int = Query(1000, ge=1, le=10000),
 ) -> Response:
     """Export audit logs to PDF format (Admin only)."""

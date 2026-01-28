@@ -1,11 +1,20 @@
 """Device model for network device inventory."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, String
+if TYPE_CHECKING:
+    from app.models.alert import Alert
+    from app.models.anomaly import AnomalyDetection
+    from app.models.device_baseline import DeviceBaseline
+    from app.models.raw_event import RawEvent
+
+from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -61,16 +70,16 @@ class Device(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    ip_addresses: Mapped[List[str]] = mapped_column(
+    ip_addresses: Mapped[list[str]] = mapped_column(
         ARRAY(String(45)),
         default=list,
         nullable=False,
     )
-    hostname: Mapped[Optional[str]] = mapped_column(
+    hostname: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
-    manufacturer: Mapped[Optional[str]] = mapped_column(
+    manufacturer: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
@@ -79,7 +88,7 @@ class Device(Base, TimestampMixin):
         default=DeviceType.UNKNOWN,
         nullable=False,
     )
-    profile_tags: Mapped[List[str]] = mapped_column(
+    profile_tags: Mapped[list[str]] = mapped_column(
         ARRAY(String(50)),
         default=list,
         nullable=False,
@@ -105,23 +114,23 @@ class Device(Base, TimestampMixin):
     )
 
     # Relationships
-    raw_events: Mapped[List["RawEvent"]] = relationship(
+    raw_events: Mapped[list[RawEvent]] = relationship(
         "RawEvent",
         back_populates="device",
         lazy="dynamic",
     )
-    alerts: Mapped[List["Alert"]] = relationship(
+    alerts: Mapped[list[Alert]] = relationship(
         "Alert",
         back_populates="device",
         lazy="dynamic",
     )
-    baselines: Mapped[List["DeviceBaseline"]] = relationship(
+    baselines: Mapped[list[DeviceBaseline]] = relationship(
         "DeviceBaseline",
         back_populates="device",
         lazy="dynamic",
         cascade="all, delete-orphan",
     )
-    anomalies: Mapped[List["AnomalyDetection"]] = relationship(
+    anomalies: Mapped[list[AnomalyDetection]] = relationship(
         "AnomalyDetection",
         back_populates="device",
         lazy="dynamic",

@@ -1,15 +1,15 @@
 """Audit logging service for tracking administrative actions."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
-from app.models.audit_log import AuditLog, AuditAction
+from app.models.audit_log import AuditAction, AuditLog
 from app.models.user import User
 
 logger = structlog.get_logger()
@@ -18,7 +18,7 @@ logger = structlog.get_logger()
 class AuditService:
     """Service for creating and querying audit logs."""
 
-    def __init__(self, session: Optional[AsyncSession] = None):
+    def __init__(self, session: AsyncSession | None = None):
         """Initialize the audit service.
 
         Args:
@@ -43,14 +43,14 @@ class AuditService:
         action: AuditAction,
         target_type: str,
         description: str,
-        user: Optional[User] = None,
-        target_id: Optional[str] = None,
-        target_name: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
+        user: User | None = None,
+        target_id: str | None = None,
+        target_name: str | None = None,
+        details: dict[str, Any] | None = None,
         success: bool = True,
-        error_message: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        error_message: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> AuditLog:
         """Create an audit log entry.
 
@@ -117,9 +117,9 @@ class AuditService:
         device_name: str,
         mac_address: str,
         user: User,
-        reason: Optional[str] = None,
-        integration_results: Optional[List[Dict[str, Any]]] = None,
-        ip_address: Optional[str] = None,
+        reason: str | None = None,
+        integration_results: list[dict[str, Any]] | None = None,
+        ip_address: str | None = None,
     ) -> AuditLog:
         """Log a device quarantine action."""
         details = {
@@ -145,9 +145,9 @@ class AuditService:
         device_name: str,
         mac_address: str,
         user: User,
-        reason: Optional[str] = None,
-        integration_results: Optional[List[Dict[str, Any]]] = None,
-        ip_address: Optional[str] = None,
+        reason: str | None = None,
+        integration_results: list[dict[str, Any]] | None = None,
+        ip_address: str | None = None,
     ) -> AuditLog:
         """Log a device release action."""
         details = {
@@ -172,10 +172,10 @@ class AuditService:
         action: AuditAction,
         integration_type: str,
         target: str,
-        user: Optional[User] = None,
+        user: User | None = None,
         success: bool = True,
-        details: Optional[Dict[str, Any]] = None,
-        error_message: Optional[str] = None,
+        details: dict[str, Any] | None = None,
+        error_message: str | None = None,
     ) -> AuditLog:
         """Log an integration action (block/unblock via external service)."""
         action_desc = "blocked" if action == AuditAction.INTEGRATION_BLOCK else "unblocked"
@@ -199,12 +199,12 @@ class AuditService:
 
     async def log_user_login(
         self,
-        user: Optional[User] = None,
-        username: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
+        user: User | None = None,
+        username: str | None = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
         success: bool = True,
-        error_message: Optional[str] = None,
+        error_message: str | None = None,
     ) -> AuditLog:
         """Log a user login attempt.
 
@@ -233,16 +233,16 @@ class AuditService:
 
     async def get_logs(
         self,
-        action: Optional[AuditAction] = None,
-        target_type: Optional[str] = None,
-        target_id: Optional[str] = None,
-        user_id: Optional[UUID] = None,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        success_only: Optional[bool] = None,
+        action: AuditAction | None = None,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        user_id: UUID | None = None,
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+        success_only: bool | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[AuditLog]:
+    ) -> list[AuditLog]:
         """Query audit logs with filtering.
 
         Args:
@@ -291,7 +291,7 @@ class AuditService:
         self,
         device_id: UUID,
         limit: int = 50,
-    ) -> List[AuditLog]:
+    ) -> list[AuditLog]:
         """Get audit history for a specific device."""
         return await self.get_logs(
             target_type="device",
@@ -303,9 +303,9 @@ class AuditService:
         self,
         hours: int = 24,
         limit: int = 100,
-    ) -> List[AuditLog]:
+    ) -> list[AuditLog]:
         """Get recent quarantine actions."""
-        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        start_time = datetime.now(UTC) - timedelta(hours=hours)
 
         session = await self._get_session()
         try:
@@ -336,7 +336,7 @@ class AuditService:
         hours: int = 24,
     ) -> int:
         """Count actions of a specific type in the given time window."""
-        start_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+        start_time = datetime.now(UTC) - timedelta(hours=hours)
 
         session = await self._get_session()
         try:
@@ -359,7 +359,7 @@ class AuditService:
 
 
 # Global service instance
-_audit_service: Optional[AuditService] = None
+_audit_service: AuditService | None = None
 
 
 def get_audit_service() -> AuditService:

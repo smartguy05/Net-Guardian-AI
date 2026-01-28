@@ -1,17 +1,16 @@
 """Device baseline API endpoints."""
 
-from datetime import datetime
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin
 from app.db.session import get_async_session
-from app.models.device_baseline import DeviceBaseline, BaselineStatus, BaselineType
+from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
 from app.models.user import User
 from app.services.baseline_service import get_baseline_service
 
@@ -24,11 +23,11 @@ class BaselineResponse(BaseModel):
     device_id: str
     baseline_type: str
     status: str
-    metrics: Dict[str, Any]
+    metrics: dict[str, Any]
     sample_count: int
     min_samples: int
     baseline_window_days: int
-    last_calculated: Optional[str]
+    last_calculated: str | None
     created_at: str
     updated_at: str
 
@@ -37,18 +36,18 @@ class BaselineResponse(BaseModel):
 
 
 class BaselineListResponse(BaseModel):
-    items: List[BaselineResponse]
+    items: list[BaselineResponse]
     total: int
 
 
 class BaselineUpdateRequest(BaseModel):
-    baseline_window_days: Optional[int] = None
-    min_samples: Optional[int] = None
+    baseline_window_days: int | None = None
+    min_samples: int | None = None
 
 
 class BaselineRecalculateResponse(BaseModel):
     device_id: str
-    baselines: Dict[str, BaselineResponse]
+    baselines: dict[str, BaselineResponse]
     message: str
 
 
@@ -82,9 +81,9 @@ def _baseline_to_response(baseline: DeviceBaseline) -> BaselineResponse:
 async def list_baselines(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    device_id: Optional[UUID] = None,
-    baseline_type: Optional[BaselineType] = None,
-    status_filter: Optional[BaselineStatus] = Query(None, alias="status"),
+    device_id: UUID | None = None,
+    baseline_type: BaselineType | None = None,
+    status_filter: BaselineStatus | None = Query(None, alias="status"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> BaselineListResponse:
@@ -187,7 +186,7 @@ async def update_baseline(
 async def recalculate_device_baselines(
     device_id: UUID,
     _admin: Annotated[User, Depends(require_admin)],
-    baseline_type: Optional[BaselineType] = None,
+    baseline_type: BaselineType | None = None,
 ) -> BaselineRecalculateResponse:
     """Recalculate baselines for a device (admin only)."""
     service = get_baseline_service()
@@ -230,7 +229,7 @@ async def recalculate_all_baselines(
 async def get_baseline_stats(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get summary statistics for baselines."""
     # Count by status
     status_counts = {}

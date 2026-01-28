@@ -2,10 +2,10 @@
 
 from app.db.session import (
     AsyncSessionLocal,
+    close_db,
     engine,
     get_async_session,
     init_db,
-    close_db,
 )
 
 __all__ = [

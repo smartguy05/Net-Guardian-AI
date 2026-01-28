@@ -1,8 +1,8 @@
 """Authentication API endpoints."""
 
 import secrets
-from datetime import datetime, timezone
-from typing import Annotated, List, Optional
+from datetime import UTC, datetime
+from typing import Annotated
 from uuid import uuid4
 
 import structlog
@@ -18,9 +18,9 @@ from app.core.exceptions import AuthenticationError
 from app.core.rate_limit import login_rate_limiter
 from app.core.security import (
     UserRole,
+    create_2fa_pending_token,
     create_access_token,
     create_refresh_token,
-    create_2fa_pending_token,
     decode_token,
     hash_password,
     verify_password,
@@ -30,7 +30,6 @@ from app.db.session import get_async_session
 from app.models.user import User
 from app.services.oidc_service import (
     OIDCError,
-    OIDCService,
     get_oidc_service,
 )
 from app.services.totp_service import get_totp_service
@@ -55,7 +54,7 @@ class LoginResponse(BaseModel):
     token_type: str = "bearer"
     user: "UserResponse"
     requires_2fa: bool = False
-    pending_token: Optional[str] = None
+    pending_token: str | None = None
 
 
 class UserResponse(BaseModel):
@@ -81,7 +80,7 @@ class TwoFactorSetupResponse(BaseModel):
     """Response when initiating 2FA setup."""
     secret: str
     qr_code: str
-    backup_codes: List[str]
+    backup_codes: list[str]
 
 
 class TwoFactorVerifyRequest(BaseModel):
@@ -98,7 +97,7 @@ class TwoFactorEnableRequest(BaseModel):
 class TwoFactorDisableRequest(BaseModel):
     """Request to disable 2FA."""
     password: str
-    code: Optional[str] = None
+    code: str | None = None
 
 
 # Dependency to get current user
@@ -207,7 +206,7 @@ async def login(
         )
 
     # Update last login
-    user.last_login = datetime.now(timezone.utc)
+    user.last_login = datetime.now(UTC)
     await session.commit()
 
     # Reset rate limit on successful login
@@ -409,7 +408,7 @@ async def verify_2fa(
             )
 
     # Update last login
-    user.last_login = datetime.now(timezone.utc)
+    user.last_login = datetime.now(UTC)
     await session.commit()
 
     # Reset rate limit
@@ -549,11 +548,11 @@ async def disable_2fa(
     return {"message": "Two-factor authentication disabled"}
 
 
-@router.post("/2fa/backup-codes", response_model=List[str])
+@router.post("/2fa/backup-codes", response_model=list[str])
 async def regenerate_backup_codes(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> List[str]:
+) -> list[str]:
     """Regenerate backup codes.
 
     This invalidates all existing backup codes.
@@ -764,7 +763,7 @@ async def oidc_callback(
                 )
                 user.role = role
 
-            user.last_login = datetime.now(timezone.utc)
+            user.last_login = datetime.now(UTC)
 
         else:
             # Try to find existing local user by email to link accounts
@@ -787,7 +786,7 @@ async def oidc_callback(
                 user.external_id = sub
                 user.external_provider = "authentik"
                 user.is_external = True
-                user.last_login = datetime.now(timezone.utc)
+                user.last_login = datetime.now(UTC)
 
                 # Update role based on groups
                 if user.role != role:
@@ -833,7 +832,7 @@ async def oidc_callback(
                     role=role,
                     is_active=True,
                     must_change_password=False,
-                    last_login=datetime.now(timezone.utc),
+                    last_login=datetime.now(UTC),
                     external_id=sub,
                     external_provider="authentik",
                     is_external=True,

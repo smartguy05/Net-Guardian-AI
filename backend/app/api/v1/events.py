@@ -1,23 +1,23 @@
 """Event query API endpoints."""
 
 from datetime import datetime
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
-from app.models.raw_event import RawEvent, EventType, EventSeverity
+from app.models.raw_event import EventSeverity, EventType, RawEvent
 from app.models.user import User
 from app.services.export_service import (
-    ExportService,
     EVENTS_COLUMNS,
     EVENTS_HEADERS,
+    ExportService,
 )
 
 router = APIRouter()
@@ -30,22 +30,22 @@ class EventResponse(BaseModel):
     source_id: str
     event_type: str
     severity: str
-    client_ip: Optional[str]
-    target_ip: Optional[str]
-    domain: Optional[str]
-    port: Optional[int]
-    protocol: Optional[str]
-    action: Optional[str]
+    client_ip: str | None
+    target_ip: str | None
+    domain: str | None
+    port: int | None
+    protocol: str | None
+    action: str | None
     raw_message: str
-    parsed_fields: Dict[str, Any]
-    device_id: Optional[str]
+    parsed_fields: dict[str, Any]
+    device_id: str | None
 
     class Config:
         from_attributes = True
 
 
 class EventListResponse(BaseModel):
-    items: List[EventResponse]
+    items: list[EventResponse]
     total: int
 
 
@@ -72,14 +72,14 @@ def _event_to_response(event: RawEvent) -> EventResponse:
 async def list_events(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = None,
-    event_type: Optional[EventType] = None,
-    severity: Optional[EventSeverity] = None,
-    device_id: Optional[UUID] = None,
-    domain_contains: Optional[str] = None,
-    client_ip: Optional[str] = None,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    source_id: str | None = None,
+    event_type: EventType | None = None,
+    severity: EventSeverity | None = None,
+    device_id: UUID | None = None,
+    domain_contains: str | None = None,
+    client_ip: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> EventListResponse:
@@ -124,11 +124,11 @@ async def list_events(
 async def list_dns_events(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    device_id: Optional[UUID] = None,
-    domain_contains: Optional[str] = None,
+    device_id: UUID | None = None,
+    domain_contains: str | None = None,
     blocked_only: bool = False,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> EventListResponse:
@@ -165,15 +165,15 @@ async def list_dns_events(
 
 async def _get_events_for_export(
     session: AsyncSession,
-    source_id: Optional[str] = None,
-    event_type: Optional[EventType] = None,
-    severity: Optional[EventSeverity] = None,
-    device_id: Optional[UUID] = None,
-    domain_contains: Optional[str] = None,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    source_id: str | None = None,
+    event_type: EventType | None = None,
+    severity: EventSeverity | None = None,
+    device_id: UUID | None = None,
+    domain_contains: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     limit: int = 10000,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Get events formatted for export."""
     query = select(RawEvent)
 
@@ -213,13 +213,13 @@ async def _get_events_for_export(
 async def export_events_csv(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = None,
-    event_type: Optional[EventType] = None,
-    severity: Optional[EventSeverity] = None,
-    device_id: Optional[UUID] = None,
-    domain_contains: Optional[str] = None,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    source_id: str | None = None,
+    event_type: EventType | None = None,
+    severity: EventSeverity | None = None,
+    device_id: UUID | None = None,
+    domain_contains: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     limit: int = Query(10000, ge=1, le=100000),
 ) -> Response:
     """Export events to CSV format."""
@@ -249,13 +249,13 @@ async def export_events_csv(
 async def export_events_pdf(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = None,
-    event_type: Optional[EventType] = None,
-    severity: Optional[EventSeverity] = None,
-    device_id: Optional[UUID] = None,
-    domain_contains: Optional[str] = None,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    source_id: str | None = None,
+    event_type: EventType | None = None,
+    severity: EventSeverity | None = None,
+    device_id: UUID | None = None,
+    domain_contains: str | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     limit: int = Query(1000, ge=1, le=10000),
 ) -> Response:
     """Export events to PDF format."""

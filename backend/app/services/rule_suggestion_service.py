@@ -2,9 +2,10 @@
 
 import hashlib
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 from uuid import UUID
 
 import structlog
@@ -12,6 +13,8 @@ from sqlalchemy import and_, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
+from app.models.alert import AlertSeverity
+from app.models.detection_rule import DetectionRule
 from app.models.semantic_analysis import (
     IrregularLog,
     SemanticAnalysisRun,
@@ -20,8 +23,6 @@ from app.models.semantic_analysis import (
     SuggestedRuleStatus,
     SuggestedRuleType,
 )
-from app.models.detection_rule import DetectionRule
-from app.models.alert import AlertSeverity
 from app.services.llm_providers.base import SuggestedRuleData
 
 logger = structlog.get_logger()
@@ -31,10 +32,10 @@ logger = structlog.get_logger()
 class RuleFilters:
     """Filters for suggested rule queries."""
 
-    source_id: Optional[str] = None
-    status: Optional[SuggestedRuleStatus] = None
-    rule_type: Optional[SuggestedRuleType] = None
-    search: Optional[str] = None
+    source_id: str | None = None
+    status: SuggestedRuleStatus | None = None
+    rule_type: SuggestedRuleType | None = None
+    search: str | None = None
     limit: int = 100
     offset: int = 0
 
@@ -43,7 +44,7 @@ class RuleFilters:
 class HistoryFilters:
     """Filters for rule history queries."""
 
-    status: Optional[SuggestedRuleStatus] = None
+    status: SuggestedRuleStatus | None = None
     limit: int = 100
     offset: int = 0
 
@@ -51,7 +52,7 @@ class HistoryFilters:
 class RuleSuggestionService:
     """Service for managing LLM-generated detection rule suggestions."""
 
-    def __init__(self, session: Optional[AsyncSession] = None):
+    def __init__(self, session: AsyncSession | None = None):
         """Initialize the service.
 
         Args:
@@ -65,7 +66,7 @@ class RuleSuggestionService:
             return self._session
         return AsyncSessionLocal()
 
-    def compute_rule_hash(self, rule_config: Dict[str, Any]) -> str:
+    def compute_rule_hash(self, rule_config: dict[str, Any]) -> str:
         """Compute a deterministic hash for deduplication.
 
         Args:
@@ -106,8 +107,8 @@ class RuleSuggestionService:
         analysis_run: SemanticAnalysisRun,
         irregular_log: IrregularLog,
         suggested_rule: SuggestedRuleData,
-        source_id: Optional[str] = None,
-    ) -> Optional[SuggestedRule]:
+        source_id: str | None = None,
+    ) -> SuggestedRule | None:
         """Create a rule suggestion from LLM response.
 
         Args:
@@ -181,9 +182,9 @@ class RuleSuggestionService:
     async def create_rules_from_analysis(
         self,
         analysis_run: SemanticAnalysisRun,
-        logs_data: List[Dict[str, Any]],
-        suggested_rules: List[SuggestedRuleData],
-    ) -> List[SuggestedRule]:
+        logs_data: list[dict[str, Any]],
+        suggested_rules: list[SuggestedRuleData],
+    ) -> list[SuggestedRule]:
         """Create multiple rule suggestions from an analysis run.
 
         Args:
@@ -214,7 +215,7 @@ class RuleSuggestionService:
 
         return created_rules
 
-    async def get_irregular_log(self, irregular_id: UUID) -> Optional[IrregularLog]:
+    async def get_irregular_log(self, irregular_id: UUID) -> IrregularLog | None:
         """Get an irregular log by ID (helper method).
 
         Args:
@@ -237,7 +238,7 @@ class RuleSuggestionService:
 
     async def get_pending_rules(
         self,
-        filters: Optional[RuleFilters] = None,
+        filters: RuleFilters | None = None,
     ) -> Sequence[SuggestedRule]:
         """Get pending rule suggestions.
 
@@ -300,7 +301,7 @@ class RuleSuggestionService:
             if should_close:
                 await session.close()
 
-    async def get_rule_by_id(self, rule_id: UUID) -> Optional[SuggestedRule]:
+    async def get_rule_by_id(self, rule_id: UUID) -> SuggestedRule | None:
         """Get a suggested rule by ID.
 
         Args:
@@ -361,8 +362,8 @@ class RuleSuggestionService:
         rule_id: UUID,
         user_id: UUID,
         enable: bool = False,
-        config_overrides: Optional[Dict[str, Any]] = None,
-    ) -> Optional[SuggestedRule]:
+        config_overrides: dict[str, Any] | None = None,
+    ) -> SuggestedRule | None:
         """Approve a suggested rule.
 
         Args:
@@ -445,7 +446,7 @@ class RuleSuggestionService:
         rule_id: UUID,
         user_id: UUID,
         reason: str,
-    ) -> Optional[SuggestedRule]:
+    ) -> SuggestedRule | None:
         """Reject a suggested rule.
 
         Args:
@@ -573,8 +574,8 @@ class RuleSuggestionService:
     def _map_rule_config_to_conditions(
         self,
         rule_type: SuggestedRuleType,
-        config: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        config: dict[str, Any],
+    ) -> dict[str, Any]:
         """Map LLM rule config to detection rule conditions.
 
         Args:
@@ -661,7 +662,7 @@ class RuleSuggestionService:
 
 
 def get_rule_suggestion_service(
-    session: Optional[AsyncSession] = None,
+    session: AsyncSession | None = None,
 ) -> RuleSuggestionService:
     """Factory function to get a RuleSuggestionService instance.
 

@@ -1,36 +1,34 @@
 """Semantic analysis API endpoints."""
 
 from datetime import datetime
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin
 from app.db.session import get_async_session
-from app.models.user import User
+from app.models.log_source import LogSource
 from app.models.semantic_analysis import (
     LLMProvider,
     SuggestedRuleStatus,
     SuggestedRuleType,
 )
+from app.models.user import User
+from app.services.llm_providers.claude_provider import ClaudeLLMProvider
+from app.services.pattern_service import PatternFilters, get_pattern_service
+from app.services.rule_suggestion_service import (
+    HistoryFilters,
+    RuleFilters,
+    get_rule_suggestion_service,
+)
 from app.services.semantic_analysis_service import (
-    SemanticAnalysisService,
     IrregularLogFilters,
     get_semantic_analysis_service,
 )
-from app.services.pattern_service import PatternService, PatternFilters, get_pattern_service
-from app.services.rule_suggestion_service import (
-    RuleSuggestionService,
-    RuleFilters,
-    HistoryFilters,
-    get_rule_suggestion_service,
-)
-from app.services.llm_providers.claude_provider import ClaudeLLMProvider
-from app.models.log_source import LogSource
-from sqlalchemy import select
 
 router = APIRouter()
 
@@ -45,11 +43,11 @@ class SemanticConfigResponse(BaseModel):
     source_id: str
     enabled: bool
     llm_provider: str
-    ollama_model: Optional[str]
+    ollama_model: str | None
     rarity_threshold: int
     batch_size: int
     batch_interval_minutes: int
-    last_run_at: Optional[str]
+    last_run_at: str | None
     created_at: str
     updated_at: str
 
@@ -59,12 +57,12 @@ class SemanticConfigResponse(BaseModel):
 class UpdateConfigRequest(BaseModel):
     """Request to update semantic analysis config."""
 
-    enabled: Optional[bool] = None
-    llm_provider: Optional[str] = Field(None, description="'claude' or 'ollama'")
-    ollama_model: Optional[str] = Field(None, description="Model to use if provider is ollama")
-    rarity_threshold: Optional[int] = Field(None, ge=1, le=100)
-    batch_size: Optional[int] = Field(None, ge=1, le=500)
-    batch_interval_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    enabled: bool | None = None
+    llm_provider: str | None = Field(None, description="'claude' or 'ollama'")
+    ollama_model: str | None = Field(None, description="Model to use if provider is ollama")
+    rarity_threshold: int | None = Field(None, ge=1, le=100)
+    batch_size: int | None = Field(None, ge=1, le=500)
+    batch_interval_minutes: int | None = Field(None, ge=1, le=1440)
 
 
 class PatternResponse(BaseModel):
@@ -87,7 +85,7 @@ class PatternResponse(BaseModel):
 class PatternListResponse(BaseModel):
     """List of patterns."""
 
-    items: List[PatternResponse]
+    items: list[PatternResponse]
     total: int
 
 
@@ -104,13 +102,13 @@ class IrregularLogResponse(BaseModel):
     event_id: str
     event_timestamp: str
     source_id: str
-    pattern_id: Optional[str]
+    pattern_id: str | None
     reason: str
     llm_reviewed: bool
-    llm_response: Optional[str]
-    severity_score: Optional[float]
+    llm_response: str | None
+    severity_score: float | None
     reviewed_by_user: bool
-    reviewed_at: Optional[str]
+    reviewed_at: str | None
     created_at: str
 
     model_config = {"from_attributes": True}
@@ -119,7 +117,7 @@ class IrregularLogResponse(BaseModel):
 class IrregularLogListResponse(BaseModel):
     """List of irregular logs."""
 
-    items: List[IrregularLogResponse]
+    items: list[IrregularLogResponse]
     total: int
 
 
@@ -129,13 +127,13 @@ class AnalysisRunResponse(BaseModel):
     id: str
     source_id: str
     started_at: str
-    completed_at: Optional[str]
+    completed_at: str | None
     status: str
     events_scanned: int
     irregulars_found: int
     llm_provider: str
-    llm_response_summary: Optional[str]
-    error_message: Optional[str]
+    llm_response_summary: str | None
+    error_message: str | None
     created_at: str
 
     model_config = {"from_attributes": True}
@@ -144,7 +142,7 @@ class AnalysisRunResponse(BaseModel):
 class AnalysisRunListResponse(BaseModel):
     """List of analysis runs."""
 
-    items: List[AnalysisRunResponse]
+    items: list[AnalysisRunResponse]
 
 
 class TriggerAnalysisResponse(BaseModel):
@@ -162,15 +160,15 @@ class SemanticStatsResponse(BaseModel):
     total_irregular_logs: int
     pending_review: int
     high_severity_count: int
-    last_run_at: Optional[str]
-    last_run_status: Optional[str]
+    last_run_at: str | None
+    last_run_status: str | None
 
 
 class SuggestedRuleResponse(BaseModel):
     """Suggested rule response."""
 
     id: str
-    source_id: Optional[str]
+    source_id: str | None
     analysis_run_id: str
     irregular_log_id: str
     name: str
@@ -178,13 +176,13 @@ class SuggestedRuleResponse(BaseModel):
     reason: str
     benefit: str
     rule_type: str
-    rule_config: Dict[str, Any]
+    rule_config: dict[str, Any]
     status: str
     enabled: bool
     rule_hash: str
-    reviewed_by: Optional[str]
-    reviewed_at: Optional[str]
-    rejection_reason: Optional[str]
+    reviewed_by: str | None
+    reviewed_at: str | None
+    rejection_reason: str | None
     created_at: str
     updated_at: str
 
@@ -194,7 +192,7 @@ class SuggestedRuleResponse(BaseModel):
 class SuggestedRuleListResponse(BaseModel):
     """List of suggested rules."""
 
-    items: List[SuggestedRuleResponse]
+    items: list[SuggestedRuleResponse]
     total: int
 
 
@@ -202,7 +200,7 @@ class ApproveRuleRequest(BaseModel):
     """Request to approve a rule."""
 
     enable: bool = Field(False, description="Whether to enable the rule immediately")
-    config_overrides: Optional[Dict[str, Any]] = Field(
+    config_overrides: dict[str, Any] | None = Field(
         None, description="Optional modifications to rule config"
     )
 
@@ -228,7 +226,7 @@ class RuleHistoryResponse(BaseModel):
 class RuleHistoryListResponse(BaseModel):
     """List of rule history entries."""
 
-    items: List[RuleHistoryResponse]
+    items: list[RuleHistoryResponse]
 
 
 class ResearchQueryResponse(BaseModel):
@@ -347,11 +345,11 @@ def _history_to_response(history) -> RuleHistoryResponse:
 # --- Configuration Endpoints ---
 
 
-@router.get("/config", response_model=List[SemanticConfigResponse])
+@router.get("/config", response_model=list[SemanticConfigResponse])
 async def list_configs(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> List[SemanticConfigResponse]:
+) -> list[SemanticConfigResponse]:
     """List all semantic analysis configurations."""
     service = get_semantic_analysis_service(session)
     configs = await service.get_all_configs()
@@ -397,7 +395,7 @@ async def update_config(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid llm_provider. Must be 'claude' or 'ollama'",
+                detail="Invalid llm_provider. Must be 'claude' or 'ollama'",
             )
     elif existing:
         llm_provider = existing.llm_provider
@@ -422,11 +420,11 @@ async def update_config(
 async def list_patterns(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = Query(None, description="Filter by source"),
-    is_ignored: Optional[bool] = Query(None, description="Filter by ignored status"),
+    source_id: str | None = Query(None, description="Filter by source"),
+    is_ignored: bool | None = Query(None, description="Filter by ignored status"),
     rare_only: bool = Query(False, description="Only show rare patterns"),
     rarity_threshold: int = Query(3, ge=1, description="Threshold for rarity"),
-    search: Optional[str] = Query(None, description="Search in pattern text"),
+    search: str | None = Query(None, description="Search in pattern text"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ) -> PatternListResponse:
@@ -457,7 +455,7 @@ async def list_patterns_for_source(
     source_id: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    is_ignored: Optional[bool] = Query(None),
+    is_ignored: bool | None = Query(None),
     rare_only: bool = Query(False),
     rarity_threshold: int = Query(3, ge=1),
     page: int = Query(1, ge=1),
@@ -511,12 +509,12 @@ async def update_pattern(
 async def list_irregular_logs(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = Query(None),
-    llm_reviewed: Optional[bool] = Query(None),
-    reviewed_by_user: Optional[bool] = Query(None),
-    min_severity: Optional[float] = Query(None, ge=0, le=1),
-    start_date: Optional[datetime] = Query(None),
-    end_date: Optional[datetime] = Query(None),
+    source_id: str | None = Query(None),
+    llm_reviewed: bool | None = Query(None),
+    reviewed_by_user: bool | None = Query(None),
+    min_severity: float | None = Query(None, ge=0, le=1),
+    start_date: datetime | None = Query(None),
+    end_date: datetime | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ) -> IrregularLogListResponse:
@@ -699,7 +697,7 @@ Example good queries:
 async def list_runs(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = Query(None),
+    source_id: str | None = Query(None),
     limit: int = Query(50, ge=1, le=100),
 ) -> AnalysisRunListResponse:
     """List analysis runs."""
@@ -802,10 +800,10 @@ async def get_stats_for_source(
 async def list_suggested_rules(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    source_id: Optional[str] = Query(None),
-    status_filter: Optional[str] = Query(None, alias="status"),
-    rule_type: Optional[str] = Query(None),
-    search: Optional[str] = Query(None),
+    source_id: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    rule_type: str | None = Query(None),
+    search: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ) -> SuggestedRuleListResponse:
@@ -820,7 +818,7 @@ async def list_suggested_rules(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status. Must be one of: pending, approved, rejected, implemented",
+                detail="Invalid status. Must be one of: pending, approved, rejected, implemented",
             )
 
     # Parse rule type filter
@@ -831,7 +829,7 @@ async def list_suggested_rules(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid rule_type. Must be one of: pattern_match, threshold, sequence",
+                detail="Invalid rule_type. Must be one of: pattern_match, threshold, sequence",
             )
 
     filters = RuleFilters(
@@ -881,7 +879,7 @@ async def list_pending_rules(
 async def get_rule_history(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[str] = Query(None, alias="status"),
+    status_filter: str | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
 ) -> RuleHistoryListResponse:
@@ -895,7 +893,7 @@ async def get_rule_history(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid status filter",
+                detail="Invalid status filter",
             )
 
     filters = HistoryFilters(

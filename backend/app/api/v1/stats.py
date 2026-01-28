@@ -1,18 +1,18 @@
 """Statistics API endpoints."""
 
-from datetime import datetime, timedelta, timezone
-from typing import Annotated, List
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
-from app.models.device import Device, DeviceStatus
-from app.models.raw_event import RawEvent, EventType
 from app.models.alert import Alert, AlertStatus
+from app.models.device import Device, DeviceStatus
+from app.models.raw_event import EventType, RawEvent
 from app.models.user import User
 
 router = APIRouter()
@@ -55,7 +55,7 @@ async def get_overview(
     _current_user: Annotated[User, Depends(get_current_user)],
 ) -> OverviewStats:
     """Get dashboard overview statistics."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     last_24h = now - timedelta(hours=24)
 
     # Device counts
@@ -112,7 +112,7 @@ async def get_overview(
     # Source count
     from app.models.log_source import LogSource
     source_count_result = await session.execute(
-        select(func.count()).select_from(LogSource).where(LogSource.enabled == True)
+        select(func.count()).select_from(LogSource).where(LogSource.enabled.is_(True))
     )
     source_count = source_count_result.scalar() or 0
 
@@ -130,15 +130,15 @@ async def get_overview(
     )
 
 
-@router.get("/dns/top-domains", response_model=List[TopDomain])
+@router.get("/dns/top-domains", response_model=list[TopDomain])
 async def get_top_domains(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
     hours: int = Query(24, ge=1, le=720),
     limit: int = Query(10, ge=1, le=100),
-) -> List[TopDomain]:
+) -> list[TopDomain]:
     """Get top queried domains."""
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
 
     result = await session.execute(
         select(RawEvent.domain, func.count().label("count"))
@@ -153,15 +153,15 @@ async def get_top_domains(
     return [TopDomain(domain=row.domain, count=row.count) for row in result]
 
 
-@router.get("/dns/timeline", response_model=List[TimelineBucket])
+@router.get("/dns/timeline", response_model=list[TimelineBucket])
 async def get_dns_timeline(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
     hours: int = Query(24, ge=1, le=720),
     bucket_minutes: int = Query(60, ge=5, le=1440),
-) -> List[TimelineBucket]:
+) -> list[TimelineBucket]:
     """Get DNS query counts over time."""
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
 
     # Use TimescaleDB time_bucket function
     result = await session.execute(
@@ -181,15 +181,15 @@ async def get_dns_timeline(
     ]
 
 
-@router.get("/devices/activity", response_model=List[DeviceActivity])
+@router.get("/devices/activity", response_model=list[DeviceActivity])
 async def get_device_activity(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
     hours: int = Query(24, ge=1, le=720),
     limit: int = Query(10, ge=1, le=100),
-) -> List[DeviceActivity]:
+) -> list[DeviceActivity]:
     """Get most active devices by event count."""
-    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+    since = datetime.now(UTC) - timedelta(hours=hours)
 
     result = await session.execute(
         select(

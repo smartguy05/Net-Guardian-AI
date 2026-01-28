@@ -1,9 +1,9 @@
 """Security utilities for authentication and authorization."""
 
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 import bcrypt
 from jose import JWTError, jwt
@@ -88,8 +88,8 @@ def generate_secure_password(length: int = 16) -> str:
 def create_access_token(
     subject: str,
     role: UserRole,
-    expires_delta: Optional[timedelta] = None,
-    additional_claims: Optional[Dict[str, Any]] = None,
+    expires_delta: timedelta | None = None,
+    additional_claims: dict[str, Any] | None = None,
 ) -> str:
     """Create a JWT access token.
 
@@ -103,9 +103,9 @@ def create_access_token(
         Encoded JWT token string.
     """
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             minutes=settings.jwt_access_token_expire_minutes
         )
 
@@ -114,7 +114,7 @@ def create_access_token(
         "role": role.value,
         "exp": expire,
         "type": "access",
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     }
 
     if additional_claims:
@@ -125,7 +125,7 @@ def create_access_token(
 
 def create_refresh_token(
     subject: str,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT refresh token.
 
@@ -137,9 +137,9 @@ def create_refresh_token(
         Encoded JWT refresh token string.
     """
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             days=settings.jwt_refresh_token_expire_days
         )
 
@@ -147,7 +147,7 @@ def create_refresh_token(
         "sub": subject,
         "exp": expire,
         "type": "refresh",
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
         "jti": secrets.token_urlsafe(16),  # Unique token ID for revocation
     }
 
@@ -156,7 +156,7 @@ def create_refresh_token(
 
 def create_2fa_pending_token(
     subject: str,
-    expires_delta: Optional[timedelta] = None,
+    expires_delta: timedelta | None = None,
 ) -> str:
     """Create a temporary token for 2FA verification.
 
@@ -171,21 +171,21 @@ def create_2fa_pending_token(
         Encoded JWT token string.
     """
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+        expire = datetime.now(UTC) + timedelta(minutes=5)
 
     to_encode = {
         "sub": subject,
         "exp": expire,
         "type": "2fa_pending",
-        "iat": datetime.now(timezone.utc),
+        "iat": datetime.now(UTC),
     }
 
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
 
 
-def decode_token(token: str) -> Dict[str, Any]:
+def decode_token(token: str) -> dict[str, Any]:
     """Decode and validate a JWT token.
 
     Args:

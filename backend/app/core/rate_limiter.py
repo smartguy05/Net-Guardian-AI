@@ -9,18 +9,13 @@ Provides:
 
 import asyncio
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Callable, Optional
 
 import structlog
 from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
-from app.config import settings
-from app.services.metrics_service import (
-    HTTP_REQUESTS_TOTAL,
-)
 
 logger = structlog.get_logger()
 
@@ -132,7 +127,7 @@ class InMemoryRateLimiter:
     async def is_allowed(
         self,
         key: str,
-        config: Optional[RateLimitConfig] = None,
+        config: RateLimitConfig | None = None,
     ) -> tuple[bool, dict]:
         """Check if request is allowed.
 
@@ -196,7 +191,7 @@ class RedisRateLimiter:
     async def is_allowed(
         self,
         key: str,
-        config: Optional[RateLimitConfig] = None,
+        config: RateLimitConfig | None = None,
     ) -> tuple[bool, dict]:
         """Check if request is allowed using Redis.
 
@@ -294,7 +289,7 @@ def get_rate_limit_key(request: Request) -> str:
 
 
 # Global rate limiter instance
-_rate_limiter: Optional[InMemoryRateLimiter] = None
+_rate_limiter: InMemoryRateLimiter | None = None
 
 
 def get_rate_limiter() -> InMemoryRateLimiter:
@@ -312,7 +307,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self,
         app,
         enabled: bool = True,
-        exclude_paths: Optional[list[str]] = None,
+        exclude_paths: list[str] | None = None,
     ):
         """Initialize middleware.
 
@@ -381,7 +376,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 def rate_limit(
     requests_per_minute: int = 60,
-    key_func: Optional[Callable[[Request], str]] = None,
+    key_func: Callable[[Request], str] | None = None,
 ):
     """Decorator for rate limiting specific endpoints.
 

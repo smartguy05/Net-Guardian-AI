@@ -8,11 +8,12 @@ Provides:
 """
 
 import asyncio
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar
+from typing import TypeVar
 
 import httpx
 import structlog
@@ -48,10 +49,10 @@ class CollectorError:
     category: ErrorCategory
     message: str
     source_id: str
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     retryable: bool = True
     details: dict = field(default_factory=dict)
-    original_exception: Optional[Exception] = None
+    original_exception: Exception | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for logging/storage."""
@@ -160,7 +161,7 @@ class CircuitBreaker:
 
         self._state = self.State.CLOSED
         self._failure_count = 0
-        self._last_failure_time: Optional[datetime] = None
+        self._last_failure_time: datetime | None = None
         self._half_open_calls = 0
         self._lock = asyncio.Lock()
 
@@ -193,7 +194,7 @@ class CircuitBreaker:
         """Record a failed call."""
         async with self._lock:
             self._failure_count += 1
-            self._last_failure_time = datetime.now(timezone.utc)
+            self._last_failure_time = datetime.now(UTC)
 
             if self._state == self.State.HALF_OPEN:
                 # Failed during recovery test - reopen
@@ -224,7 +225,7 @@ class CircuitBreaker:
                 # Check if recovery timeout has passed
                 if self._last_failure_time:
                     elapsed = (
-                        datetime.now(timezone.utc) - self._last_failure_time
+                        datetime.now(UTC) - self._last_failure_time
                     ).total_seconds()
                     if elapsed >= self.recovery_timeout:
                         # Try half-open
@@ -250,8 +251,8 @@ class RetryHandler:
 
     def __init__(
         self,
-        config: Optional[RetryConfig] = None,
-        circuit_breaker: Optional[CircuitBreaker] = None,
+        config: RetryConfig | None = None,
+        circuit_breaker: CircuitBreaker | None = None,
     ):
         """Initialize retry handler.
 
@@ -305,7 +306,7 @@ class RetryHandler:
         Raises:
             The last exception if all retries fail.
         """
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
         attempts = 0
 
         while attempts <= self.config.max_retries:
@@ -455,7 +456,7 @@ class ErrorTracker:
 
     async def get_recent_errors(
         self,
-        minutes: Optional[int] = None,
+        minutes: int | None = None,
     ) -> list[CollectorError]:
         """Get recent errors.
 
@@ -469,7 +470,7 @@ class ErrorTracker:
             if minutes is None:
                 return list(self._errors)
 
-            cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
+            cutoff = datetime.now(UTC) - timedelta(minutes=minutes)
             return [e for e in self._errors if e.timestamp >= cutoff]
 
     async def get_error_rate(self, minutes: int = 5) -> float:

@@ -1,11 +1,17 @@
 """Raw event model for normalized log events."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Enum as SQLEnum, Float, ForeignKey, Index, String, Text
+if TYPE_CHECKING:
+    from app.models.device import Device
+
+from sqlalchemy import DateTime, Float, ForeignKey, Index, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -91,28 +97,28 @@ class RawEvent(Base):
     )
 
     # Network context
-    client_ip: Mapped[Optional[str]] = mapped_column(
+    client_ip: Mapped[str | None] = mapped_column(
         String(45),
         nullable=True,
         index=True,
     )
-    target_ip: Mapped[Optional[str]] = mapped_column(
+    target_ip: Mapped[str | None] = mapped_column(
         String(255),  # Increased to accommodate CNAMEs from DNS responses
         nullable=True,
     )
-    domain: Mapped[Optional[str]] = mapped_column(
+    domain: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
         index=True,
     )
-    port: Mapped[Optional[int]] = mapped_column(
+    port: Mapped[int | None] = mapped_column(
         nullable=True,
     )
-    protocol: Mapped[Optional[str]] = mapped_column(
+    protocol: Mapped[str | None] = mapped_column(
         String(10),
         nullable=True,
     )
-    action: Mapped[Optional[str]] = mapped_column(
+    action: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
     )
@@ -122,32 +128,32 @@ class RawEvent(Base):
         Text,
         nullable=False,
     )
-    parsed_fields: Mapped[Dict[str, Any]] = mapped_column(
+    parsed_fields: Mapped[dict[str, Any]] = mapped_column(
         JSONB,
         default=dict,
         nullable=False,
     )
 
     # DNS-specific fields (for quick access without parsing JSON)
-    query_type: Mapped[Optional[str]] = mapped_column(
+    query_type: Mapped[str | None] = mapped_column(
         String(10),
         nullable=True,
     )
-    response_status: Mapped[Optional[str]] = mapped_column(
+    response_status: Mapped[str | None] = mapped_column(
         String(50),
         nullable=True,
     )
-    blocked_reason: Mapped[Optional[str]] = mapped_column(
+    blocked_reason: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
-    entropy_score: Mapped[Optional[float]] = mapped_column(
+    entropy_score: Mapped[float | None] = mapped_column(
         Float,
         nullable=True,
     )
 
     # Device association
-    device_id: Mapped[Optional[UUID]] = mapped_column(
+    device_id: Mapped[UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="SET NULL"),
         nullable=True,
@@ -155,7 +161,7 @@ class RawEvent(Base):
     )
 
     # Relationships
-    device: Mapped[Optional["Device"]] = relationship(
+    device: Mapped[Device | None] = relationship(
         "Device",
         back_populates="raw_events",
     )

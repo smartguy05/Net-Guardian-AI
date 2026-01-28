@@ -1,7 +1,7 @@
 """ntfy.sh notification service for push notifications."""
 
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 import structlog
@@ -19,9 +19,9 @@ class NtfyService:
 
     def __init__(
         self,
-        server_url: Optional[str] = None,
-        default_topic: Optional[str] = None,
-        auth_token: Optional[str] = None,
+        server_url: str | None = None,
+        default_topic: str | None = None,
+        auth_token: str | None = None,
     ):
         """Initialize the ntfy service.
 
@@ -42,12 +42,12 @@ class NtfyService:
     async def send_notification(
         self,
         message: str,
-        title: Optional[str] = None,
-        topic: Optional[str] = None,
+        title: str | None = None,
+        topic: str | None = None,
         priority: int = 3,
-        tags: Optional[list[str]] = None,
-        click_url: Optional[str] = None,
-        actions: Optional[list[Dict[str, Any]]] = None,
+        tags: list[str] | None = None,
+        click_url: str | None = None,
+        actions: list[dict[str, Any]] | None = None,
     ) -> bool:
         """Send a notification via ntfy.
 
@@ -129,9 +129,9 @@ class NtfyService:
         alert_title: str,
         alert_description: str,
         severity: str,
-        topic: Optional[str] = None,
-        device_name: Optional[str] = None,
-        alert_id: Optional[str] = None,
+        topic: str | None = None,
+        device_name: str | None = None,
+        alert_id: str | None = None,
     ) -> bool:
         """Send an alert notification.
 
@@ -162,7 +162,7 @@ class NtfyService:
             message_parts.append(f"Device: {device_name}")
         if alert_id:
             message_parts.append(f"Alert ID: {alert_id}")
-        message_parts.append(f"Time: {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}")
+        message_parts.append(f"Time: {datetime.now(UTC).strftime('%H:%M:%S UTC')}")
 
         message = "\n".join(message_parts)
 
@@ -178,8 +178,8 @@ class NtfyService:
         self,
         anomaly_type: str,
         description: str,
-        topic: Optional[str] = None,
-        device_name: Optional[str] = None,
+        topic: str | None = None,
+        device_name: str | None = None,
     ) -> bool:
         """Send an anomaly detection notification."""
         title = f"Anomaly Detected: {anomaly_type}"
@@ -187,7 +187,7 @@ class NtfyService:
         message_parts = [description]
         if device_name:
             message_parts.append(f"Device: {device_name}")
-        message_parts.append(f"Time: {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}")
+        message_parts.append(f"Time: {datetime.now(UTC).strftime('%H:%M:%S UTC')}")
 
         message = "\n".join(message_parts)
 
@@ -203,9 +203,9 @@ class NtfyService:
         self,
         device_name: str,
         action: str,  # "quarantined" or "released"
-        topic: Optional[str] = None,
-        reason: Optional[str] = None,
-        performed_by: Optional[str] = None,
+        topic: str | None = None,
+        reason: str | None = None,
+        performed_by: str | None = None,
     ) -> bool:
         """Send a device quarantine/release notification."""
         is_quarantine = action.lower() == "quarantined"
@@ -224,7 +224,7 @@ class NtfyService:
             message_parts.append(f"Reason: {reason}")
         if performed_by:
             message_parts.append(f"By: {performed_by}")
-        message_parts.append(f"Time: {datetime.now(timezone.utc).strftime('%H:%M:%S UTC')}")
+        message_parts.append(f"Time: {datetime.now(UTC).strftime('%H:%M:%S UTC')}")
 
         message = "\n".join(message_parts)
 
@@ -236,7 +236,7 @@ class NtfyService:
             tags=tags,
         )
 
-    async def test_connection(self, topic: Optional[str] = None) -> Dict[str, Any]:
+    async def test_connection(self, topic: str | None = None) -> dict[str, Any]:
         """Test ntfy connection by sending a test notification.
 
         Args:
@@ -279,7 +279,7 @@ class NtfyService:
 
 
 # Global service instance
-_ntfy_service: Optional[NtfyService] = None
+_ntfy_service: NtfyService | None = None
 
 
 def get_ntfy_service() -> NtfyService:

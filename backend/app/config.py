@@ -2,9 +2,8 @@
 
 import json
 from functools import lru_cache
-from typing import List, Union
 
-from pydantic import field_validator, computed_field
+from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -57,7 +56,7 @@ class Settings(BaseSettings):
 
     @computed_field
     @property
-    def cors_origins(self) -> List[str]:
+    def cors_origins(self) -> list[str]:
         """Parse CORS origins from raw string."""
         v = self.cors_origins_raw
         if not v:

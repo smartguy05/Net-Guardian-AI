@@ -1,8 +1,8 @@
 """Nginx access and error log parser."""
 
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -75,7 +75,7 @@ class NginxParser(BaseParser):
         log_type: "access" or "error" (default: auto-detect)
     """
 
-    def __init__(self, config: Dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.log_type = self.config.get("log_type", "auto")
 
@@ -87,19 +87,19 @@ class NginxParser(BaseParser):
             try:
                 # Try without timezone
                 dt = datetime.strptime(time_str, "%d/%b/%Y:%H:%M:%S")
-                return dt.replace(tzinfo=timezone.utc)
+                return dt.replace(tzinfo=UTC)
             except ValueError:
-                return datetime.now(timezone.utc)
+                return datetime.now(UTC)
 
     def _parse_error_timestamp(self, time_str: str) -> datetime:
         """Parse nginx error log timestamp format: 2026/01/28 12:34:56"""
         try:
             dt = datetime.strptime(time_str, "%Y/%m/%d %H:%M:%S")
-            return dt.replace(tzinfo=timezone.utc)
+            return dt.replace(tzinfo=UTC)
         except ValueError:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
 
-    def _parse_request(self, request: str) -> Dict[str, str]:
+    def _parse_request(self, request: str) -> dict[str, str]:
         """Parse HTTP request line into method, path, protocol."""
         parts = request.split(' ', 2)
         result = {
@@ -109,7 +109,7 @@ class NginxParser(BaseParser):
         }
         return result
 
-    def _parse_access_line(self, line: str) -> Optional[ParseResult]:
+    def _parse_access_line(self, line: str) -> ParseResult | None:
         """Parse nginx access log line."""
         match = NGINX_COMBINED_PATTERN.match(line)
         if not match:
@@ -161,13 +161,13 @@ class NginxParser(BaseParser):
             },
         )
 
-    def _parse_error_line(self, line: str) -> Optional[ParseResult]:
+    def _parse_error_line(self, line: str) -> ParseResult | None:
         """Parse nginx error log line."""
         match = NGINX_ERROR_PATTERN.match(line)
         if not match:
             # Fallback for unmatched error lines
             return ParseResult(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 event_type=EventType.SYSTEM,
                 severity=EventSeverity.ERROR,
                 raw_message=line,
@@ -202,7 +202,7 @@ class NginxParser(BaseParser):
             },
         )
 
-    def parse(self, raw_data: Any) -> List[ParseResult]:
+    def parse(self, raw_data: Any) -> list[ParseResult]:
         """Parse nginx log lines."""
         results = []
 

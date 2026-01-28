@@ -1,15 +1,15 @@
 """Ollama LLM provider for local semantic log analysis."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 import structlog
 
 from app.config import settings
 from app.services.llm_providers.base import (
+    SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
     BaseLLMProvider,
     LLMAnalysisResult,
-    SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
 )
 
 logger = structlog.get_logger()
@@ -20,7 +20,7 @@ class OllamaLLMProvider(BaseLLMProvider):
 
     def __init__(
         self,
-        url: Optional[str] = None,
+        url: str | None = None,
         model: str = "llama3.2",
         timeout: int = 120,
     ):
@@ -48,7 +48,7 @@ class OllamaLLMProvider(BaseLLMProvider):
         except Exception:
             return False
 
-    async def list_models(self) -> List[str]:
+    async def list_models(self) -> list[str]:
         """List available models on the Ollama server.
 
         Returns:
@@ -66,8 +66,8 @@ class OllamaLLMProvider(BaseLLMProvider):
 
     async def analyze_logs(
         self,
-        logs: List[Dict[str, Any]],
-        context: Optional[str] = None,
+        logs: list[dict[str, Any]],
+        context: str | None = None,
     ) -> LLMAnalysisResult:
         """Analyze logs using Ollama.
 

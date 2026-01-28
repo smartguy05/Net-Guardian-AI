@@ -3,7 +3,6 @@
 import base64
 import io
 import secrets
-from typing import List, Optional, Tuple
 
 import pyotp
 import qrcode
@@ -39,7 +38,7 @@ class TOTPService:
         return pyotp.random_base32()
 
     @staticmethod
-    def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> List[str]:
+    def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:
         """Generate backup codes for account recovery.
 
         Args:
@@ -56,7 +55,7 @@ class TOTPService:
         return codes
 
     @staticmethod
-    def hash_backup_codes(codes: List[str]) -> List[str]:
+    def hash_backup_codes(codes: list[str]) -> list[str]:
         """Hash backup codes for secure storage.
 
         For simplicity, we store codes in plain text but in a real production
@@ -141,8 +140,8 @@ class TOTPService:
 
     @staticmethod
     def verify_backup_code(
-        code: str, stored_codes: List[str]
-    ) -> Tuple[bool, Optional[int]]:
+        code: str, stored_codes: list[str]
+    ) -> tuple[bool, int | None]:
         """Verify a backup code.
 
         Args:
@@ -167,7 +166,7 @@ class TOTPService:
 
 
 # Global service instance
-_totp_service: Optional[TOTPService] = None
+_totp_service: TOTPService | None = None
 
 
 def get_totp_service() -> TOTPService:

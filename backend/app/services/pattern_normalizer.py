@@ -2,7 +2,6 @@
 
 import hashlib
 import re
-from typing import Tuple
 
 
 class PatternNormalizer:
@@ -129,7 +128,7 @@ class PatternNormalizer:
     _compiled_patterns = [(re.compile(p), r) for p, r in _patterns]
 
     @classmethod
-    def normalize(cls, message: str) -> Tuple[str, str]:
+    def normalize(cls, message: str) -> tuple[str, str]:
         """Normalize a log message by replacing dynamic values with placeholders.
 
         Args:

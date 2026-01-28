@@ -6,7 +6,6 @@ and API abuse.
 
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import structlog
 from fastapi import HTTPException, Request, status
@@ -20,7 +19,7 @@ class RateLimitEntry:
 
     count: int
     window_start: float
-    blocked_until: Optional[float] = None
+    blocked_until: float | None = None
 
 
 class RateLimiter:
@@ -46,7 +45,7 @@ class RateLimiter:
         self.requests_per_window = requests_per_window
         self.window_seconds = window_seconds
         self.block_seconds = block_seconds
-        self._entries: Dict[str, RateLimitEntry] = {}
+        self._entries: dict[str, RateLimitEntry] = {}
 
     def _get_client_key(self, request: Request) -> str:
         """Get a unique key for the client.

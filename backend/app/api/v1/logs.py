@@ -1,10 +1,10 @@
 """Log ingestion API endpoints for push sources."""
 
-import structlog
-from datetime import datetime, timezone
-from typing import Annotated, Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Annotated, Any
 from uuid import uuid4
 
+import structlog
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_async_session
 from app.models.log_source import LogSource, SourceType
-from app.models.raw_event import RawEvent, EventType, EventSeverity
+from app.models.raw_event import EventSeverity, EventType, RawEvent
 from app.services.semantic_analysis_service import get_semantic_analysis_service
 
 logger = structlog.get_logger()
@@ -22,21 +22,21 @@ router = APIRouter()
 
 # Pydantic schemas
 class EventIngest(BaseModel):
-    timestamp: Optional[datetime] = None
-    event_type: Optional[EventType] = EventType.UNKNOWN
-    severity: Optional[EventSeverity] = EventSeverity.INFO
-    client_ip: Optional[str] = None
-    target_ip: Optional[str] = None
-    domain: Optional[str] = None
-    port: Optional[int] = None
-    protocol: Optional[str] = None
-    action: Optional[str] = None
+    timestamp: datetime | None = None
+    event_type: EventType | None = EventType.UNKNOWN
+    severity: EventSeverity | None = EventSeverity.INFO
+    client_ip: str | None = None
+    target_ip: str | None = None
+    domain: str | None = None
+    port: int | None = None
+    protocol: str | None = None
+    action: str | None = None
     raw_message: str
-    parsed_fields: Dict[str, Any] = {}
+    parsed_fields: dict[str, Any] = {}
 
 
 class BatchIngestRequest(BaseModel):
-    events: List[EventIngest]
+    events: list[EventIngest]
 
 
 class IngestResponse(BaseModel):
@@ -55,7 +55,7 @@ async def verify_source_api_key(
         select(LogSource).where(
             LogSource.api_key == x_source_api_key,
             LogSource.source_type == SourceType.API_PUSH,
-            LogSource.enabled == True,
+            LogSource.enabled.is_(True),
         )
     )
     source = result.scalar_one_or_none()
@@ -84,7 +84,7 @@ async def ingest_events(
             message="No events to process",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     events_stored = 0
 
     for event_data in request.events:
@@ -115,8 +115,8 @@ async def ingest_events(
 
     # Process events for semantic analysis (non-blocking, best-effort)
     try:
-        semantic_service = get_semantic_analysis_service(session)
-        for event_data in request.events:
+        _semantic_service = get_semantic_analysis_service(session)
+        for _event_data in request.events:
             # Re-query the event to get the ORM object
             # Note: For better performance, could store events in a list and process after commit
             pass  # Semantic analysis is handled async by scheduler for batch efficiency
@@ -148,15 +148,15 @@ async def ingest_json_events(
 
 class SyslogEvent(BaseModel):
     message: str
-    facility: Optional[int] = None
-    severity: Optional[int] = None
-    timestamp: Optional[datetime] = None
-    hostname: Optional[str] = None
-    app_name: Optional[str] = None
+    facility: int | None = None
+    severity: int | None = None
+    timestamp: datetime | None = None
+    hostname: str | None = None
+    app_name: str | None = None
 
 
 class SyslogBatchRequest(BaseModel):
-    events: List[SyslogEvent]
+    events: list[SyslogEvent]
 
 
 @router.post("/ingest/syslog", response_model=IngestResponse)
@@ -174,7 +174,7 @@ async def ingest_syslog_events(
             message="No events to process",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     events_stored = 0
 
     # Map syslog severity to our severity enum

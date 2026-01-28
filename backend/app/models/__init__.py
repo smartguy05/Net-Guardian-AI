@@ -1,35 +1,35 @@
 """SQLAlchemy models for NetGuardian AI."""
 
-from app.models.base import Base, TimestampMixin
-from app.models.user import User
-from app.models.device import Device, DeviceType, DeviceStatus
-from app.models.log_source import LogSource, SourceType, ParserType
-from app.models.raw_event import RawEvent, EventType, EventSeverity
 from app.models.alert import Alert, AlertSeverity, AlertStatus
+from app.models.anomaly import AnomalyDetection, AnomalyStatus, AnomalyType
+from app.models.audit_log import AuditAction, AuditLog
+from app.models.base import Base, TimestampMixin
 from app.models.detection_rule import DetectionRule
-from app.models.device_baseline import DeviceBaseline, BaselineType, BaselineStatus
-from app.models.anomaly import AnomalyDetection, AnomalyType, AnomalyStatus
-from app.models.audit_log import AuditLog, AuditAction
+from app.models.device import Device, DeviceStatus, DeviceType
+from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
+from app.models.log_source import LogSource, ParserType, SourceType
 from app.models.playbook import (
-    Playbook,
-    PlaybookExecution,
-    PlaybookTriggerType,
-    PlaybookActionType,
-    PlaybookStatus,
     ExecutionStatus,
+    Playbook,
+    PlaybookActionType,
+    PlaybookExecution,
+    PlaybookStatus,
+    PlaybookTriggerType,
 )
+from app.models.raw_event import EventSeverity, EventType, RawEvent
 from app.models.semantic_analysis import (
+    AnalysisRunStatus,
+    IrregularLog,
+    LLMProvider,
     LogPattern,
     SemanticAnalysisConfig,
-    IrregularLog,
     SemanticAnalysisRun,
     SuggestedRule,
     SuggestedRuleHistory,
-    LLMProvider,
-    AnalysisRunStatus,
     SuggestedRuleStatus,
     SuggestedRuleType,
 )
+from app.models.user import User
 
 __all__ = [
     "Base",

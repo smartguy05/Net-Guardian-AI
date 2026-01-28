@@ -1,18 +1,17 @@
 """Network topology API endpoints."""
 
-from typing import Optional
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select, func, and_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
-from app.models.user import User
 from app.models.device import Device
 from app.models.raw_event import RawEvent
+from app.models.user import User
 
 router = APIRouter(prefix="/topology", tags=["topology"])
 
@@ -24,10 +23,10 @@ class TopologyNode(BaseModel):
     label: str
     type: str  # device, router, internet, unknown
     status: str
-    ip_address: Optional[str] = None
-    mac_address: Optional[str] = None
-    manufacturer: Optional[str] = None
-    device_type: Optional[str] = None
+    ip_address: str | None = None
+    mac_address: str | None = None
+    manufacturer: str | None = None
+    device_type: str | None = None
     event_count_24h: int = 0
     tags: list[str] = []
     is_quarantined: bool = False
@@ -62,7 +61,7 @@ async def get_network_topology(
 
     Returns nodes (devices) and links (connections) based on traffic patterns.
     """
-    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+    cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
     # Get all devices
     device_query = select(Device)
@@ -104,7 +103,7 @@ async def get_network_topology(
         .group_by(RawEvent.device_id, RawEvent.domain, RawEvent.target_ip)
     )
     conn_result = await session.execute(connection_query)
-    connections = list(conn_result)
+    _connections = list(conn_result)  # TODO: Use for device-to-device links
 
     # Build nodes
     nodes: list[TopologyNode] = []
@@ -220,7 +219,7 @@ async def get_device_connections(
     current_user: User = Depends(get_current_user),
 ):
     """Get connection details for a specific device."""
-    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=hours)
+    cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 
     # Get top domains/IPs this device has connected to
     query = (

@@ -1,15 +1,14 @@
 """Anomaly detection API endpoints."""
 
-from datetime import datetime
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.auth import get_current_user, require_operator, require_admin
+from app.api.v1.auth import get_current_user, require_admin, require_operator
 from app.db.session import get_async_session
 from app.models.alert import AlertSeverity
 from app.models.anomaly import AnomalyDetection, AnomalyStatus, AnomalyType
@@ -28,12 +27,12 @@ class AnomalyResponse(BaseModel):
     score: float
     status: str
     description: str
-    details: Dict[str, Any]
-    baseline_comparison: Dict[str, Any]
+    details: dict[str, Any]
+    baseline_comparison: dict[str, Any]
     detected_at: str
-    alert_id: Optional[str]
-    reviewed_by: Optional[str]
-    reviewed_at: Optional[str]
+    alert_id: str | None
+    reviewed_by: str | None
+    reviewed_at: str | None
     created_at: str
     updated_at: str
 
@@ -42,7 +41,7 @@ class AnomalyResponse(BaseModel):
 
 
 class AnomalyListResponse(BaseModel):
-    items: List[AnomalyResponse]
+    items: list[AnomalyResponse]
     total: int
 
 
@@ -58,15 +57,15 @@ class DetectionRunRequest(BaseModel):
 class DetectionRunResponse(BaseModel):
     anomalies_detected: int
     alerts_created: int
-    anomalies: List[AnomalyResponse]
+    anomalies: list[AnomalyResponse]
 
 
 class BulkDetectionResponse(BaseModel):
     devices_checked: int
     anomalies_detected: int
     alerts_created: int
-    by_type: Dict[str, int]
-    by_severity: Dict[str, int]
+    by_type: dict[str, int]
+    by_severity: dict[str, int]
     errors: int
 
 
@@ -94,10 +93,10 @@ def _anomaly_to_response(anomaly: AnomalyDetection) -> AnomalyResponse:
 async def list_anomalies(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    device_id: Optional[UUID] = None,
-    anomaly_type: Optional[AnomalyType] = None,
-    severity: Optional[AlertSeverity] = None,
-    status_filter: Optional[AnomalyStatus] = Query(None, alias="status"),
+    device_id: UUID | None = None,
+    anomaly_type: AnomalyType | None = None,
+    severity: AlertSeverity | None = None,
+    status_filter: AnomalyStatus | None = Query(None, alias="status"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> AnomalyListResponse:
@@ -133,7 +132,7 @@ async def list_anomalies(
 async def list_active_anomalies(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-    min_severity: Optional[AlertSeverity] = None,
+    min_severity: AlertSeverity | None = None,
     limit: int = Query(100, ge=1, le=1000),
 ) -> AnomalyListResponse:
     """List all active anomalies."""
@@ -150,8 +149,8 @@ async def list_active_anomalies(
 async def get_device_anomalies(
     device_id: UUID,
     _current_user: Annotated[User, Depends(get_current_user)],
-    status_filter: Optional[AnomalyStatus] = Query(None, alias="status"),
-    anomaly_type: Optional[AnomalyType] = None,
+    status_filter: AnomalyStatus | None = Query(None, alias="status"),
+    anomaly_type: AnomalyType | None = None,
     limit: int = Query(100, ge=1, le=1000),
 ) -> AnomalyListResponse:
     """Get all anomalies for a specific device."""
@@ -269,7 +268,7 @@ async def run_detection_for_all_devices(
 async def get_anomaly_stats(
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Get summary statistics for anomalies."""
     # Count by status
     status_counts = {}
