@@ -128,7 +128,7 @@ export interface AlertListResponse {
 }
 
 // Log Source types
-export type SourceType = 'api_pull' | 'file_watch' | 'api_push';
+export type SourceType = 'api_pull' | 'file_watch' | 'api_push' | 'udp_listen';
 export type ParserType = 'adguard' | 'authentik' | 'unifi' | 'pfsense' | 'json' | 'syslog' | 'nginx' | 'custom' | 'ollama' | 'endpoint' | 'netflow' | 'sflow' | 'loki';
 
 export interface CreateSourceRequest {

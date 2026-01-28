@@ -525,6 +525,7 @@ export const helpContent: Record<string, HelpContent> = {
           'API Pull: NetGuardian polls an external API on an interval',
           'File Watch: Monitors a log file for new entries',
           'API Push: External systems send logs to NetGuardian',
+          'UDP Listen: Receive syslog/NetFlow/sFlow via UDP (for NAS, routers, switches)',
         ],
       },
       {

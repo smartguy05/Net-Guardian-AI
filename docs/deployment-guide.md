@@ -426,9 +426,27 @@ Add to `docker-compose.yml` collector service:
 ```yaml
 collector:
   ports:
+    - "5514:5514/udp"   # Syslog (NAS, routers, switches)
     - "2055:2055/udp"   # NetFlow
     - "6343:6343/udp"   # sFlow
 ```
+
+### Configuring Syslog Sources
+
+**Synology NAS:**
+1. Open DSM > Log Center > Log Sending
+2. Create new destination:
+   - Server: `<netguardian-ip>`
+   - Port: `5514`
+   - Protocol: `UDP`
+   - Format: `BSD (RFC 3164)` or `IETF (RFC 5424)`
+3. Select logs to forward (System, Connection, File Transfer, etc.)
+
+**Generic Router/Switch:**
+Most network devices support syslog forwarding. Configure:
+- Syslog server: `<netguardian-ip>`
+- Port: `5514`
+- Protocol: `UDP`
 
 ### Configuring Network Devices
 

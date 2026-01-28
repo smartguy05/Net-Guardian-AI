@@ -272,7 +272,7 @@ Admin users can configure log sources:
    - **API Pull:** Fetch from REST APIs (AdGuard, UniFi, etc.)
    - **File Watch:** Monitor log files
    - **API Push:** Receive events via webhook
-   - **UDP Listen:** Receive NetFlow/sFlow data
+   - **UDP Listen:** Receive syslog, NetFlow, or sFlow via UDP
 
 ### API Pull Configuration
 
@@ -313,6 +313,35 @@ To receive network flow data:
 2. Select parser type: **netflow** or **sflow**
 3. Configure the UDP port (default: 2055 for NetFlow, 6343 for sFlow)
 4. Configure your router/switch to send flow data to NetGuardian
+
+### Syslog Sources (NAS, Routers, Switches)
+
+To receive syslog from devices like Synology NAS, routers, or switches:
+
+1. Create a **UDP Listen** source
+2. Select parser type: **syslog**
+3. Configure the UDP port (default: 5514 to avoid privileged port 514)
+4. **Important:** Expose the UDP port in your Docker configuration:
+   ```yaml
+   collector:
+     ports:
+       - "5514:5514/udp"
+   ```
+5. Configure your device to send syslog to NetGuardian's IP and port
+
+**Synology NAS Configuration:**
+1. Open DSM > Log Center > Log Sending
+2. Click Create and configure:
+   - Server: NetGuardian server IP
+   - Port: 5514
+   - Protocol: UDP
+   - Format: BSD (RFC 3164) or IETF (RFC 5424)
+3. Select which logs to send (System, Connection, File Transfer, etc.)
+
+**Supported Syslog Formats:**
+- RFC 3164 (BSD syslog)
+- RFC 5424 (IETF syslog with structured data)
+- Simple syslog without PRI
 
 ### Grafana Loki Sources
 

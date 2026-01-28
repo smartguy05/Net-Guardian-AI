@@ -1813,3 +1813,41 @@ Comprehensive step-by-step guide covering:
 - Total tests: 488 → 804
 - New test files created: 8
 - Existing files improved: 5
+
+---
+
+## Synology NAS Syslog Support (January 2026)
+
+### UDP Listen Source Type UI - COMPLETE
+- [x] Added `udp_listen` to SourceType in `frontend/src/types/index.ts`
+- [x] Added UDP Listen option to `sourceTypeOptions` in `AddSourceModal.tsx`
+  - Icon: Radio (from lucide-react)
+  - Description: "Receive syslog/NetFlow/sFlow via UDP (Synology, routers, etc.)"
+- [x] Updated `parserTypeOptions` to add `udp_listen` compatibility:
+  - syslog: now supports `['file_watch', 'api_push', 'udp_listen']`
+  - netflow: `['udp_listen']`
+  - sflow: `['udp_listen']`
+- [x] Added UDP configuration state variables:
+  - `udpPort` (default: 5514)
+  - `udpHost` (default: "0.0.0.0")
+- [x] Added UDP validation in `validateStep2()`
+- [x] Added UDP config building in `buildConfig()`
+- [x] Added UDP Listen Configuration UI:
+  - Port number input (1-65535)
+  - Bind address input
+  - Docker port mapping reminder with dynamic port display
+- [x] Frontend builds successfully with TypeScript
+
+### Documentation Updates - COMPLETE
+- [x] `frontend/src/content/helpContent.ts` - Added UDP Listen to source types tips
+- [x] `docs/user-guide.md` - Added "Syslog Sources (NAS, Routers, Switches)" section with Synology NAS instructions
+- [x] `frontend/src/pages/DocsPage.tsx` - Enhanced UDP Listener description with use cases and Docker note
+- [x] `docs/configuration.md` - Added "UDP Listen Sources" section with config options and port examples
+- [x] `docs/deployment-guide.md` - Added syslog port (5514) and Synology NAS configuration instructions
+- [x] `README.md` - Updated udp_listen description to include syslog, added nginx parser to table
+
+### Test Coverage Verified - COMPLETE
+- Backend tests: 934 passed (8 errors from OIDC tests requiring database - unrelated)
+- UDP listener collector: 25 existing tests covering initialization, lifecycle, collect, protocol
+- Syslog parser: 17 existing tests covering RFC 3164/5424, severity mapping, facility parsing
+- No additional tests needed - existing coverage is comprehensive

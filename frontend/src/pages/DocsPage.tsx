@@ -1288,8 +1288,14 @@ curl -X POST http://localhost:8000/api/v1/semantic/runs/{source_id}/trigger \\
                 </div>
                 <div className="p-4 rounded-lg bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700">
                   <h3 className="font-medium mb-1">UDP Listener</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Receives syslog, NetFlow, or sFlow data over UDP from network devices.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <strong>Use cases:</strong> Synology NAS, routers, switches, firewalls, any device that supports syslog forwarding.
+                  </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Receives syslog-style events over UDP.
+                    <strong>Note:</strong> Requires exposing a UDP port in your Docker configuration (e.g., <code className="bg-gray-200 dark:bg-zinc-700 px-1 rounded">5514:5514/udp</code>).
                   </p>
                 </div>
               </div>
@@ -1299,11 +1305,12 @@ curl -X POST http://localhost:8000/api/v1/semantic/runs/{source_id}/trigger \\
               <h2 className="text-2xl font-bold mb-4">Parser Types</h2>
               <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
                 <li><strong>adguard</strong> - AdGuard Home DNS query logs</li>
-                <li><strong>syslog</strong> - Standard syslog format</li>
+                <li><strong>syslog</strong> - Standard syslog format (RFC 3164/5424) for NAS, routers, switches</li>
                 <li><strong>json</strong> - Generic JSON log parsing</li>
                 <li><strong>custom</strong> - User-defined parsing rules</li>
                 <li><strong>netflow</strong> - NetFlow v5/v9 data</li>
                 <li><strong>sflow</strong> - sFlow traffic data</li>
+                <li><strong>nginx</strong> - Nginx access and error logs</li>
                 <li><strong>endpoint</strong> - Endpoint agent events</li>
                 <li><strong>ollama</strong> - Ollama LLM interaction logs</li>
               </ul>

@@ -319,7 +319,7 @@ curl -X POST http://localhost:8000/api/v1/sources \
 - **api_pull** - Poll remote APIs on a schedule
 - **file_watch** - Watch local log files for changes
 - **api_push** - Receive logs via HTTP POST with API key
-- **udp_listen** - Receive UDP packets (NetFlow, sFlow)
+- **udp_listen** - Receive UDP packets (syslog, NetFlow, sFlow)
 
 ### Supported Parsers
 | Parser | Description |
@@ -335,6 +335,7 @@ curl -X POST http://localhost:8000/api/v1/sources \
 | sflow | sFlow v5 flow data |
 | json | Generic JSON with field mapping |
 | syslog | Standard syslog format (RFC 3164/5424) |
+| nginx | Nginx access and error logs |
 | custom | Regex-based custom format |
 
 ## Development

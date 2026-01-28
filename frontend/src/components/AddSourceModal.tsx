@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Database, Globe, FileText, Upload } from 'lucide-react';
+import { X, Database, Globe, FileText, Upload, Radio } from 'lucide-react';
 import { useCreateSource } from '../api/hooks';
 import type { SourceType, ParserType } from '../types';
 import clsx from 'clsx';
@@ -28,6 +28,12 @@ const sourceTypeOptions: { value: SourceType; label: string; description: string
     description: 'Receive logs via HTTP from external services',
     icon: Upload,
   },
+  {
+    value: 'udp_listen',
+    label: 'UDP Listen',
+    description: 'Receive syslog/NetFlow/sFlow via UDP (Synology, routers, etc.)',
+    icon: Radio,
+  },
 ];
 
 const parserTypeOptions: { value: ParserType; label: string; sourceTypes: SourceType[] }[] = [
@@ -38,8 +44,10 @@ const parserTypeOptions: { value: ParserType; label: string; sourceTypes: Source
   { value: 'loki', label: 'Grafana Loki', sourceTypes: ['api_pull'] },
   { value: 'ollama', label: 'Ollama LLM', sourceTypes: ['api_pull'] },
   { value: 'json', label: 'JSON', sourceTypes: ['api_pull', 'file_watch', 'api_push'] },
-  { value: 'syslog', label: 'Syslog', sourceTypes: ['file_watch', 'api_push'] },
+  { value: 'syslog', label: 'Syslog', sourceTypes: ['file_watch', 'api_push', 'udp_listen'] },
   { value: 'nginx', label: 'Nginx', sourceTypes: ['file_watch'] },
+  { value: 'netflow', label: 'NetFlow', sourceTypes: ['udp_listen'] },
+  { value: 'sflow', label: 'sFlow', sourceTypes: ['udp_listen'] },
   { value: 'custom', label: 'Custom (Regex)', sourceTypes: ['file_watch', 'api_push'] },
 ];
 
@@ -66,6 +74,10 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
   // File Watch config
   const [filePath, setFilePath] = useState('');
 
+  // UDP Listen config
+  const [udpPort, setUdpPort] = useState(5514);
+  const [udpHost, setUdpHost] = useState('0.0.0.0');
+
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -83,6 +95,8 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     setApiKey('');
     setPollInterval(30);
     setFilePath('');
+    setUdpPort(5514);
+    setUdpHost('0.0.0.0');
     setErrors({});
   };
 
@@ -120,6 +134,12 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     if (sourceType === 'file_watch') {
       if (!filePath.trim()) newErrors.filePath = 'File path is required';
       else if (!filePath.startsWith('/')) newErrors.filePath = 'Path must be absolute (start with /)';
+    }
+
+    if (sourceType === 'udp_listen') {
+      if (!udpPort || udpPort < 1 || udpPort > 65535) {
+        newErrors.udpPort = 'Port must be between 1 and 65535';
+      }
     }
 
     setErrors(newErrors);
@@ -163,6 +183,13 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
         path: filePath,
         follow: true,
         encoding: 'utf-8',
+      };
+    }
+
+    if (sourceType === 'udp_listen') {
+      return {
+        port: udpPort,
+        host: udpHost,
       };
     }
 
@@ -455,6 +482,58 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                       Path inside the container. Mount external logs to /logs directory.
                     </p>
                   </div>
+                )}
+
+                {/* UDP Listen Configuration */}
+                {sourceType === 'udp_listen' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        UDP Port
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={65535}
+                        value={udpPort}
+                        onChange={(e) => setUdpPort(parseInt(e.target.value) || 5514)}
+                        className={clsx('input w-32', errors.udpPort && 'border-danger-500')}
+                      />
+                      {errors.udpPort && <p className="mt-1 text-sm text-danger-600">{errors.udpPort}</p>}
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Port to listen on. Default: 5514 (avoids privileged port 514)
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Bind Address
+                      </label>
+                      <input
+                        type="text"
+                        value={udpHost}
+                        onChange={(e) => setUdpHost(e.target.value)}
+                        placeholder="0.0.0.0"
+                        className="input w-48"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        IP to bind to. Use 0.0.0.0 for all interfaces.
+                      </p>
+                    </div>
+
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-2">
+                        Important: Expose the UDP port in Docker
+                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mb-2">
+                        Add this port mapping to your collector container:
+                      </p>
+                      <code className="block text-xs bg-white dark:bg-zinc-800 p-2 rounded border border-gray-200 dark:border-zinc-600 text-gray-800 dark:text-gray-200">
+                        ports:<br />
+                        &nbsp;&nbsp;- "{udpPort}:{udpPort}/udp"
+                      </code>
+                    </div>
+                  </>
                 )}
 
                 {/* API Push Info */}

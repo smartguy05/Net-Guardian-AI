@@ -244,6 +244,32 @@ CORS_ORIGINS=https://netguardian.example.com,https://admin.example.com
 | `LOG_INGESTION_API_ENABLED` | bool | `true` | Enable API-based log ingestion |
 | `LOG_INGESTION_RATE_LIMIT` | int | `1000` | Events per minute per source |
 
+### UDP Listen Sources (Syslog, NetFlow, sFlow)
+
+UDP Listen sources receive data via UDP protocol. Configure via the UI:
+
+| Config Field | Default | Description |
+|--------------|---------|-------------|
+| `port` | (required) | UDP port to listen on (e.g., 5514 for syslog) |
+| `host` | `0.0.0.0` | Interface to bind to |
+| `queue_size` | `10000` | Max queued datagrams |
+| `allowed_sources` | `[]` | IP whitelist (empty = allow all) |
+
+**Docker Port Exposure Required:**
+
+```yaml
+collector:
+  ports:
+    - "5514:5514/udp"   # Syslog
+    - "2055:2055/udp"   # NetFlow
+    - "6343:6343/udp"   # sFlow
+```
+
+**Common Syslog Ports:**
+- `514` - Standard syslog (requires privileged access)
+- `5514` - Recommended non-privileged alternative
+- `1514` - Alternative non-privileged port
+
 ---
 
 ## AdGuard Home Integration
