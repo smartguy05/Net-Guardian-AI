@@ -26,6 +26,7 @@ services:
     container_name: netguardian-backend
     restart: unless-stopped
     environment:
+      - NETGUARDIAN_MODE=api
       - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
@@ -122,8 +123,8 @@ services:
     image: apetalous/netguardian-backend:latest
     container_name: netguardian-collector
     restart: unless-stopped
-    command: ["python", "-m", "app.worker"]
     environment:
+      - NETGUARDIAN_MODE=worker
       - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
       - REDIS_URL=redis://redis:6379/0
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
@@ -150,8 +151,8 @@ services:
     image: apetalous/netguardian-backend:latest
     container_name: netguardian-migrations
     restart: "no"
-    command: ["sh", "-c", "alembic upgrade head"]
     environment:
+      - NETGUARDIAN_MODE=migrations
       - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
     depends_on:
       db:

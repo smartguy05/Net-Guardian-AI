@@ -1071,3 +1071,66 @@ When fixing dark theme for modals, ensure these elements have proper styling:
 11. **Placeholder text:** `dark:placeholder-gray-500`
 
 **Common mistake:** Forgetting `dark:text-white` on select options, making them invisible on dark backgrounds.
+
+---
+
+## Docker/Portainer Command Parsing Issues (January 2026)
+
+### Problem: "python -m app.worker: not found"
+
+**Error:** `sh: 1: python -m app.worker: not found`
+
+**Cause:** Portainer (and some Docker orchestration tools) mishandle command overrides. When you enter `python -m app.worker` in Portainer's command field, it wraps the command incorrectly, causing the shell to interpret the entire string as a single command name rather than `python` with arguments.
+
+**Why this happens:**
+1. Portainer may pass the command through `sh -c "command"`
+2. The quoting/escaping gets mangled, resulting in the whole string being treated as one word
+3. This is a known issue with various Docker UIs and orchestration tools
+
+### Solution: NETGUARDIAN_MODE Environment Variable
+
+Instead of relying on command overrides, use an entrypoint script that reads a mode from environment variables:
+
+**docker-entrypoint.sh:**
+```bash
+#!/bin/bash
+MODE="${NETGUARDIAN_MODE:-api}"
+case "$MODE" in
+    api) exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 ;;
+    worker|collector) exec python -m app.worker ;;
+    migrations) exec alembic upgrade head ;;
+esac
+```
+
+**Dockerfile changes:**
+```dockerfile
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD []
+```
+
+**docker-compose usage:**
+```yaml
+collector:
+  image: apetalous/netguardian-backend:latest
+  environment:
+    - NETGUARDIAN_MODE=worker  # Instead of command override
+```
+
+**In Portainer:** Set environment variable `NETGUARDIAN_MODE=worker` instead of modifying the command field.
+
+**Valid modes:**
+- `api` (default) - Run the FastAPI backend
+- `worker` or `collector` - Run the collector worker
+- `migrations` - Run database migrations
+
+### Related Issue: async_session_factory Import Error
+
+**Error:** `ImportError: cannot import name 'async_session_factory' from 'app.db.session'`
+
+**Cause:** Code mismatch between `collector_service.py` (importing `async_session_factory`) and `session.py` (exporting `AsyncSessionLocal`).
+
+**Solution:** Updated `collector_service.py` to import `AsyncSessionLocal` instead of `async_session_factory`.
+
+---
