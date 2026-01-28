@@ -21,7 +21,7 @@ from app.services.collector_service import (
 
 # Import collectors and parsers to register them
 from app.collectors import api_pull_collector, file_collector  # noqa: F401
-from app.parsers import json_parser, syslog_parser, adguard_parser, custom_parser  # noqa: F401
+from app.parsers import json_parser, syslog_parser, adguard_parser, custom_parser, nginx_parser  # noqa: F401
 
 logger = structlog.get_logger()
 
