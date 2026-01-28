@@ -122,7 +122,7 @@ services:
     image: apetalous/netguardian-backend:latest
     container_name: netguardian-collector
     restart: unless-stopped
-    command: ["python", "-m", "app.collectors.worker"]
+    command: ["python", "-m", "app.worker"]
     environment:
       - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
       - REDIS_URL=redis://redis:6379/0

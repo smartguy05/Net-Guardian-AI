@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collectors import get_collector
 from app.collectors.base import BaseCollector
-from app.db.session import async_session_factory
+from app.db.session import AsyncSessionLocal
 from app.events.bus import EventBus, get_event_bus
 from app.models.device import Device
 from app.models.log_source import LogSource
@@ -63,7 +63,7 @@ class CollectorService:
 
     async def _load_sources(self) -> None:
         """Load all enabled log sources and start collectors."""
-        async with async_session_factory() as session:
+        async with AsyncSessionLocal() as session:
             result = await session.execute(
                 select(LogSource).where(LogSource.enabled == True)
             )
@@ -166,7 +166,7 @@ class CollectorService:
         event: ParseResult,
     ) -> None:
         """Handle a single parsed event."""
-        async with async_session_factory() as session:
+        async with AsyncSessionLocal() as session:
             # Try to find/create device from client IP
             device_id = None
             if event.client_ip:
@@ -286,14 +286,14 @@ class CollectorService:
             await self._stop_collector(source_id)
 
         # Get updated source
-        async with async_session_factory() as session:
+        async with AsyncSessionLocal() as session:
             source = await session.get(LogSource, source_id)
             if source and source.enabled:
                 await self._start_collector(source)
 
     async def add_source(self, source_id: str) -> None:
         """Add and start a new source."""
-        async with async_session_factory() as session:
+        async with AsyncSessionLocal() as session:
             source = await session.get(LogSource, source_id)
             if source and source.enabled:
                 await self._start_collector(source)
