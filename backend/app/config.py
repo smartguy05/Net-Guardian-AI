@@ -2,9 +2,9 @@
 
 import json
 from functools import lru_cache
-from typing import List
+from typing import List, Union
 
-from pydantic import field_validator
+from pydantic import field_validator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -52,18 +52,24 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 30
     jwt_refresh_token_expire_days: int = 7
 
-    # CORS
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # CORS - stored as string to avoid pydantic-settings JSON parsing issues
+    cors_origins_raw: str = "http://localhost:3000,http://localhost:5173"
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [origin.strip() for origin in v.split(",")]
-        return v
+    @computed_field
+    @property
+    def cors_origins(self) -> List[str]:
+        """Parse CORS origins from raw string."""
+        v = self.cors_origins_raw
+        if not v:
+            return []
+        # Try JSON first, fall back to comma-separated
+        try:
+            parsed = json.loads(v)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        return [origin.strip() for origin in v.split(",") if origin.strip()]
 
     # Log Ingestion
     log_sources_dir: str = "/logs"

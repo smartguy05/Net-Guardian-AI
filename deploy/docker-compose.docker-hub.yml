@@ -33,7 +33,7 @@ services:
       - JWT_REFRESH_TOKEN_EXPIRE_DAYS=${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - DEBUG=${DEBUG:-false}
-      - CORS_ORIGINS=${CORS_ORIGINS:-["https://net-guardian.apetalo.us"]}
+      - CORS_ORIGINS_RAW=${CORS_ORIGINS_RAW:-https://net-guardian.apetalo.us}
       - LOG_INGESTION_API_ENABLED=${LOG_INGESTION_API_ENABLED:-true}
       - LOG_INGESTION_RATE_LIMIT=${LOG_INGESTION_RATE_LIMIT:-1000}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -122,7 +122,7 @@ services:
     image: apetalous/netguardian-backend:latest
     container_name: netguardian-collector
     restart: unless-stopped
-    command: python -m app.collectors.worker
+    command: ["python", "-m", "app.collectors.worker"]
     environment:
       - DATABASE_URL=postgresql://netguardian:${DB_PASSWORD}@db:5432/netguardian
       - REDIS_URL=redis://redis:6379/0
