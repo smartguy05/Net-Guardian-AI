@@ -1,6 +1,7 @@
 """Collector service for managing and running log collectors."""
 
 import asyncio
+import hashlib
 from datetime import datetime, timezone
 from typing import Dict, Optional
 from uuid import uuid4
@@ -256,10 +257,14 @@ class CollectorService:
             device.last_seen = datetime.now(timezone.utc)
             return device.id
 
-        # Create new device
+        # Create new device with placeholder MAC (must be <=17 chars)
+        # Generate a consistent placeholder MAC from IP hash: 00:00:XX:XX:XX:XX
+        ip_hash = hashlib.md5(ip_address.encode()).hexdigest()[:8]
+        placeholder_mac = f"00:00:{ip_hash[0:2]}:{ip_hash[2:4]}:{ip_hash[4:6]}:{ip_hash[6:8]}"
+
         device = Device(
             id=uuid4(),
-            mac_address=f"unknown-{ip_address}",  # Placeholder until we get MAC
+            mac_address=placeholder_mac,
             ip_addresses=[ip_address],
             hostname=None,
             manufacturer=None,
