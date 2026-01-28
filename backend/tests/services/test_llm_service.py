@@ -274,7 +274,7 @@ Additional notes here."""
             result = service._parse_analysis_response(response)
 
             assert result["confidence"] == 50  # Default confidence
-            assert result["structured"] == False
+            assert result["structured"] is False
             assert "analysis" in result
 
     def test_parse_incident_summary_json_block(self):
