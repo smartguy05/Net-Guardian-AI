@@ -97,7 +97,7 @@ class RawEvent(Base):
         index=True,
     )
     target_ip: Mapped[Optional[str]] = mapped_column(
-        String(45),
+        String(255),  # Increased to accommodate CNAMEs from DNS responses
         nullable=True,
     )
     domain: Mapped[Optional[str]] = mapped_column(
