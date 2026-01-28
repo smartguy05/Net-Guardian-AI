@@ -6,13 +6,13 @@ from uuid import uuid4
 
 import pytest
 
+from app.models.semantic_analysis import AnalysisRunStatus, LLMProvider
 from app.services.semantic_analysis_service import (
+    IrregularLogFilters,
     SemanticAnalysisService,
     SemanticStats,
-    IrregularLogFilters,
     get_semantic_analysis_service,
 )
-from app.models.semantic_analysis import LLMProvider, AnalysisRunStatus
 
 
 class TestSemanticAnalysisServiceInit:

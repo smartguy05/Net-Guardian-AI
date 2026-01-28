@@ -1,7 +1,6 @@
 """Tests for the Grafana Loki parser."""
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.loki_parser import LokiParser
@@ -141,7 +140,7 @@ class TestLokiParser:
 
         assert len(results) == 1
         # Check timestamp is approximately correct (within a second)
-        expected = datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+        expected = datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
         assert abs((results[0].timestamp - expected).total_seconds()) < 1
 
     def test_timestamp_as_integer(self):

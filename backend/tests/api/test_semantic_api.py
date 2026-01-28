@@ -4,7 +4,6 @@ Note: This file contains router configuration tests. For comprehensive API
 endpoint tests with mocked services, see test_semantic_endpoints.py.
 """
 
-import pytest
 
 from app.api.v1.semantic import router
 

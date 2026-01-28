@@ -1,6 +1,5 @@
 """Tests for the pattern normalizer service."""
 
-import pytest
 
 from app.services.pattern_normalizer import PatternNormalizer
 

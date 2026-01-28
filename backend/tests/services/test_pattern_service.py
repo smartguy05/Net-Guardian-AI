@@ -11,16 +11,16 @@ Tests cover:
 - Edge cases
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
 from app.services.pattern_service import (
+    PatternFilters,
     PatternService,
     PatternStats,
-    PatternFilters,
     get_pattern_service,
 )
 

@@ -4,8 +4,8 @@ These factories provide convenient methods for creating test data
 with sensible defaults while allowing customization of specific fields.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from uuid import uuid4
 
 from app.core.security import UserRole
@@ -29,19 +29,19 @@ class DeviceFactory:
     @classmethod
     def build(
         cls,
-        id: Optional[Any] = None,
-        mac_address: Optional[str] = None,
-        ip_addresses: Optional[List[str]] = None,
-        hostname: Optional[str] = None,
-        manufacturer: Optional[str] = None,
+        id: Any | None = None,
+        mac_address: str | None = None,
+        ip_addresses: list[str] | None = None,
+        hostname: str | None = None,
+        manufacturer: str | None = None,
         device_type: DeviceType = DeviceType.PC,
-        profile_tags: Optional[List[str]] = None,
-        first_seen: Optional[datetime] = None,
-        last_seen: Optional[datetime] = None,
+        profile_tags: list[str] | None = None,
+        first_seen: datetime | None = None,
+        last_seen: datetime | None = None,
         status: DeviceStatus = DeviceStatus.ACTIVE,
         baseline_ready: bool = False,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build device data dictionary.
 
         Args:
@@ -61,7 +61,7 @@ class DeviceFactory:
         Returns:
             Dictionary with device data.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cls._counter += 1
 
         data = {
@@ -81,7 +81,7 @@ class DeviceFactory:
         return data
 
     @classmethod
-    def build_batch(cls, count: int, **kwargs) -> List[Dict[str, Any]]:
+    def build_batch(cls, count: int, **kwargs) -> list[dict[str, Any]]:
         """Build multiple device data dictionaries.
 
         Args:
@@ -106,22 +106,22 @@ class EventFactory:
     @classmethod
     def build(
         cls,
-        id: Optional[Any] = None,
-        timestamp: Optional[datetime] = None,
+        id: Any | None = None,
+        timestamp: datetime | None = None,
         source_id: str = "test-source",
         event_type: EventType = EventType.DNS,
         severity: EventSeverity = EventSeverity.INFO,
-        client_ip: Optional[str] = None,
-        target_ip: Optional[str] = None,
-        domain: Optional[str] = None,
-        port: Optional[int] = None,
-        protocol: Optional[str] = None,
-        action: Optional[str] = None,
-        raw_message: Optional[str] = None,
-        parsed_fields: Optional[Dict[str, Any]] = None,
-        device_id: Optional[Any] = None,
+        client_ip: str | None = None,
+        target_ip: str | None = None,
+        domain: str | None = None,
+        port: int | None = None,
+        protocol: str | None = None,
+        action: str | None = None,
+        raw_message: str | None = None,
+        parsed_fields: dict[str, Any] | None = None,
+        device_id: Any | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build event data dictionary.
 
         Args:
@@ -145,7 +145,7 @@ class EventFactory:
             Dictionary with event data.
         """
         cls._counter += 1
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         data = {
             "id": id or uuid4(),
@@ -167,7 +167,7 @@ class EventFactory:
         return data
 
     @classmethod
-    def build_dns(cls, **kwargs) -> Dict[str, Any]:
+    def build_dns(cls, **kwargs) -> dict[str, Any]:
         """Build a DNS event."""
         defaults = {
             "event_type": EventType.DNS,
@@ -179,7 +179,7 @@ class EventFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_firewall(cls, **kwargs) -> Dict[str, Any]:
+    def build_firewall(cls, **kwargs) -> dict[str, Any]:
         """Build a firewall event."""
         defaults = {
             "event_type": EventType.FIREWALL,
@@ -191,7 +191,7 @@ class EventFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_auth(cls, success: bool = True, **kwargs) -> Dict[str, Any]:
+    def build_auth(cls, success: bool = True, **kwargs) -> dict[str, Any]:
         """Build an authentication event."""
         defaults = {
             "event_type": EventType.AUTH,
@@ -207,7 +207,7 @@ class EventFactory:
         count: int,
         time_span_minutes: int = 60,
         **kwargs,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Build multiple event data dictionaries.
 
         Args:
@@ -218,7 +218,7 @@ class EventFactory:
         Returns:
             List of event data dictionaries.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         events = []
         for i in range(count):
             timestamp = now - timedelta(minutes=i * time_span_minutes / count)
@@ -241,25 +241,25 @@ class AlertFactory:
     @classmethod
     def build(
         cls,
-        id: Optional[Any] = None,
-        timestamp: Optional[datetime] = None,
-        device_id: Optional[Any] = None,
-        rule_id: Optional[str] = None,
+        id: Any | None = None,
+        timestamp: datetime | None = None,
+        device_id: Any | None = None,
+        rule_id: str | None = None,
         severity: AlertSeverity = AlertSeverity.MEDIUM,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
-        llm_analysis: Optional[Dict[str, Any]] = None,
+        title: str | None = None,
+        description: str | None = None,
+        llm_analysis: dict[str, Any] | None = None,
         status: AlertStatus = AlertStatus.NEW,
-        actions_taken: Optional[List[Dict[str, Any]]] = None,
-        acknowledged_by: Optional[Any] = None,
-        acknowledged_at: Optional[datetime] = None,
-        resolved_by: Optional[Any] = None,
-        resolved_at: Optional[datetime] = None,
+        actions_taken: list[dict[str, Any]] | None = None,
+        acknowledged_by: Any | None = None,
+        acknowledged_at: datetime | None = None,
+        resolved_by: Any | None = None,
+        resolved_at: datetime | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build alert data dictionary."""
         cls._counter += 1
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         data = {
             "id": id or uuid4(),
@@ -281,7 +281,7 @@ class AlertFactory:
         return data
 
     @classmethod
-    def build_critical(cls, **kwargs) -> Dict[str, Any]:
+    def build_critical(cls, **kwargs) -> dict[str, Any]:
         """Build a critical severity alert."""
         defaults = {
             "severity": AlertSeverity.CRITICAL,
@@ -291,9 +291,9 @@ class AlertFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_acknowledged(cls, user_id: Any = None, **kwargs) -> Dict[str, Any]:
+    def build_acknowledged(cls, user_id: Any = None, **kwargs) -> dict[str, Any]:
         """Build an acknowledged alert."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         defaults = {
             "status": AlertStatus.ACKNOWLEDGED,
             "acknowledged_by": user_id or uuid4(),
@@ -303,9 +303,9 @@ class AlertFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_resolved(cls, user_id: Any = None, **kwargs) -> Dict[str, Any]:
+    def build_resolved(cls, user_id: Any = None, **kwargs) -> dict[str, Any]:
         """Build a resolved alert."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         defaults = {
             "status": AlertStatus.RESOLVED,
             "resolved_by": user_id or uuid4(),
@@ -315,7 +315,7 @@ class AlertFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_batch(cls, count: int, **kwargs) -> List[Dict[str, Any]]:
+    def build_batch(cls, count: int, **kwargs) -> list[dict[str, Any]]:
         """Build multiple alert data dictionaries."""
         return [cls.build(**kwargs) for _ in range(count)]
 
@@ -328,23 +328,23 @@ class UserFactory:
     @classmethod
     def build(
         cls,
-        id: Optional[Any] = None,
-        username: Optional[str] = None,
-        email: Optional[str] = None,
+        id: Any | None = None,
+        username: str | None = None,
+        email: str | None = None,
         password_hash: str = "$2b$12$test_hash_placeholder",
         role: UserRole = UserRole.VIEWER,
         is_active: bool = True,
         must_change_password: bool = False,
-        last_login: Optional[datetime] = None,
-        created_by: Optional[Any] = None,
+        last_login: datetime | None = None,
+        created_by: Any | None = None,
         totp_enabled: bool = False,
-        totp_secret: Optional[str] = None,
-        backup_codes: Optional[List[str]] = None,
+        totp_secret: str | None = None,
+        backup_codes: list[str] | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build user data dictionary."""
         cls._counter += 1
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         data = {
             "id": id or uuid4(),
@@ -364,28 +364,28 @@ class UserFactory:
         return data
 
     @classmethod
-    def build_admin(cls, **kwargs) -> Dict[str, Any]:
+    def build_admin(cls, **kwargs) -> dict[str, Any]:
         """Build an admin user."""
         defaults = {"role": UserRole.ADMIN, "username": f"admin{cls._counter}"}
         defaults.update(kwargs)
         return cls.build(**defaults)
 
     @classmethod
-    def build_operator(cls, **kwargs) -> Dict[str, Any]:
+    def build_operator(cls, **kwargs) -> dict[str, Any]:
         """Build an operator user."""
         defaults = {"role": UserRole.OPERATOR, "username": f"operator{cls._counter}"}
         defaults.update(kwargs)
         return cls.build(**defaults)
 
     @classmethod
-    def build_viewer(cls, **kwargs) -> Dict[str, Any]:
+    def build_viewer(cls, **kwargs) -> dict[str, Any]:
         """Build a viewer user."""
         defaults = {"role": UserRole.VIEWER, "username": f"viewer{cls._counter}"}
         defaults.update(kwargs)
         return cls.build(**defaults)
 
     @classmethod
-    def build_with_2fa(cls, **kwargs) -> Dict[str, Any]:
+    def build_with_2fa(cls, **kwargs) -> dict[str, Any]:
         """Build a user with 2FA enabled."""
         defaults = {
             "totp_enabled": True,
@@ -404,23 +404,23 @@ class SourceFactory:
     @classmethod
     def build(
         cls,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
         source_type: SourceType = SourceType.API_PULL,
         enabled: bool = True,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
         parser_type: ParserType = ParserType.ADGUARD,
-        parser_config: Optional[Dict[str, Any]] = None,
-        api_key: Optional[str] = None,
-        last_event_at: Optional[datetime] = None,
-        last_error: Optional[str] = None,
+        parser_config: dict[str, Any] | None = None,
+        api_key: str | None = None,
+        last_event_at: datetime | None = None,
+        last_error: str | None = None,
         event_count: int = 0,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build log source data dictionary."""
         cls._counter += 1
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         data = {
             "id": id or f"source-{cls._counter}",
@@ -440,7 +440,7 @@ class SourceFactory:
         return data
 
     @classmethod
-    def build_adguard(cls, url: str = "http://192.168.1.1:3000", **kwargs) -> Dict[str, Any]:
+    def build_adguard(cls, url: str = "http://192.168.1.1:3000", **kwargs) -> dict[str, Any]:
         """Build an AdGuard Home source."""
         defaults = {
             "source_type": SourceType.API_PULL,
@@ -456,7 +456,7 @@ class SourceFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_syslog(cls, path: str = "/var/log/syslog", **kwargs) -> Dict[str, Any]:
+    def build_syslog(cls, path: str = "/var/log/syslog", **kwargs) -> dict[str, Any]:
         """Build a syslog file source."""
         defaults = {
             "source_type": SourceType.FILE_WATCH,
@@ -467,7 +467,7 @@ class SourceFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_netflow(cls, port: int = 2055, **kwargs) -> Dict[str, Any]:
+    def build_netflow(cls, port: int = 2055, **kwargs) -> dict[str, Any]:
         """Build a NetFlow UDP source."""
         defaults = {
             "source_type": SourceType.UDP_LISTEN,
@@ -486,16 +486,16 @@ class RuleFactory:
     @classmethod
     def build(
         cls,
-        id: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: str | None = None,
+        name: str | None = None,
+        description: str | None = None,
         severity: AlertSeverity = AlertSeverity.MEDIUM,
         enabled: bool = True,
-        conditions: Optional[Dict[str, Any]] = None,
-        response_actions: Optional[List[Dict[str, Any]]] = None,
+        conditions: dict[str, Any] | None = None,
+        response_actions: list[dict[str, Any]] | None = None,
         cooldown_minutes: int = 60,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build detection rule data dictionary."""
         cls._counter += 1
 
@@ -518,7 +518,7 @@ class RuleFactory:
         return data
 
     @classmethod
-    def build_domain_match(cls, pattern: str, **kwargs) -> Dict[str, Any]:
+    def build_domain_match(cls, pattern: str, **kwargs) -> dict[str, Any]:
         """Build a domain matching rule."""
         defaults = {
             "name": "Domain Match Rule",
@@ -531,7 +531,7 @@ class RuleFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_threshold(cls, field: str, threshold: int, **kwargs) -> Dict[str, Any]:
+    def build_threshold(cls, field: str, threshold: int, **kwargs) -> dict[str, Any]:
         """Build a threshold-based rule."""
         defaults = {
             "name": "Threshold Rule",
@@ -547,7 +547,7 @@ class RuleFactory:
         return cls.build(**defaults)
 
     @classmethod
-    def build_with_quarantine(cls, auto: bool = False, **kwargs) -> Dict[str, Any]:
+    def build_with_quarantine(cls, auto: bool = False, **kwargs) -> dict[str, Any]:
         """Build a rule that triggers quarantine."""
         defaults = {
             "severity": AlertSeverity.HIGH,

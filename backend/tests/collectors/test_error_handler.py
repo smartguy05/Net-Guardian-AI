@@ -9,14 +9,13 @@ Tests cover:
 """
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
 
 from app.collectors.error_handler import (
-    categorize_error,
     CircuitBreaker,
     CollectorCircuitOpenError,
     CollectorError,
@@ -24,6 +23,7 @@ from app.collectors.error_handler import (
     ErrorTracker,
     RetryConfig,
     RetryHandler,
+    categorize_error,
     with_retry,
 )
 
@@ -398,7 +398,7 @@ class TestCircuitBreaker:
         """Should reset to closed state."""
         circuit_breaker._state = CircuitBreaker.State.OPEN
         circuit_breaker._failure_count = 10
-        circuit_breaker._last_failure_time = datetime.now(timezone.utc)
+        circuit_breaker._last_failure_time = datetime.now(UTC)
         circuit_breaker._half_open_calls = 5
 
         circuit_breaker.reset()
@@ -613,7 +613,7 @@ class TestErrorTracker:
             message="Old error",
             source_id="test-source",
         )
-        old_error.timestamp = datetime.now(timezone.utc) - timedelta(minutes=10)
+        old_error.timestamp = datetime.now(UTC) - timedelta(minutes=10)
         await error_tracker.record_error(old_error)
 
         # Recent error

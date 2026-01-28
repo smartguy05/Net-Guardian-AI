@@ -1,19 +1,15 @@
 """Tests for OIDC authentication service."""
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
-from jose import jwt
 
+from app.core.security import UserRole
 from app.services.oidc_service import (
     OIDCConfigError,
     OIDCService,
-    OIDCTokenError,
     get_oidc_service,
 )
-from app.core.security import UserRole
 
 
 class TestOIDCService:

@@ -1,8 +1,9 @@
 """Tests for the NetFlow parser."""
 
 import struct
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.netflow_parser import NetFlowParser
@@ -568,4 +569,4 @@ class TestNetFlowParserFields:
 
         results = parser.parse(data)
         assert len(results) == 1
-        assert (datetime.now(timezone.utc) - results[0].timestamp).total_seconds() < 5
+        assert (datetime.now(UTC) - results[0].timestamp).total_seconds() < 5

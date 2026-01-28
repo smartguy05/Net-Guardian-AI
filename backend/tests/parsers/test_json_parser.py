@@ -1,8 +1,7 @@
 """Tests for the JSON parser."""
 
 import json
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.json_parser import JsonParser
@@ -217,7 +216,7 @@ class TestJsonParser:
 
         assert len(results) == 1
         # Should be recent (within last minute)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         assert (now - results[0].timestamp).total_seconds() < 60
 
     def test_parse_non_dict_items_skipped(self):

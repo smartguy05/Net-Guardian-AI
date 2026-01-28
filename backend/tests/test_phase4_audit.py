@@ -1,9 +1,9 @@
 """Tests for Phase 4 audit service."""
 
-import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
+
+import pytest
 
 from app.models.audit_log import AuditAction, AuditLog
 from app.services.audit_service import AuditService

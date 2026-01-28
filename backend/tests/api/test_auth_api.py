@@ -9,15 +9,13 @@ Tests cover:
 - 2FA setup and verification
 """
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from fastapi import status
-from fastapi.testclient import TestClient
 
-from app.core.security import UserRole, hash_password, create_access_token, create_refresh_token
+from app.core.security import UserRole, create_access_token, create_refresh_token, hash_password
 
 
 class TestLogin:
@@ -47,8 +45,9 @@ class TestLogin:
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.auth import login
         from fastapi import Request
+
+        from app.api.v1.auth import login
 
         # Create mock request
         request = MagicMock(spec=Request)
@@ -76,8 +75,9 @@ class TestLogin:
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.auth import login
         from fastapi import HTTPException, Request
+
+        from app.api.v1.auth import login
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -101,8 +101,9 @@ class TestLogin:
         mock_result.scalar_one_or_none.return_value = None
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.auth import login
         from fastapi import HTTPException, Request
+
+        from app.api.v1.auth import login
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -126,8 +127,9 @@ class TestLogin:
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.auth import login
         from fastapi import HTTPException, Request
+
+        from app.api.v1.auth import login
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -154,8 +156,9 @@ class TestLogin:
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.auth import login
         from fastapi import Request
+
+        from app.api.v1.auth import login
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -245,7 +248,7 @@ class TestGetCurrentUserInfo:
         user.role = UserRole.OPERATOR
         user.is_active = True
         user.must_change_password = False
-        user.last_login = datetime.now(timezone.utc)
+        user.last_login = datetime.now(UTC)
         user.totp_enabled = False
         return user
 
@@ -277,7 +280,7 @@ class TestPasswordChange:
     @pytest.mark.asyncio
     async def test_change_password_success(self, mock_user, mock_db_session):
         """Should change password with valid current password."""
-        from app.api.v1.auth import change_password, PasswordChangeRequest
+        from app.api.v1.auth import PasswordChangeRequest, change_password
 
         request = PasswordChangeRequest(
             current_password="currentpassword",
@@ -292,8 +295,9 @@ class TestPasswordChange:
     @pytest.mark.asyncio
     async def test_change_password_wrong_current(self, mock_user, mock_db_session):
         """Should reject if current password is wrong."""
-        from app.api.v1.auth import change_password, PasswordChangeRequest
         from fastapi import HTTPException
+
+        from app.api.v1.auth import PasswordChangeRequest, change_password
 
         request = PasswordChangeRequest(
             current_password="wrongpassword",
@@ -309,8 +313,9 @@ class TestPasswordChange:
     @pytest.mark.asyncio
     async def test_change_password_same_as_current(self, mock_user, mock_db_session):
         """Should reject if new password is same as current."""
-        from app.api.v1.auth import change_password, PasswordChangeRequest
         from fastapi import HTTPException
+
+        from app.api.v1.auth import PasswordChangeRequest, change_password
 
         request = PasswordChangeRequest(
             current_password="currentpassword",
@@ -373,8 +378,9 @@ class TestTwoFactorSetup:
         """Should reject setup if 2FA is already enabled."""
         mock_user.totp_enabled = True
 
-        from app.api.v1.auth import setup_2fa
         from fastapi import HTTPException
+
+        from app.api.v1.auth import setup_2fa
 
         with pytest.raises(HTTPException) as exc_info:
             await setup_2fa(mock_user, mock_db_session)
@@ -405,9 +411,10 @@ class TestTwoFactorVerification:
     @pytest.mark.asyncio
     async def test_verify_2fa_with_valid_code(self, mock_user, mock_db_session):
         """Should complete login with valid TOTP code."""
-        from app.api.v1.auth import verify_2fa, TwoFactorVerifyRequest
-        from app.core.security import create_2fa_pending_token
         from fastapi import Request
+
+        from app.api.v1.auth import TwoFactorVerifyRequest, verify_2fa
+        from app.core.security import create_2fa_pending_token
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
@@ -436,9 +443,10 @@ class TestTwoFactorVerification:
     @pytest.mark.asyncio
     async def test_verify_2fa_with_invalid_code(self, mock_user, mock_db_session):
         """Should reject invalid TOTP code."""
-        from app.api.v1.auth import verify_2fa, TwoFactorVerifyRequest
-        from app.core.security import create_2fa_pending_token
         from fastapi import HTTPException, Request
+
+        from app.api.v1.auth import TwoFactorVerifyRequest, verify_2fa
+        from app.core.security import create_2fa_pending_token
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
@@ -526,8 +534,9 @@ class TestRoleRequirements:
     @pytest.mark.asyncio
     async def test_require_admin_with_operator(self, mock_current_user_operator):
         """Should reject operator user."""
-        from app.api.v1.auth import require_admin
         from fastapi import HTTPException
+
+        from app.api.v1.auth import require_admin
 
         with pytest.raises(HTTPException) as exc_info:
             await require_admin(mock_current_user_operator)
@@ -545,8 +554,9 @@ class TestRoleRequirements:
     @pytest.mark.asyncio
     async def test_require_operator_with_viewer(self, mock_current_user_viewer):
         """Should reject viewer user."""
-        from app.api.v1.auth import require_operator
         from fastapi import HTTPException
+
+        from app.api.v1.auth import require_operator
 
         with pytest.raises(HTTPException) as exc_info:
             await require_operator(mock_current_user_viewer)

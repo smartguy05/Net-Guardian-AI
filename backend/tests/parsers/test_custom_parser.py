@@ -11,8 +11,7 @@ Tests cover:
 - Edge cases
 """
 
-from datetime import datetime, timezone
-from unittest.mock import patch
+from datetime import UTC, datetime
 
 import pytest
 
@@ -256,9 +255,9 @@ class TestTimestampParsing:
         }
         parser = CustomParser(config)
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         results = parser.parse("No timestamp here")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         assert before <= results[0].timestamp <= after
 
@@ -270,9 +269,9 @@ class TestTimestampParsing:
         }
         parser = CustomParser(config)
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         results = parser.parse("not-a-date Test message")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         assert before <= results[0].timestamp <= after
 
@@ -475,9 +474,9 @@ class TestFallbackBehavior:
         }
         parser = CustomParser(config)
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         results = parser.parse("Test message")
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         assert before <= results[0].timestamp <= after
 

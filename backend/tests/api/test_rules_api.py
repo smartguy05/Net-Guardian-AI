@@ -11,9 +11,8 @@ Tests cover:
 - Test rule against sample event
 """
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import HTTPException, status
@@ -27,7 +26,7 @@ class TestListRules:
     @pytest.mark.asyncio
     async def test_list_rules_returns_all(self, mock_db_session, mock_current_user_operator):
         """Should return all rules with pagination."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         rule1 = MagicMock()
         rule1.id = "rule-001"
@@ -82,7 +81,7 @@ class TestListRules:
     @pytest.mark.asyncio
     async def test_list_rules_filter_by_enabled(self, mock_db_session, mock_current_user_operator):
         """Should filter rules by enabled status."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         enabled_rule = MagicMock()
         enabled_rule.id = "rule-001"
@@ -180,7 +179,7 @@ class TestGetRule:
     @pytest.mark.asyncio
     async def test_get_rule_success(self, mock_db_session, mock_current_user_operator):
         """Should return rule details."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         mock_rule = MagicMock()
         mock_rule.id = "test-rule"
@@ -241,7 +240,7 @@ class TestCreateRule:
         mock_db_session.execute.return_value = mock_result
 
         # Make refresh set the expected attributes on the added rule
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         def refresh_side_effect(rule):
             rule.created_at = now
@@ -250,11 +249,11 @@ class TestCreateRule:
         mock_db_session.refresh = AsyncMock(side_effect=refresh_side_effect)
 
         from app.api.v1.rules import (
-            create_rule,
             CreateRuleRequest,
-            RuleConditionGroup,
-            RuleCondition,
             RuleAction,
+            RuleCondition,
+            RuleConditionGroup,
+            create_rule,
         )
 
         request = CreateRuleRequest(
@@ -306,10 +305,10 @@ class TestCreateRule:
         mock_db_session.execute.return_value = mock_result
 
         from app.api.v1.rules import (
-            create_rule,
             CreateRuleRequest,
-            RuleConditionGroup,
             RuleCondition,
+            RuleConditionGroup,
+            create_rule,
         )
 
         request = CreateRuleRequest(
@@ -348,15 +347,15 @@ class TestUpdateRule:
             conditions={},
             response_actions=[],
             cooldown_minutes=60,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_rule
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.rules import update_rule, UpdateRuleRequest
+        from app.api.v1.rules import UpdateRuleRequest, update_rule
 
         request = UpdateRuleRequest(name="New Name")
 
@@ -373,7 +372,7 @@ class TestUpdateRule:
     @pytest.mark.asyncio
     async def test_update_rule_severity(self, mock_db_session, mock_current_user_admin):
         """Should update rule severity."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         mock_rule = MagicMock()
         mock_rule.id = "test-rule"
@@ -391,7 +390,7 @@ class TestUpdateRule:
         mock_result.scalar_one_or_none.return_value = mock_rule
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.rules import update_rule, UpdateRuleRequest
+        from app.api.v1.rules import UpdateRuleRequest, update_rule
 
         request = UpdateRuleRequest(severity=AlertSeverity.CRITICAL)
 
@@ -411,7 +410,7 @@ class TestUpdateRule:
         mock_result.scalar_one_or_none.return_value = None
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.rules import update_rule, UpdateRuleRequest
+        from app.api.v1.rules import UpdateRuleRequest, update_rule
 
         with pytest.raises(HTTPException) as exc_info:
             await update_rule(
@@ -474,7 +473,7 @@ class TestEnableDisableRule:
     @pytest.mark.asyncio
     async def test_enable_rule(self, mock_db_session, mock_current_user_admin):
         """Should enable a disabled rule."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         mock_rule = MagicMock()
         mock_rule.id = "test-rule"
@@ -506,7 +505,7 @@ class TestEnableDisableRule:
     @pytest.mark.asyncio
     async def test_disable_rule(self, mock_db_session, mock_current_user_admin):
         """Should disable an enabled rule."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         mock_rule = MagicMock()
         mock_rule.id = "test-rule"
@@ -560,7 +559,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_matches(self, mock_current_user_operator):
         """Should return match when conditions match event."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         request = TestRuleRequest(
             conditions=RuleConditionGroup(
@@ -589,7 +588,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_no_match(self, mock_current_user_operator):
         """Should return no match when conditions don't match."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         request = TestRuleRequest(
             conditions=RuleConditionGroup(
@@ -613,7 +612,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_or_logic(self, mock_current_user_operator):
         """Should match with OR logic when one condition matches."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         request = TestRuleRequest(
             conditions=RuleConditionGroup(
@@ -638,7 +637,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_contains_operator(self, mock_current_user_operator):
         """Should match with contains operator."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         request = TestRuleRequest(
             conditions=RuleConditionGroup(
@@ -662,7 +661,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_regex_operator(self, mock_current_user_operator):
         """Should match with regex operator."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         request = TestRuleRequest(
             conditions=RuleConditionGroup(
@@ -686,7 +685,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_comparison_operators(self, mock_current_user_operator):
         """Should handle comparison operators correctly."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         # Test greater than
         request = TestRuleRequest(
@@ -711,7 +710,7 @@ class TestTestRule:
     @pytest.mark.asyncio
     async def test_rule_in_operator(self, mock_current_user_operator):
         """Should handle in operator."""
-        from app.api.v1.rules import test_rule, TestRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup, TestRuleRequest, test_rule
 
         request = TestRuleRequest(
             conditions=RuleConditionGroup(
@@ -748,15 +747,16 @@ class TestRuleConditionValidation:
 
     def test_invalid_operator_rejected(self):
         """Should reject invalid operators."""
-        from app.api.v1.rules import RuleCondition
         from pydantic import ValidationError
+
+        from app.api.v1.rules import RuleCondition
 
         with pytest.raises(ValidationError):
             RuleCondition(field="test", operator="invalid", value="val")
 
     def test_valid_logic_operators(self):
         """Should accept valid logic operators."""
-        from app.api.v1.rules import RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup
 
         for logic in ["and", "or"]:
             group = RuleConditionGroup(
@@ -767,8 +767,9 @@ class TestRuleConditionValidation:
 
     def test_invalid_logic_rejected(self):
         """Should reject invalid logic operators."""
-        from app.api.v1.rules import RuleConditionGroup, RuleCondition
         from pydantic import ValidationError
+
+        from app.api.v1.rules import RuleCondition, RuleConditionGroup
 
         with pytest.raises(ValidationError):
             RuleConditionGroup(
@@ -792,8 +793,9 @@ class TestRuleActionValidation:
 
     def test_invalid_action_type_rejected(self):
         """Should reject invalid action types."""
-        from app.api.v1.rules import RuleAction
         from pydantic import ValidationError
+
+        from app.api.v1.rules import RuleAction
 
         with pytest.raises(ValidationError):
             RuleAction(type="invalid_action")
@@ -816,7 +818,7 @@ class TestCreateRuleRequestValidation:
 
     def test_valid_rule_id_format(self):
         """Should accept valid rule ID formats."""
-        from app.api.v1.rules import CreateRuleRequest, RuleConditionGroup, RuleCondition
+        from app.api.v1.rules import CreateRuleRequest, RuleCondition, RuleConditionGroup
 
         valid_ids = ["rule-001", "my_rule", "test123", "a", "1abc"]
 
@@ -834,8 +836,9 @@ class TestCreateRuleRequestValidation:
 
     def test_invalid_rule_id_rejected(self):
         """Should reject invalid rule ID formats."""
-        from app.api.v1.rules import CreateRuleRequest, RuleConditionGroup, RuleCondition
         from pydantic import ValidationError
+
+        from app.api.v1.rules import CreateRuleRequest, RuleCondition, RuleConditionGroup
 
         invalid_ids = ["_rule", "-rule", "Rule", "RULE", "rule space"]
 

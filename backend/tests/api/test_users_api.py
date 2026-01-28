@@ -9,8 +9,8 @@ Tests cover:
 - Reset user password
 """
 
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -34,7 +34,7 @@ class TestListUsers:
                 role=UserRole.OPERATOR,
                 is_active=True,
                 must_change_password=False,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ),
             MagicMock(
                 id=uuid4(),
@@ -43,7 +43,7 @@ class TestListUsers:
                 role=UserRole.VIEWER,
                 is_active=True,
                 must_change_password=False,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ),
         ]
 
@@ -109,11 +109,11 @@ class TestCreateUser:
         # Make refresh set the expected attributes on the added user
         def refresh_side_effect(user):
             user.id = uuid4()
-            user.created_at = datetime.now(timezone.utc)
+            user.created_at = datetime.now(UTC)
 
         mock_db_session.refresh = AsyncMock(side_effect=refresh_side_effect)
 
-        from app.api.v1.users import create_user, UserCreate
+        from app.api.v1.users import UserCreate, create_user
 
         user_data = UserCreate(
             username="newuser",
@@ -152,7 +152,7 @@ class TestCreateUser:
         mock_result.scalar_one_or_none.return_value = existing_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.users import create_user, UserCreate
+        from app.api.v1.users import UserCreate, create_user
 
         user_data = UserCreate(
             username="existing",
@@ -180,11 +180,11 @@ class TestCreateUser:
         # Make refresh set the expected attributes on the added user
         def refresh_side_effect(user):
             user.id = uuid4()
-            user.created_at = datetime.now(timezone.utc)
+            user.created_at = datetime.now(UTC)
 
         mock_db_session.refresh = AsyncMock(side_effect=refresh_side_effect)
 
-        from app.api.v1.users import create_user, UserCreate
+        from app.api.v1.users import UserCreate, create_user
 
         user_data = UserCreate(
             username="newviewer",
@@ -215,7 +215,7 @@ class TestGetUser:
             role=UserRole.OPERATOR,
             is_active=True,
             must_change_password=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         mock_result = MagicMock()
@@ -267,14 +267,14 @@ class TestUpdateUser:
             role=UserRole.OPERATOR,
             is_active=True,
             must_change_password=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.users import update_user, UserUpdate
+        from app.api.v1.users import UserUpdate, update_user
 
         update_data = UserUpdate(email="new@example.com")
 
@@ -299,14 +299,14 @@ class TestUpdateUser:
             role=UserRole.VIEWER,
             is_active=True,
             must_change_password=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.users import update_user, UserUpdate
+        from app.api.v1.users import UserUpdate, update_user
 
         update_data = UserUpdate(role=UserRole.OPERATOR)
 
@@ -330,14 +330,14 @@ class TestUpdateUser:
             role=UserRole.VIEWER,
             is_active=True,
             must_change_password=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.users import update_user, UserUpdate
+        from app.api.v1.users import UserUpdate, update_user
 
         update_data = UserUpdate(is_active=False)
 
@@ -357,7 +357,7 @@ class TestUpdateUser:
         mock_result.scalar_one_or_none.return_value = None
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.users import update_user, UserUpdate
+        from app.api.v1.users import UserUpdate, update_user
 
         with pytest.raises(HTTPException) as exc_info:
             await update_user(

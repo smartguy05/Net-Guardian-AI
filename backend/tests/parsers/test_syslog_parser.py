@@ -1,7 +1,5 @@
 """Tests for the syslog parser."""
 
-import pytest
-from datetime import datetime, timezone
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.syslog_parser import SyslogParser

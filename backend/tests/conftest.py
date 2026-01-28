@@ -1,18 +1,19 @@
 """Pytest configuration and shared fixtures."""
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import AsyncGenerator, Dict, Generator, Any
+from collections.abc import Generator
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
 from app.core.security import UserRole
-from app.models.device import DeviceStatus, DeviceType
-from app.models.raw_event import EventSeverity, EventType
 from app.models.alert import AlertSeverity, AlertStatus
+from app.models.device import DeviceStatus, DeviceType
 from app.models.log_source import ParserType, SourceType
+from app.models.raw_event import EventSeverity, EventType
 
 
 @pytest.fixture(scope="session")
@@ -126,6 +127,7 @@ def test_client():
     and routing.
     """
     from fastapi.testclient import TestClient
+
     from app.main import app
 
     with TestClient(app) as client:
@@ -154,7 +156,7 @@ def freeze_time():
         """Freeze datetime.now() to return a specific time."""
         # Ensure timezone awareness
         if frozen_datetime.tzinfo is None:
-            frozen_datetime = frozen_datetime.replace(tzinfo=timezone.utc)
+            frozen_datetime = frozen_datetime.replace(tzinfo=UTC)
 
         with patch("datetime.datetime") as mock_datetime:
             mock_datetime.now.return_value = frozen_datetime
@@ -171,7 +173,7 @@ def freeze_time():
 @pytest.fixture
 def fixed_now() -> datetime:
     """Return a fixed datetime for deterministic testing."""
-    return datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2024, 6, 15, 12, 0, 0, tzinfo=UTC)
 
 
 # ============================================================================
@@ -180,10 +182,10 @@ def fixed_now() -> datetime:
 
 
 @pytest.fixture
-def sample_device_data() -> Dict[str, Any]:
+def sample_device_data() -> dict[str, Any]:
     """Generate sample device test data."""
     device_id = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return {
         "id": device_id,
@@ -210,10 +212,10 @@ def sample_device(sample_device_data) -> MagicMock:
 
 
 @pytest.fixture
-def sample_event_data() -> Dict[str, Any]:
+def sample_event_data() -> dict[str, Any]:
     """Generate sample event test data."""
     event_id = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return {
         "id": event_id,
@@ -243,10 +245,10 @@ def sample_event(sample_event_data) -> MagicMock:
 
 
 @pytest.fixture
-def sample_alert_data() -> Dict[str, Any]:
+def sample_alert_data() -> dict[str, Any]:
     """Generate sample alert test data."""
     alert_id = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return {
         "id": alert_id,
@@ -276,10 +278,10 @@ def sample_alert(sample_alert_data) -> MagicMock:
 
 
 @pytest.fixture
-def sample_user_data() -> Dict[str, Any]:
+def sample_user_data() -> dict[str, Any]:
     """Generate sample user test data."""
     user_id = uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return {
         "id": user_id,
@@ -307,9 +309,9 @@ def sample_user(sample_user_data) -> MagicMock:
 
 
 @pytest.fixture
-def sample_source_data() -> Dict[str, Any]:
+def sample_source_data() -> dict[str, Any]:
     """Generate sample log source test data."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     return {
         "id": "test-adguard",
@@ -341,7 +343,7 @@ def sample_source(sample_source_data) -> MagicMock:
 
 
 @pytest.fixture
-def sample_rule_data() -> Dict[str, Any]:
+def sample_rule_data() -> dict[str, Any]:
     """Generate sample detection rule test data."""
     return {
         "id": "test-rule-001",
@@ -376,7 +378,7 @@ def sample_rule(sample_rule_data) -> MagicMock:
 
 
 @pytest.fixture
-def auth_headers_admin() -> Dict[str, str]:
+def auth_headers_admin() -> dict[str, str]:
     """Generate mock authentication headers for admin user."""
     return {
         "Authorization": "Bearer mock-admin-jwt-token",
@@ -385,7 +387,7 @@ def auth_headers_admin() -> Dict[str, str]:
 
 
 @pytest.fixture
-def auth_headers_operator() -> Dict[str, str]:
+def auth_headers_operator() -> dict[str, str]:
     """Generate mock authentication headers for operator user."""
     return {
         "Authorization": "Bearer mock-operator-jwt-token",
@@ -394,7 +396,7 @@ def auth_headers_operator() -> Dict[str, str]:
 
 
 @pytest.fixture
-def auth_headers_viewer() -> Dict[str, str]:
+def auth_headers_viewer() -> dict[str, str]:
     """Generate mock authentication headers for viewer user."""
     return {
         "Authorization": "Bearer mock-viewer-jwt-token",
@@ -485,7 +487,7 @@ def generate_events():
         start_time: datetime = None,
     ) -> list:
         if start_time is None:
-            start_time = datetime.now(timezone.utc)
+            start_time = datetime.now(UTC)
         if device_id is None:
             device_id = uuid4()
 

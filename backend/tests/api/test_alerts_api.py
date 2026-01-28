@@ -9,7 +9,7 @@ Tests cover:
 - Trigger LLM analysis
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -31,7 +31,7 @@ class TestListAlerts:
         for i in range(10):
             alert = MagicMock()
             alert.id = uuid4()
-            alert.timestamp = datetime.now(timezone.utc) - timedelta(hours=i)
+            alert.timestamp = datetime.now(UTC) - timedelta(hours=i)
             alert.device_id = uuid4()
             alert.rule_id = f"rule-{i % 3:03d}"
             alert.severity = severities[i % len(severities)]
@@ -140,7 +140,7 @@ class TestGetAlert:
         """Create a mock alert."""
         alert = MagicMock()
         alert.id = uuid4()
-        alert.timestamp = datetime.now(timezone.utc)
+        alert.timestamp = datetime.now(UTC)
         alert.device_id = uuid4()
         alert.rule_id = "test-rule"
         alert.severity = AlertSeverity.MEDIUM
@@ -329,7 +329,7 @@ class TestTriggerLLMAnalysis:
         alert.rule_id = "test-rule"
         alert.severity = AlertSeverity.HIGH
         alert.status = AlertStatus.NEW
-        alert.timestamp = datetime.now(timezone.utc)
+        alert.timestamp = datetime.now(UTC)
         alert.actions_taken = []
         alert.acknowledged_by = None
         alert.acknowledged_at = None
@@ -398,7 +398,7 @@ class TestAlertAuthorization:
         """Create a mock alert."""
         alert = MagicMock()
         alert.id = uuid4()
-        alert.timestamp = datetime.now(timezone.utc)
+        alert.timestamp = datetime.now(UTC)
         alert.device_id = uuid4()
         alert.rule_id = "test-rule"
         alert.severity = AlertSeverity.MEDIUM

@@ -1,14 +1,12 @@
 """Tests for Ollama LLM parser."""
 
+
 import pytest
-from datetime import datetime, timezone
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.ollama_parser import (
     OllamaParser,
     calculate_risk_score,
-    INJECTION_PATTERNS,
-    JAILBREAK_PATTERNS,
 )
 
 

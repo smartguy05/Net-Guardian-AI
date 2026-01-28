@@ -1,17 +1,16 @@
 """Tests for LLM provider abstraction."""
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from app.services.llm_providers.base import (
+    SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
     BaseLLMProvider,
+    BenignExplanation,
     LLMAnalysisResult,
     LogConcern,
-    BenignExplanation,
     SuggestedRuleData,
-    SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
 )
 from app.services.llm_providers.factory import LLMProviderFactory
 

@@ -10,12 +10,12 @@ Tests cover:
 - Export functionality
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 from app.models.device import DeviceStatus, DeviceType
 
@@ -36,8 +36,8 @@ class TestListDevices:
             device.manufacturer = "Test Corp"
             device.device_type = DeviceType.PC
             device.profile_tags = ["tag1"] if i % 2 == 0 else []
-            device.first_seen = datetime.now(timezone.utc) - timedelta(days=30)
-            device.last_seen = datetime.now(timezone.utc) - timedelta(hours=i)
+            device.first_seen = datetime.now(UTC) - timedelta(days=30)
+            device.last_seen = datetime.now(UTC) - timedelta(hours=i)
             device.status = DeviceStatus.ACTIVE
             device.baseline_ready = True
             devices.append(device)
@@ -201,8 +201,8 @@ class TestGetDevice:
         device.manufacturer = "Test Corp"
         device.device_type = DeviceType.PC
         device.profile_tags = ["workstation"]
-        device.first_seen = datetime.now(timezone.utc) - timedelta(days=30)
-        device.last_seen = datetime.now(timezone.utc)
+        device.first_seen = datetime.now(UTC) - timedelta(days=30)
+        device.last_seen = datetime.now(UTC)
         device.status = DeviceStatus.ACTIVE
         device.baseline_ready = True
         return device
@@ -260,8 +260,8 @@ class TestUpdateDevice:
         device.manufacturer = "Test Corp"
         device.device_type = DeviceType.PC
         device.profile_tags = []
-        device.first_seen = datetime.now(timezone.utc) - timedelta(days=30)
-        device.last_seen = datetime.now(timezone.utc)
+        device.first_seen = datetime.now(UTC) - timedelta(days=30)
+        device.last_seen = datetime.now(UTC)
         device.status = DeviceStatus.ACTIVE
         device.baseline_ready = True
         return device
@@ -273,7 +273,7 @@ class TestUpdateDevice:
         mock_result.scalar_one_or_none.return_value = mock_device
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import update_device, DeviceUpdate
+        from app.api.v1.devices import DeviceUpdate, update_device
 
         update_data = DeviceUpdate(hostname="new-hostname")
 
@@ -294,7 +294,7 @@ class TestUpdateDevice:
         mock_result.scalar_one_or_none.return_value = mock_device
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import update_device, DeviceUpdate
+        from app.api.v1.devices import DeviceUpdate, update_device
 
         update_data = DeviceUpdate(device_type=DeviceType.IOT)
 
@@ -314,7 +314,7 @@ class TestUpdateDevice:
         mock_result.scalar_one_or_none.return_value = mock_device
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import update_device, DeviceUpdate
+        from app.api.v1.devices import DeviceUpdate, update_device
 
         update_data = DeviceUpdate(profile_tags=["new-tag", "another-tag"])
 
@@ -334,7 +334,7 @@ class TestUpdateDevice:
         mock_result.scalar_one_or_none.return_value = None
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import update_device, DeviceUpdate
+        from app.api.v1.devices import DeviceUpdate, update_device
 
         update_data = DeviceUpdate(hostname="new-hostname")
 
@@ -368,8 +368,9 @@ class TestQuarantineDevice:
     @pytest.mark.asyncio
     async def test_quarantine_device_success(self, mock_quarantine_result, mock_current_user_operator):
         """Should quarantine device successfully."""
-        from app.api.v1.devices import quarantine_device
         from fastapi import Request
+
+        from app.api.v1.devices import quarantine_device
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -394,8 +395,9 @@ class TestQuarantineDevice:
     @pytest.mark.asyncio
     async def test_quarantine_device_not_found(self, mock_current_user_operator):
         """Should return 404 if device not found."""
-        from app.api.v1.devices import quarantine_device
         from fastapi import Request
+
+        from app.api.v1.devices import quarantine_device
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -422,8 +424,9 @@ class TestQuarantineDevice:
     @pytest.mark.asyncio
     async def test_quarantine_already_quarantined(self, mock_current_user_operator):
         """Should return 400 if device already quarantined."""
-        from app.api.v1.devices import quarantine_device
         from fastapi import Request
+
+        from app.api.v1.devices import quarantine_device
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -467,8 +470,9 @@ class TestReleaseDevice:
     @pytest.mark.asyncio
     async def test_release_device_success(self, mock_release_result, mock_current_user_operator):
         """Should release device successfully."""
-        from app.api.v1.devices import release_device
         from fastapi import Request
+
+        from app.api.v1.devices import release_device
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -492,8 +496,9 @@ class TestReleaseDevice:
     @pytest.mark.asyncio
     async def test_release_device_not_quarantined(self, mock_current_user_operator):
         """Should return 400 if device not quarantined."""
-        from app.api.v1.devices import release_device
         from fastapi import Request
+
+        from app.api.v1.devices import release_device
 
         request = MagicMock(spec=Request)
         request.client = MagicMock()
@@ -532,8 +537,8 @@ class TestTagManagement:
         device.manufacturer = "Test Corp"
         device.device_type = DeviceType.PC
         device.profile_tags = ["existing-tag"]
-        device.first_seen = datetime.now(timezone.utc) - timedelta(days=30)
-        device.last_seen = datetime.now(timezone.utc)
+        device.first_seen = datetime.now(UTC) - timedelta(days=30)
+        device.last_seen = datetime.now(UTC)
         device.status = DeviceStatus.ACTIVE
         device.baseline_ready = True
         return device
@@ -645,8 +650,8 @@ class TestBulkTagOperations:
             device.manufacturer = "Test Corp"
             device.device_type = DeviceType.PC
             device.profile_tags = ["common-tag"]
-            device.first_seen = datetime.now(timezone.utc)
-            device.last_seen = datetime.now(timezone.utc)
+            device.first_seen = datetime.now(UTC)
+            device.last_seen = datetime.now(UTC)
             device.status = DeviceStatus.ACTIVE
             device.baseline_ready = True
             devices.append(device)
@@ -662,7 +667,7 @@ class TestBulkTagOperations:
         mock_result.scalars.return_value = mock_scalars
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import bulk_tag_devices, BulkTagRequest
+        from app.api.v1.devices import BulkTagRequest, bulk_tag_devices
 
         request = BulkTagRequest(
             device_ids=[d.id for d in mock_devices],
@@ -690,7 +695,7 @@ class TestBulkTagOperations:
         mock_result.scalars.return_value = mock_scalars
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import bulk_tag_devices, BulkTagRequest
+        from app.api.v1.devices import BulkTagRequest, bulk_tag_devices
 
         request = BulkTagRequest(
             device_ids=[d.id for d in mock_devices],
@@ -710,7 +715,7 @@ class TestBulkTagOperations:
     @pytest.mark.asyncio
     async def test_bulk_tag_no_operations(self, mock_db_session, mock_current_user_operator):
         """Should reject request with no operations."""
-        from app.api.v1.devices import bulk_tag_devices, BulkTagRequest
+        from app.api.v1.devices import BulkTagRequest, bulk_tag_devices
 
         request = BulkTagRequest(
             device_ids=[uuid4()],
@@ -735,7 +740,7 @@ class TestBulkTagOperations:
         mock_result.scalars.return_value = mock_scalars
         mock_db_session.execute.return_value = mock_result
 
-        from app.api.v1.devices import bulk_tag_devices, BulkTagRequest
+        from app.api.v1.devices import BulkTagRequest, bulk_tag_devices
 
         request = BulkTagRequest(
             device_ids=[uuid4()],
@@ -766,8 +771,8 @@ class TestExportDevices:
             device.ip_addresses = [f"192.168.1.{100 + i}"]
             device.device_type = DeviceType.PC
             device.status = DeviceStatus.ACTIVE
-            device.first_seen = datetime.now(timezone.utc) - timedelta(days=30)
-            device.last_seen = datetime.now(timezone.utc)
+            device.first_seen = datetime.now(UTC) - timedelta(days=30)
+            device.last_seen = datetime.now(UTC)
             devices.append(device)
         return devices
 

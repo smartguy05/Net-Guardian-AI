@@ -1,10 +1,10 @@
 """Tests for Authentik event log parser."""
 
-import pytest
-from datetime import datetime, timezone
 
-from app.parsers.authentik_parser import AuthentikParser
+import pytest
+
 from app.models.raw_event import EventSeverity, EventType
+from app.parsers.authentik_parser import AuthentikParser
 
 
 class TestAuthentikParser:

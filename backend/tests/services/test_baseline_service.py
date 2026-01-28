@@ -1,14 +1,14 @@
 """Tests for the baseline calculator service."""
 
-import pytest
-from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
-from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
-from app.models.device import Device, DeviceStatus
-from app.models.raw_event import EventType, RawEvent
-from app.services.baseline_service import BaselineCalculator, BaselineService
+import pytest
+
+from app.models.device_baseline import BaselineStatus
+from app.models.raw_event import EventType
+from app.services.baseline_service import BaselineCalculator
 
 
 class TestBaselineCalculator:
@@ -29,7 +29,7 @@ class TestBaselineCalculator:
     def sample_dns_events(self):
         """Create sample DNS events for testing."""
         device_id = uuid4()
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         events = []
 
         domains = ["google.com", "facebook.com", "twitter.com", "example.com"]
@@ -98,7 +98,7 @@ class TestBaselineCalculator:
     def test_calculate_traffic_metrics_with_events(self, calculator):
         """Test traffic metrics calculation with sample events."""
         events = []
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         for i in range(100):
             events.append(
@@ -132,7 +132,7 @@ class TestBaselineCalculator:
     def test_calculate_connection_metrics_with_events(self, calculator):
         """Test connection metrics calculation with sample events."""
         events = []
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         destinations = [
             "192.168.1.100",  # internal
@@ -181,7 +181,7 @@ class TestBaselineCalculator:
     def test_determine_status_learning(self, calculator):
         """Test status determination - learning state."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.baseline_window_days = 7
 
         status = calculator._determine_status(50, 100, baseline)
@@ -190,7 +190,7 @@ class TestBaselineCalculator:
     def test_determine_status_ready(self, calculator):
         """Test status determination - ready state."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.baseline_window_days = 7
 
         status = calculator._determine_status(100, 100, baseline)
@@ -202,7 +202,7 @@ class TestBaselineCalculator:
     def test_determine_status_stale(self, calculator):
         """Test status determination - stale state."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc) - timedelta(days=30)
+        baseline.last_calculated = datetime.now(UTC) - timedelta(days=30)
         baseline.baseline_window_days = 7
 
         status = calculator._determine_status(100, 100, baseline)
@@ -221,7 +221,7 @@ class TestDNSMetricsCalculation:
         """Test with only one domain."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 domain="example.com",
                 action="allow",
             )
@@ -236,7 +236,7 @@ class TestDNSMetricsCalculation:
         """Test when all queries are blocked."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 domain="malware.com",
                 action="block",
             )
@@ -250,7 +250,7 @@ class TestDNSMetricsCalculation:
         """Test when no queries are blocked."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 domain="safe.com",
                 action="allow",
             )
@@ -264,7 +264,7 @@ class TestDNSMetricsCalculation:
         """Test that unique domains are capped at 500."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 domain=f"domain{i}.com",
                 action="allow",
             )
@@ -286,7 +286,7 @@ class TestBaselineStatusTransitions:
     def test_status_learning_with_few_events(self, calculator):
         """Test LEARNING status with insufficient events."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.baseline_window_days = 7
 
         # Few events relative to minimum
@@ -296,7 +296,7 @@ class TestBaselineStatusTransitions:
     def test_status_ready_with_enough_events(self, calculator):
         """Test READY status with sufficient events."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.baseline_window_days = 7
 
         # Enough events
@@ -306,7 +306,7 @@ class TestBaselineStatusTransitions:
     def test_status_stale_when_old(self, calculator):
         """Test STALE status when baseline is too old."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc) - timedelta(days=21)  # 3 weeks old
+        baseline.last_calculated = datetime.now(UTC) - timedelta(days=21)  # 3 weeks old
         baseline.baseline_window_days = 7
 
         status = calculator._determine_status(200, 100, baseline)
@@ -315,7 +315,7 @@ class TestBaselineStatusTransitions:
     def test_status_boundary_at_minimum(self, calculator):
         """Test status exactly at minimum sample count."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.baseline_window_days = 7
 
         # Exactly at minimum
@@ -325,7 +325,7 @@ class TestBaselineStatusTransitions:
     def test_status_boundary_just_below_minimum(self, calculator):
         """Test status just below minimum sample count."""
         baseline = MagicMock()
-        baseline.last_calculated = datetime.now(timezone.utc)
+        baseline.last_calculated = datetime.now(UTC)
         baseline.baseline_window_days = 7
 
         # Just below minimum
@@ -344,7 +344,7 @@ class TestTrafficMetricsEdgeCases:
     def test_traffic_metrics_mixed_protocols(self, calculator):
         """Test with multiple protocols."""
         events = []
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
         protocols = ["tcp", "udp", "icmp", "other"]
 
         for i in range(100):
@@ -367,7 +367,7 @@ class TestTrafficMetricsEdgeCases:
         """Test with many different ports."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 protocol="tcp",
                 port=i,
                 action="allow",
@@ -384,7 +384,7 @@ class TestTrafficMetricsEdgeCases:
         """Test with high blocked ratio."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 protocol="tcp",
                 port=22,
                 action="block" if i < 90 else "allow",
@@ -410,7 +410,7 @@ class TestConnectionMetricsEdgeCases:
         internal_ips = ["192.168.1.100", "10.0.0.1", "172.16.0.1"]
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 target_ip=internal_ips[i % len(internal_ips)],
                 port=443,
             )
@@ -426,7 +426,7 @@ class TestConnectionMetricsEdgeCases:
         external_ips = ["8.8.8.8", "1.1.1.1", "208.67.222.222"]
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 target_ip=external_ips[i % len(external_ips)],
                 port=443,
             )
@@ -441,7 +441,7 @@ class TestConnectionMetricsEdgeCases:
         """Test with events missing target_ip."""
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 target_ip=None,
                 port=443,
             )

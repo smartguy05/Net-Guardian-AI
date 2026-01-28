@@ -1,7 +1,8 @@
 """Tests for the endpoint agent parser."""
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.endpoint_parser import EndpointParser
@@ -245,7 +246,7 @@ class TestEndpointParser:
         results = parser.parse(data)
         assert len(results) == 1
         # Timestamp should be recent
-        assert (datetime.now(timezone.utc) - results[0].timestamp).total_seconds() < 5
+        assert (datetime.now(UTC) - results[0].timestamp).total_seconds() < 5
 
     def test_invalid_data_type(self, parser):
         """Test handling of invalid data types."""

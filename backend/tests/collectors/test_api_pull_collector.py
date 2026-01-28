@@ -1,15 +1,14 @@
 """Tests for the API pull collector."""
 
 import asyncio
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
+import pytest
 
 from app.collectors.api_pull_collector import ApiPullCollector
 from app.collectors.error_handler import (
-    CircuitBreaker,
     CollectorCircuitOpenError,
 )
 from app.models.log_source import LogSource, SourceType
@@ -818,7 +817,7 @@ class TestApiPullCollectorTimestampPagination:
             },
         })
         collector = ApiPullCollector(source, JsonParser())
-        collector._last_timestamp = datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+        collector._last_timestamp = datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
 
         params = collector._build_params()
 

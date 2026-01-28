@@ -1,14 +1,15 @@
 """Tests for the LLM service."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
+
 import pytest
 
 from app.services.llm_service import (
-    LLMService,
-    LLMModel,
-    get_llm_service,
-    SYSTEM_PROMPT_SECURITY_ANALYST,
     SYSTEM_PROMPT_CHAT_ASSISTANT,
+    SYSTEM_PROMPT_SECURITY_ANALYST,
+    LLMModel,
+    LLMService,
+    get_llm_service,
 )
 
 

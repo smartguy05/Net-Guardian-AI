@@ -1,7 +1,5 @@
 """Tests for the AdGuard Home parser."""
 
-import pytest
-from datetime import datetime, timezone
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.adguard_parser import AdGuardParser

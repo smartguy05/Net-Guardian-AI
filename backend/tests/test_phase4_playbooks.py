@@ -1,17 +1,16 @@
 """Tests for Phase 4 playbook engine."""
 
-import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
+import pytest
+
 from app.models.playbook import (
+    ExecutionStatus,
     Playbook,
     PlaybookActionType,
-    PlaybookExecution,
     PlaybookStatus,
     PlaybookTriggerType,
-    ExecutionStatus,
 )
 from app.services.playbook_engine import PlaybookEngine
 

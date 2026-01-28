@@ -1,15 +1,15 @@
 """Tests for the anomaly detection service."""
 
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from app.models.alert import Alert, AlertSeverity, AlertStatus
+import pytest
+
+from app.models.alert import AlertSeverity
 from app.models.anomaly import AnomalyDetection, AnomalyStatus, AnomalyType
-from app.models.device import Device, DeviceStatus
+from app.models.device import DeviceStatus
 from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
-from app.models.raw_event import EventType, RawEvent
 from app.services.anomaly_service import AnomalyDetector, AnomalyService
 
 
@@ -196,12 +196,12 @@ class TestDNSAnomalyDetection:
         # Simulate events with a new domain
         events = [
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 domain="malicious-site.com",  # New domain
                 action="allow",
             ),
             MagicMock(
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
                 domain="google.com",  # Known domain
                 action="allow",
             ),

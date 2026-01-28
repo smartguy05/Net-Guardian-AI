@@ -8,18 +8,18 @@ Tests that verify all parsers handle:
 - Malformed input
 """
 
+
 import pytest
-from datetime import datetime, timezone
 
 from app.parsers.adguard_parser import AdGuardParser
-from app.parsers.json_parser import JsonParser
-from app.parsers.syslog_parser import SyslogParser
-from app.parsers.endpoint_parser import EndpointParser
 from app.parsers.custom_parser import CustomParser
-from app.parsers.netflow_parser import NetFlowParser
-from app.parsers.sflow_parser import SFlowParser
+from app.parsers.endpoint_parser import EndpointParser
+from app.parsers.json_parser import JsonParser
 from app.parsers.loki_parser import LokiParser
+from app.parsers.netflow_parser import NetFlowParser
 from app.parsers.ollama_parser import OllamaParser
+from app.parsers.sflow_parser import SFlowParser
+from app.parsers.syslog_parser import SyslogParser
 
 
 class TestUnicodeHandling:

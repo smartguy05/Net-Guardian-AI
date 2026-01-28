@@ -1,13 +1,13 @@
 """Tests for Phase 4 integration services."""
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import patch
 
-from app.services.integrations.base import ActionType, IntegrationResult, IntegrationType
+import pytest
+
 from app.services.integrations.adguard import AdGuardHomeService
-from app.services.integrations.unifi import UniFiService
+from app.services.integrations.base import ActionType, IntegrationResult, IntegrationType
 from app.services.integrations.pfsense import PfSenseService
+from app.services.integrations.unifi import UniFiService
 
 
 class TestAdGuardHomeService:

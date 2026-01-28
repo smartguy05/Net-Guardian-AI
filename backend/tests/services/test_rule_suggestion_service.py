@@ -1,21 +1,20 @@
 """Tests for the rule suggestion service."""
 
-from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
-from app.services.rule_suggestion_service import (
-    RuleSuggestionService,
-    RuleFilters,
-    HistoryFilters,
-    get_rule_suggestion_service,
-)
-from app.services.llm_providers.base import SuggestedRuleData
 from app.models.semantic_analysis import (
     SuggestedRuleStatus,
     SuggestedRuleType,
+)
+from app.services.llm_providers.base import SuggestedRuleData
+from app.services.rule_suggestion_service import (
+    HistoryFilters,
+    RuleFilters,
+    RuleSuggestionService,
+    get_rule_suggestion_service,
 )
 
 

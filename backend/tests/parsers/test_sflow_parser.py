@@ -1,8 +1,9 @@
 """Tests for the sFlow parser."""
 
 import struct
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.sflow_parser import SFlowParser
@@ -271,7 +272,7 @@ class TestSFlowParser:
         results = parser.parse(data)
         assert len(results) == 1
         # Timestamp should be recent
-        assert (datetime.now(timezone.utc) - results[0].timestamp).total_seconds() < 5
+        assert (datetime.now(UTC) - results[0].timestamp).total_seconds() < 5
 
     def test_parsed_fields_preserved(self, parser):
         """Test that all original fields are preserved in parsed_fields."""
