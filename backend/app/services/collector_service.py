@@ -373,42 +373,56 @@ class CollectorService:
                 for event_data in event_data_for_bus:
                     await self._event_bus.publish_raw_event(event_data)
 
+    def _generate_placeholder_mac(self, ip: str) -> str:
+        """Generate a deterministic placeholder MAC from IP hash."""
+        ip_hash = hashlib.md5(ip.encode()).hexdigest()[:8]
+        return f"00:00:{ip_hash[0:2]}:{ip_hash[2:4]}:{ip_hash[4:6]}:{ip_hash[6:8]}"
+
     async def _batch_get_or_create_devices(
         self,
         session: AsyncSession,
         ip_addresses: List[str],
     ) -> Dict[str, Optional[UUID]]:
-        """Batch get or create devices by IP addresses."""
+        """Batch get or create devices by IP addresses.
+
+        Handles race conditions from concurrent batch processing by:
+        1. Looking up by both IP and placeholder MAC
+        2. Catching IntegrityError on insert and retrying lookup
+        """
         result_map: Dict[str, Optional[UUID]] = {}
 
         if not ip_addresses:
             return result_map
 
-        # Query all existing devices with these IPs in one query
-        # Note: This uses the ARRAY contains operator
         from sqlalchemy import or_
+        from sqlalchemy.exc import IntegrityError
 
-        conditions = [Device.ip_addresses.contains([ip]) for ip in ip_addresses]
+        # Generate placeholder MACs for lookup
+        ip_to_mac = {ip: self._generate_placeholder_mac(ip) for ip in ip_addresses}
+        placeholder_macs = list(ip_to_mac.values())
+
+        # Query existing devices by IP OR by placeholder MAC (handles race condition)
+        ip_conditions = [Device.ip_addresses.contains([ip]) for ip in ip_addresses]
+        mac_condition = Device.mac_address.in_(placeholder_macs)
+
         result = await session.execute(
-            select(Device).where(or_(*conditions))
+            select(Device).where(or_(*ip_conditions, mac_condition))
         )
         existing_devices = result.scalars().all()
 
         # Map IPs to existing devices
+        now = datetime.now(timezone.utc)
         for device in existing_devices:
             for ip in ip_addresses:
-                if ip in device.ip_addresses:
+                if ip in device.ip_addresses or device.mac_address == ip_to_mac.get(ip):
                     result_map[ip] = device.id
                     # Update last seen
-                    device.last_seen = datetime.now(timezone.utc)
+                    device.last_seen = now
 
         # Create new devices for IPs without matches
-        now = datetime.now(timezone.utc)
         for ip in ip_addresses:
             if ip not in result_map:
-                # Generate placeholder MAC from IP hash
-                ip_hash = hashlib.md5(ip.encode()).hexdigest()[:8]
-                placeholder_mac = f"00:00:{ip_hash[0:2]}:{ip_hash[2:4]}:{ip_hash[4:6]}:{ip_hash[6:8]}"
+                placeholder_mac = ip_to_mac[ip]
 
                 device = Device(
                     id=uuid4(),
@@ -429,6 +443,32 @@ class CollectorService:
                     device_id=str(device.id),
                     ip_address=ip,
                 )
+
+        # Flush to detect any constraint violations before returning
+        try:
+            await session.flush()
+        except IntegrityError:
+            # Race condition: another batch created this device
+            # Rollback the failed inserts and re-query
+            await session.rollback()
+
+            # Re-query to get the devices that were created by another batch
+            result = await session.execute(
+                select(Device).where(or_(*ip_conditions, mac_condition))
+            )
+            existing_devices = result.scalars().all()
+
+            result_map.clear()
+            for device in existing_devices:
+                for ip in ip_addresses:
+                    if ip in device.ip_addresses or device.mac_address == ip_to_mac.get(ip):
+                        result_map[ip] = device.id
+                        device.last_seen = now
+
+            logger.debug(
+                "device_creation_race_resolved",
+                ip_count=len(ip_addresses),
+            )
 
         return result_map
 
