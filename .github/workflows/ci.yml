@@ -156,7 +156,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
-          npm ci
+          npm ci --force  # Force to handle cross-platform optional deps
 
       - name: Run ESLint
         run: |
@@ -179,7 +179,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
-          npm ci
+          npm ci --force  # Force to handle cross-platform optional deps
 
       - name: TypeScript check and build
         run: |
