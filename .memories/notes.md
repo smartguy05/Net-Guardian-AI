@@ -4,6 +4,26 @@ Issues, gotchas, and lessons learned during development.
 
 ---
 
+## PostgreSQL Enum Migrations (January 2026)
+
+**Problem:** Adding a new value to a SQLAlchemy Enum (like `SourceType.UDP_LISTEN`) requires a database migration. The Python enum is updated but PostgreSQL's `sourcetype` enum doesn't automatically get the new value.
+
+**Error:** `asyncpg.exceptions.InvalidTextRepresentationError: invalid input value for enum sourcetype: "udp_listen"`
+
+**Solution:** Create an Alembic migration to add the enum value:
+```python
+def upgrade() -> None:
+    op.execute("ALTER TYPE sourcetype ADD VALUE IF NOT EXISTS 'udp_listen'")
+
+def downgrade() -> None:
+    # PostgreSQL doesn't support removing enum values directly
+    pass
+```
+
+**Important:** Always create a migration when adding new enum values. Check `app/models/log_source.py` for `SourceType` and `ParserType` enums.
+
+---
+
 ## Test Suite Gotchas (January 2026)
 
 ### FastAPI Query Parameter Defaults
