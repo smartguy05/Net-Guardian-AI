@@ -253,3 +253,40 @@ Fixed 460 mypy strict type check errors across 50+ files:
 - Default: `true` (only collect new log entries written after collector starts)
 - When disabled: Reads all existing entries from the beginning of the file
 - Useful for importing historical log data (e.g., nginx error logs with existing entries)
+
+---
+
+## File Watch Directory Mode (January 2026)
+
+**Feature**: Added folder/directory watching support to the File Watcher Collector with glob pattern filtering
+
+**Backend** (`backend/app/collectors/file_collector.py`):
+- Added `is_directory_mode` property to detect if watching a directory vs single file
+- Added `file_pattern` config option for glob filtering (default: "*")
+- Multi-file state tracking: `_file_handles`, `_file_positions`, `_modified_files` dicts
+- `_scan_directory()`: Finds all files matching the glob pattern
+- `_open_single_file()`: Opens individual files with position tracking
+- `_read_lines_from_file()`: Reads from specific file by path
+- `_on_file_created()`: Handles new file detection in directory mode
+- `_on_file_deleted()`: Handles file removal, closes handle gracefully
+- `FileEventHandler._matches_pattern()`: Filters events by glob pattern
+- Updated `test_connection()` to validate directories and show file count
+
+**Frontend**:
+- `AddSourceModal.tsx`: Added "Watch Directory" toggle, file pattern input field
+- `EditSourceModal.tsx`: Same directory mode UI, loads `file_pattern` from config
+
+**Config Schema**:
+```json
+{
+  "path": "/var/log/myapp/",
+  "file_pattern": "*.log",
+  "follow": true,
+  "encoding": "utf-8",
+  "read_from_end": true
+}
+```
+
+**Tests** (`backend/tests/collectors/test_file_collector.py`):
+- 17 new tests for directory watching mode
+- Tests for: directory mode detection, glob pattern matching, multi-file reading, position tracking, file creation/deletion handling, connection testing
