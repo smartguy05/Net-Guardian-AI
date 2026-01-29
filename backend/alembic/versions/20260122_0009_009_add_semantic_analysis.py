@@ -165,21 +165,31 @@ def upgrade() -> None:
     # Create indexes
     op.execute("CREATE INDEX ix_log_patterns_source_id ON log_patterns(source_id)")
     op.execute("CREATE INDEX ix_log_patterns_pattern_hash ON log_patterns(pattern_hash)")
-    op.execute("CREATE UNIQUE INDEX ix_log_patterns_source_hash ON log_patterns(source_id, pattern_hash)")
+    op.execute(
+        "CREATE UNIQUE INDEX ix_log_patterns_source_hash ON log_patterns(source_id, pattern_hash)"
+    )
 
     op.execute("CREATE INDEX ix_irregular_logs_event_id ON irregular_logs(event_id)")
     op.execute("CREATE INDEX ix_irregular_logs_source_id ON irregular_logs(source_id)")
-    op.execute("CREATE INDEX ix_irregular_logs_source_created ON irregular_logs(source_id, created_at)")
+    op.execute(
+        "CREATE INDEX ix_irregular_logs_source_created ON irregular_logs(source_id, created_at)"
+    )
     op.execute("CREATE INDEX ix_irregular_logs_severity ON irregular_logs(severity_score)")
 
-    op.execute("CREATE INDEX ix_semantic_analysis_runs_source_id ON semantic_analysis_runs(source_id)")
-    op.execute("CREATE INDEX ix_semantic_analysis_runs_source_started ON semantic_analysis_runs(source_id, started_at)")
+    op.execute(
+        "CREATE INDEX ix_semantic_analysis_runs_source_id ON semantic_analysis_runs(source_id)"
+    )
+    op.execute(
+        "CREATE INDEX ix_semantic_analysis_runs_source_started ON semantic_analysis_runs(source_id, started_at)"
+    )
 
     op.execute("CREATE INDEX ix_suggested_rules_source_id ON suggested_rules(source_id)")
     op.execute("CREATE INDEX ix_suggested_rules_status ON suggested_rules(status)")
     op.execute("CREATE INDEX ix_suggested_rules_rule_hash ON suggested_rules(rule_hash)")
 
-    op.execute("CREATE INDEX ix_suggested_rule_history_rule_hash ON suggested_rule_history(rule_hash)")
+    op.execute(
+        "CREATE INDEX ix_suggested_rule_history_rule_hash ON suggested_rule_history(rule_hash)"
+    )
 
 
 def downgrade() -> None:

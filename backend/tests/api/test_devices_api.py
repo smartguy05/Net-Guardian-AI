@@ -916,9 +916,7 @@ class TestDeviceSync:
         assert "unsupported" in exc_info.value.detail.lower()
 
     @pytest.mark.asyncio
-    async def test_sync_devices_with_overwrite(
-        self, mock_db_session, mock_current_user_operator
-    ):
+    async def test_sync_devices_with_overwrite(self, mock_db_session, mock_current_user_operator):
         """Should pass overwrite_existing flag to service."""
         from app.api.v1.devices import DeviceSyncRequest, sync_device_names
         from app.services.device_sync_service import DeviceSyncResult
@@ -951,9 +949,7 @@ class TestDeviceSync:
             )
 
     @pytest.mark.asyncio
-    async def test_sync_devices_error_handling(
-        self, mock_db_session, mock_current_user_operator
-    ):
+    async def test_sync_devices_error_handling(self, mock_db_session, mock_current_user_operator):
         """Should handle service errors gracefully."""
         from app.api.v1.devices import DeviceSyncRequest, sync_device_names
 

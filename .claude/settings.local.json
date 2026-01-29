@@ -55,7 +55,9 @@
       "Bash(pip install:*)",
       "Bash(source /home/anthony/Code/Net-Guardian-AI/backend/.venv/bin/activate)",
       "Bash(/home/anthony/Code/Net-Guardian-AI/backend/.venv/bin/mypy:*)",
-      "Bash(.venv/bin/python:*)"
+      "Bash(.venv/bin/python:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(pytest:*)"
     ]
   }
 }

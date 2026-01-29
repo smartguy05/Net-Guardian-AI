@@ -269,9 +269,7 @@ class BulkTagResponse(BaseModel):
 
 class DeviceSyncRequest(BaseModel):
     source: str = Field("adguard", description="Source to sync from (currently only 'adguard')")
-    overwrite_existing: bool = Field(
-        False, description="If true, overwrites existing hostnames"
-    )
+    overwrite_existing: bool = Field(False, description="If true, overwrites existing hostnames")
 
 
 class DeviceSyncResponse(BaseModel):

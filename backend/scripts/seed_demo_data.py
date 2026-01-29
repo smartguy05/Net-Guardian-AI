@@ -358,21 +358,46 @@ DEMO_LOG_SOURCES = [
 
 # Common domains for DNS events
 SAFE_DOMAINS = [
-    "google.com", "youtube.com", "facebook.com", "amazon.com", "twitter.com",
-    "github.com", "stackoverflow.com", "reddit.com", "netflix.com", "spotify.com",
-    "microsoft.com", "apple.com", "cloudflare.com", "openai.com", "anthropic.com",
-    "icloud.com", "dropbox.com", "zoom.us", "slack.com", "notion.so",
+    "google.com",
+    "youtube.com",
+    "facebook.com",
+    "amazon.com",
+    "twitter.com",
+    "github.com",
+    "stackoverflow.com",
+    "reddit.com",
+    "netflix.com",
+    "spotify.com",
+    "microsoft.com",
+    "apple.com",
+    "cloudflare.com",
+    "openai.com",
+    "anthropic.com",
+    "icloud.com",
+    "dropbox.com",
+    "zoom.us",
+    "slack.com",
+    "notion.so",
 ]
 
 BLOCKED_DOMAINS = [
-    "ads.doubleclick.net", "tracking.mixpanel.com", "analytics.google.com",
-    "telemetry.microsoft.com", "metrics.icloud.com", "data.microsoft.com",
-    "ad.doubleclick.net", "pagead2.googlesyndication.com", "securepubads.g.doubleclick.net",
+    "ads.doubleclick.net",
+    "tracking.mixpanel.com",
+    "analytics.google.com",
+    "telemetry.microsoft.com",
+    "metrics.icloud.com",
+    "data.microsoft.com",
+    "ad.doubleclick.net",
+    "pagead2.googlesyndication.com",
+    "securepubads.g.doubleclick.net",
 ]
 
 SUSPICIOUS_DOMAINS = [
-    "malware-c2.evil.com", "phishing-site.ru", "cryptominer.xyz",
-    "data-exfil.darkweb.onion", "botnet-controller.net",
+    "malware-c2.evil.com",
+    "phishing-site.ru",
+    "cryptominer.xyz",
+    "data-exfil.darkweb.onion",
+    "botnet-controller.net",
 ]
 
 DEMO_DETECTION_RULES = [
@@ -456,7 +481,10 @@ DEMO_PLAYBOOKS = [
                 "type": PlaybookActionType.SEND_NOTIFICATION.value,
                 "params": {"channel": "email", "template": "device_quarantined"},
             },
-            {"type": PlaybookActionType.LOG_EVENT.value, "params": {"message": "Device quarantined by playbook"}},
+            {
+                "type": PlaybookActionType.LOG_EVENT.value,
+                "params": {"message": "Device quarantined by playbook"},
+            },
         ],
         "cooldown_minutes": 60,
         "max_executions_per_hour": 5,
@@ -468,7 +496,10 @@ DEMO_PLAYBOOKS = [
         "trigger_type": PlaybookTriggerType.DEVICE_NEW,
         "trigger_conditions": {},
         "actions": [
-            {"type": PlaybookActionType.CREATE_ALERT.value, "params": {"severity": "low", "title": "New device detected"}},
+            {
+                "type": PlaybookActionType.CREATE_ALERT.value,
+                "params": {"severity": "low", "title": "New device detected"},
+            },
             {
                 "type": PlaybookActionType.SEND_NOTIFICATION.value,
                 "params": {"channel": "ntfy", "message": "New device on network"},
@@ -484,7 +515,10 @@ DEMO_PLAYBOOKS = [
         "trigger_type": PlaybookTriggerType.ALERT_CREATED,
         "trigger_conditions": {"severity": ["critical"]},
         "actions": [
-            {"type": PlaybookActionType.RUN_LLM_ANALYSIS.value, "params": {"model": "claude-sonnet-4-20250514"}},
+            {
+                "type": PlaybookActionType.RUN_LLM_ANALYSIS.value,
+                "params": {"model": "claude-sonnet-4-20250514"},
+            },
             {
                 "type": PlaybookActionType.SEND_NOTIFICATION.value,
                 "params": {"channel": "email", "template": "critical_alert"},
@@ -501,7 +535,10 @@ DEMO_PLAYBOOKS = [
         "trigger_type": PlaybookTriggerType.SCHEDULE,
         "trigger_conditions": {"cron": "0 9 * * 1"},  # Monday 9 AM
         "actions": [
-            {"type": PlaybookActionType.EXECUTE_WEBHOOK.value, "params": {"url": "http://localhost:8000/api/v1/reports/generate"}},
+            {
+                "type": PlaybookActionType.EXECUTE_WEBHOOK.value,
+                "params": {"url": "http://localhost:8000/api/v1/reports/generate"},
+            },
             {
                 "type": PlaybookActionType.SEND_NOTIFICATION.value,
                 "params": {"channel": "email", "template": "weekly_report"},
@@ -546,28 +583,120 @@ DEMO_THREAT_FEEDS = [
 # Sample threat indicators
 DEMO_INDICATORS = [
     # Malicious IPs
-    {"type": IndicatorType.IP, "value": "185.220.101.1", "severity": "critical", "tags": ["tor-exit", "abuse"], "confidence": 95},
-    {"type": IndicatorType.IP, "value": "45.155.205.233", "severity": "high", "tags": ["c2", "botnet"], "confidence": 90},
-    {"type": IndicatorType.IP, "value": "193.142.146.64", "severity": "high", "tags": ["scanner", "bruteforce"], "confidence": 85},
-    {"type": IndicatorType.IP, "value": "89.248.165.0/24", "severity": "medium", "tags": ["suspicious"], "confidence": 70},
+    {
+        "type": IndicatorType.IP,
+        "value": "185.220.101.1",
+        "severity": "critical",
+        "tags": ["tor-exit", "abuse"],
+        "confidence": 95,
+    },
+    {
+        "type": IndicatorType.IP,
+        "value": "45.155.205.233",
+        "severity": "high",
+        "tags": ["c2", "botnet"],
+        "confidence": 90,
+    },
+    {
+        "type": IndicatorType.IP,
+        "value": "193.142.146.64",
+        "severity": "high",
+        "tags": ["scanner", "bruteforce"],
+        "confidence": 85,
+    },
+    {
+        "type": IndicatorType.IP,
+        "value": "89.248.165.0/24",
+        "severity": "medium",
+        "tags": ["suspicious"],
+        "confidence": 70,
+    },
     # Malicious domains
-    {"type": IndicatorType.DOMAIN, "value": "evil-phishing.com", "severity": "critical", "tags": ["phishing"], "confidence": 99},
-    {"type": IndicatorType.DOMAIN, "value": "malware-download.ru", "severity": "critical", "tags": ["malware"], "confidence": 95},
-    {"type": IndicatorType.DOMAIN, "value": "cryptominer-pool.xyz", "severity": "high", "tags": ["cryptominer"], "confidence": 90},
-    {"type": IndicatorType.DOMAIN, "value": "suspicious-tracker.net", "severity": "medium", "tags": ["tracking"], "confidence": 75},
+    {
+        "type": IndicatorType.DOMAIN,
+        "value": "evil-phishing.com",
+        "severity": "critical",
+        "tags": ["phishing"],
+        "confidence": 99,
+    },
+    {
+        "type": IndicatorType.DOMAIN,
+        "value": "malware-download.ru",
+        "severity": "critical",
+        "tags": ["malware"],
+        "confidence": 95,
+    },
+    {
+        "type": IndicatorType.DOMAIN,
+        "value": "cryptominer-pool.xyz",
+        "severity": "high",
+        "tags": ["cryptominer"],
+        "confidence": 90,
+    },
+    {
+        "type": IndicatorType.DOMAIN,
+        "value": "suspicious-tracker.net",
+        "severity": "medium",
+        "tags": ["tracking"],
+        "confidence": 75,
+    },
     # Malicious URLs
-    {"type": IndicatorType.URL, "value": "http://evil-phishing.com/login.php", "severity": "critical", "tags": ["phishing", "credential-theft"], "confidence": 98},
-    {"type": IndicatorType.URL, "value": "https://malware-download.ru/payload.exe", "severity": "critical", "tags": ["malware", "dropper"], "confidence": 97},
+    {
+        "type": IndicatorType.URL,
+        "value": "http://evil-phishing.com/login.php",
+        "severity": "critical",
+        "tags": ["phishing", "credential-theft"],
+        "confidence": 98,
+    },
+    {
+        "type": IndicatorType.URL,
+        "value": "https://malware-download.ru/payload.exe",
+        "severity": "critical",
+        "tags": ["malware", "dropper"],
+        "confidence": 97,
+    },
     # File hashes
-    {"type": IndicatorType.HASH_SHA256, "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "severity": "info", "tags": ["empty-file"], "confidence": 100},
-    {"type": IndicatorType.HASH_MD5, "value": "d41d8cd98f00b204e9800998ecf8427e", "severity": "info", "tags": ["empty-file"], "confidence": 100},
+    {
+        "type": IndicatorType.HASH_SHA256,
+        "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "severity": "info",
+        "tags": ["empty-file"],
+        "confidence": 100,
+    },
+    {
+        "type": IndicatorType.HASH_MD5,
+        "value": "d41d8cd98f00b204e9800998ecf8427e",
+        "severity": "info",
+        "tags": ["empty-file"],
+        "confidence": 100,
+    },
 ]
 
 DEMO_RETENTION_POLICIES = [
-    {"table_name": "raw_events", "display_name": "Raw Events", "retention_days": 90, "description": "Network and security events"},
-    {"table_name": "audit_logs", "display_name": "Audit Logs", "retention_days": 365, "description": "Administrative action logs"},
-    {"table_name": "anomaly_detections", "display_name": "Anomaly Detections", "retention_days": 180, "description": "Detected anomalies"},
-    {"table_name": "playbook_executions", "display_name": "Playbook Executions", "retention_days": 90, "description": "Automation run history"},
+    {
+        "table_name": "raw_events",
+        "display_name": "Raw Events",
+        "retention_days": 90,
+        "description": "Network and security events",
+    },
+    {
+        "table_name": "audit_logs",
+        "display_name": "Audit Logs",
+        "retention_days": 365,
+        "description": "Administrative action logs",
+    },
+    {
+        "table_name": "anomaly_detections",
+        "display_name": "Anomaly Detections",
+        "retention_days": 180,
+        "description": "Detected anomalies",
+    },
+    {
+        "table_name": "playbook_executions",
+        "display_name": "Playbook Executions",
+        "retention_days": 90,
+        "description": "Automation run history",
+    },
 ]
 
 # Additional detection rules
@@ -929,7 +1058,9 @@ async def seed_devices(session: AsyncSession) -> dict[str, Device]:
 
     for i, device_data in enumerate(DEMO_DEVICES):
         # Check if device already exists
-        result = await session.execute(select(Device).where(Device.mac_address == device_data["mac_address"]))
+        result = await session.execute(
+            select(Device).where(Device.mac_address == device_data["mac_address"])
+        )
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -939,7 +1070,11 @@ async def seed_devices(session: AsyncSession) -> dict[str, Device]:
 
         # Vary first_seen and last_seen times
         first_seen = NOW - timedelta(days=30 - i)
-        last_seen = NOW - timedelta(hours=i * 2) if device_data["status"] == DeviceStatus.ACTIVE else NOW - timedelta(days=14)
+        last_seen = (
+            NOW - timedelta(hours=i * 2)
+            if device_data["status"] == DeviceStatus.ACTIVE
+            else NOW - timedelta(days=14)
+        )
 
         device = Device(
             id=uuid.uuid4(),
@@ -1001,7 +1136,9 @@ async def seed_log_sources(session: AsyncSession) -> dict[str, LogSource]:
     return sources
 
 
-async def seed_events(session: AsyncSession, devices: dict[str, Device], sources: dict[str, LogSource]) -> list[RawEvent]:
+async def seed_events(
+    session: AsyncSession, devices: dict[str, Device], sources: dict[str, LogSource]
+) -> list[RawEvent]:
     """Create demo events across various types."""
     print("Creating demo events...")
     events = []
@@ -1041,7 +1178,10 @@ async def seed_events(session: AsyncSession, devices: dict[str, Device], sources
             blocked_reason="AdBlock filter" if is_blocked else None,
             action="blocked" if is_blocked else "allowed",
             raw_message=f"DNS query for {domain} from {device.hostname}",
-            parsed_fields={"client_name": device.hostname, "answer": "93.184.216.34" if not is_blocked else None},
+            parsed_fields={
+                "client_name": device.hostname,
+                "answer": "93.184.216.34" if not is_blocked else None,
+            },
             device_id=device.id,
         )
         events.append(event)
@@ -1068,7 +1208,10 @@ async def seed_events(session: AsyncSession, devices: dict[str, Device], sources
             protocol=protocol,
             action="DROP" if is_blocked else "ACCEPT",
             raw_message=f"Firewall {('DROP' if is_blocked else 'ACCEPT')} {protocol} {device.hostname} -> 203.0.113.{i % 256}:{port}",
-            parsed_fields={"rule": "default-drop" if is_blocked else "allow-outbound", "interface": "eth0"},
+            parsed_fields={
+                "rule": "default-drop" if is_blocked else "allow-outbound",
+                "interface": "eth0",
+            },
             device_id=device.id,
         )
         events.append(event)
@@ -1108,7 +1251,15 @@ async def seed_events(session: AsyncSession, devices: dict[str, Device], sources
     print("  Creating endpoint events...")
     desktop = devices.get("AA:BB:CC:11:22:33")
     if desktop:
-        processes = ["chrome.exe", "firefox.exe", "code.exe", "python.exe", "node.exe", "powershell.exe", "cmd.exe"]
+        processes = [
+            "chrome.exe",
+            "firefox.exe",
+            "code.exe",
+            "python.exe",
+            "node.exe",
+            "powershell.exe",
+            "cmd.exe",
+        ]
         for i in range(30):
             timestamp = NOW - timedelta(hours=i, minutes=(i * 11) % 60)
             process = processes[i % len(processes)]
@@ -1279,7 +1430,9 @@ async def seed_events(session: AsyncSession, devices: dict[str, Device], sources
     return events
 
 
-async def seed_alerts(session: AsyncSession, devices: dict[str, Device], users: dict[str, User]) -> list[Alert]:
+async def seed_alerts(
+    session: AsyncSession, devices: dict[str, Device], users: dict[str, User]
+) -> list[Alert]:
     """Create demo alerts."""
     print("Creating demo alerts...")
     alerts = []
@@ -1405,22 +1558,44 @@ async def seed_alerts(session: AsyncSession, devices: dict[str, Device], users: 
         if scenario["status"] == AlertStatus.ACKNOWLEDGED:
             alert.acknowledged_by = operator_user.id if operator_user else None
             alert.acknowledged_at = timestamp + timedelta(hours=1)
-            alert.actions_taken = [{"action": "acknowledged", "by": "demo_operator", "at": (timestamp + timedelta(hours=1)).isoformat()}]
+            alert.actions_taken = [
+                {
+                    "action": "acknowledged",
+                    "by": "demo_operator",
+                    "at": (timestamp + timedelta(hours=1)).isoformat(),
+                }
+            ]
         elif scenario["status"] == AlertStatus.RESOLVED:
             alert.acknowledged_by = admin_user.id if admin_user else None
             alert.acknowledged_at = timestamp + timedelta(hours=2)
             alert.resolved_by = admin_user.id if admin_user else None
             alert.resolved_at = timestamp + timedelta(hours=6)
             alert.actions_taken = [
-                {"action": "acknowledged", "by": "demo_admin", "at": (timestamp + timedelta(hours=2)).isoformat()},
-                {"action": "device_quarantined", "at": (timestamp + timedelta(hours=2, minutes=5)).isoformat()},
-                {"action": "resolved", "by": "demo_admin", "at": (timestamp + timedelta(hours=6)).isoformat()},
+                {
+                    "action": "acknowledged",
+                    "by": "demo_admin",
+                    "at": (timestamp + timedelta(hours=2)).isoformat(),
+                },
+                {
+                    "action": "device_quarantined",
+                    "at": (timestamp + timedelta(hours=2, minutes=5)).isoformat(),
+                },
+                {
+                    "action": "resolved",
+                    "by": "demo_admin",
+                    "at": (timestamp + timedelta(hours=6)).isoformat(),
+                },
             ]
         elif scenario["status"] == AlertStatus.FALSE_POSITIVE:
             alert.resolved_by = operator_user.id if operator_user else None
             alert.resolved_at = timestamp + timedelta(hours=4)
             alert.actions_taken = [
-                {"action": "marked_false_positive", "by": "demo_operator", "reason": "Normal cloud backup activity", "at": (timestamp + timedelta(hours=4)).isoformat()},
+                {
+                    "action": "marked_false_positive",
+                    "by": "demo_operator",
+                    "reason": "Normal cloud backup activity",
+                    "at": (timestamp + timedelta(hours=4)).isoformat(),
+                },
             ]
 
         session.add(alert)
@@ -1431,7 +1606,9 @@ async def seed_alerts(session: AsyncSession, devices: dict[str, Device], users: 
     return alerts
 
 
-async def seed_anomalies(session: AsyncSession, devices: dict[str, Device], alerts: list[Alert]) -> list[AnomalyDetection]:
+async def seed_anomalies(
+    session: AsyncSession, devices: dict[str, Device], alerts: list[Alert]
+) -> list[AnomalyDetection]:
     """Create demo anomaly detections."""
     print("Creating demo anomalies...")
     anomalies = []
@@ -1571,7 +1748,7 @@ async def seed_baselines(session: AsyncSession, devices: dict[str, Device]) -> l
         result = await session.execute(
             select(DeviceBaseline).where(
                 DeviceBaseline.device_id == device.id,
-                DeviceBaseline.baseline_type == BaselineType.DNS
+                DeviceBaseline.baseline_type == BaselineType.DNS,
             )
         )
         existing_dns = result.scalar_one_or_none()
@@ -1586,7 +1763,9 @@ async def seed_baselines(session: AsyncSession, devices: dict[str, Device]) -> l
                 baseline_type=BaselineType.DNS,
                 status=BaselineStatus.READY,
                 metrics={
-                    "domains_daily": ["google.com", "cloudflare.com", "github.com"] if device.device_type == DeviceType.PC else ["nest.com", "google.com"],
+                    "domains_daily": ["google.com", "cloudflare.com", "github.com"]
+                    if device.device_type == DeviceType.PC
+                    else ["nest.com", "google.com"],
                     "total_queries_daily_avg": 450 if device.device_type == DeviceType.PC else 120,
                     "total_queries_daily_std": 85 if device.device_type == DeviceType.PC else 30,
                     "query_rate_hourly": {str(h): 20 + (h % 12) * 3 for h in range(24)},
@@ -1610,7 +1789,7 @@ async def seed_baselines(session: AsyncSession, devices: dict[str, Device]) -> l
             result = await session.execute(
                 select(DeviceBaseline).where(
                     DeviceBaseline.device_id == device.id,
-                    DeviceBaseline.baseline_type == BaselineType.TRAFFIC
+                    DeviceBaseline.baseline_type == BaselineType.TRAFFIC,
                 )
             )
             existing_traffic = result.scalar_one_or_none()
@@ -1624,9 +1803,13 @@ async def seed_baselines(session: AsyncSession, devices: dict[str, Device]) -> l
                     baseline_type=BaselineType.TRAFFIC,
                     status=BaselineStatus.READY,
                     metrics={
-                        "bytes_daily_avg": 2500000000 if device.device_type == DeviceType.PC else 500000000,
+                        "bytes_daily_avg": 2500000000
+                        if device.device_type == DeviceType.PC
+                        else 500000000,
                         "bytes_daily_std": 500000000,
-                        "bytes_hourly_avg": {str(h): 100000000 + (h % 12) * 20000000 for h in range(24)},
+                        "bytes_hourly_avg": {
+                            str(h): 100000000 + (h % 12) * 20000000 for h in range(24)
+                        },
                         "peak_hours": [10, 11, 14, 15, 16],
                         "active_hours": list(range(8, 23)),
                     },
@@ -1651,7 +1834,9 @@ async def seed_detection_rules(session: AsyncSession) -> list[DetectionRule]:
 
     for rule_data in DEMO_DETECTION_RULES:
         # Check if rule already exists
-        result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_data["id"]))
+        result = await session.execute(
+            select(DetectionRule).where(DetectionRule.id == rule_data["id"])
+        )
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -1735,9 +1920,15 @@ async def seed_playbooks(session: AsyncSession, users: dict[str, User]) -> list[
                 status=status,
                 trigger_event={"type": "alert_created", "alert_id": str(uuid.uuid4())},
                 started_at=exec_time,
-                completed_at=exec_time + timedelta(seconds=5) if status == ExecutionStatus.COMPLETED else None,
+                completed_at=exec_time + timedelta(seconds=5)
+                if status == ExecutionStatus.COMPLETED
+                else None,
                 action_results=[
-                    {"action": "quarantine_device", "success": status == ExecutionStatus.COMPLETED, "duration_ms": 150},
+                    {
+                        "action": "quarantine_device",
+                        "success": status == ExecutionStatus.COMPLETED,
+                        "duration_ms": 150,
+                    },
                     {"action": "send_notification", "success": True, "duration_ms": 200},
                 ],
                 error_message="AdGuard API timeout" if status == ExecutionStatus.FAILED else None,
@@ -1749,7 +1940,9 @@ async def seed_playbooks(session: AsyncSession, users: dict[str, User]) -> list[
     return playbooks
 
 
-async def seed_threat_intel(session: AsyncSession) -> tuple[list[ThreatIntelFeed], list[ThreatIndicator]]:
+async def seed_threat_intel(
+    session: AsyncSession,
+) -> tuple[list[ThreatIntelFeed], list[ThreatIndicator]]:
     """Create demo threat intelligence feeds and indicators."""
     print("Creating demo threat intelligence...")
     feeds = []
@@ -1757,7 +1950,9 @@ async def seed_threat_intel(session: AsyncSession) -> tuple[list[ThreatIntelFeed
 
     for feed_data in DEMO_THREAT_FEEDS:
         # Check if feed already exists
-        result = await session.execute(select(ThreatIntelFeed).where(ThreatIntelFeed.name == feed_data["name"]))
+        result = await session.execute(
+            select(ThreatIntelFeed).where(ThreatIntelFeed.name == feed_data["name"])
+        )
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -1816,7 +2011,9 @@ async def seed_threat_intel(session: AsyncSession) -> tuple[list[ThreatIntelFeed
     return feeds, indicators
 
 
-async def seed_audit_logs(session: AsyncSession, users: dict[str, User], devices: dict[str, Device]) -> list[AuditLog]:
+async def seed_audit_logs(
+    session: AsyncSession, users: dict[str, User], devices: dict[str, Device]
+) -> list[AuditLog]:
     """Create demo audit logs."""
     print("Creating demo audit logs...")
     logs = []
@@ -1921,7 +2118,9 @@ async def seed_audit_logs(session: AsyncSession, users: dict[str, User], devices
             details={},
             success=True,
             ip_address="192.168.1.100" if user else None,
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0" if user else None,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0"
+            if user
+            else None,
         )
         session.add(audit_log)
         logs.append(audit_log)
@@ -1931,7 +2130,9 @@ async def seed_audit_logs(session: AsyncSession, users: dict[str, User], devices
     return logs
 
 
-async def seed_notification_preferences(session: AsyncSession, users: dict[str, User]) -> list[NotificationPreferences]:
+async def seed_notification_preferences(
+    session: AsyncSession, users: dict[str, User]
+) -> list[NotificationPreferences]:
     """Create demo notification preferences."""
     print("Creating demo notification preferences...")
     prefs = []
@@ -1939,7 +2140,9 @@ async def seed_notification_preferences(session: AsyncSession, users: dict[str, 
     admin_user = users.get("demo_admin")
     if admin_user:
         # Check if preferences already exist
-        result = await session.execute(select(NotificationPreferences).where(NotificationPreferences.user_id == admin_user.id))
+        result = await session.execute(
+            select(NotificationPreferences).where(NotificationPreferences.user_id == admin_user.id)
+        )
         existing = result.scalar_one_or_none()
 
         if not existing:
@@ -1980,7 +2183,9 @@ async def seed_retention_policies(session: AsyncSession) -> list[RetentionPolicy
 
     for policy_data in DEMO_RETENTION_POLICIES:
         # Check if policy already exists
-        result = await session.execute(select(RetentionPolicy).where(RetentionPolicy.table_name == policy_data["table_name"]))
+        result = await session.execute(
+            select(RetentionPolicy).where(RetentionPolicy.table_name == policy_data["table_name"])
+        )
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -2002,7 +2207,9 @@ async def seed_retention_policies(session: AsyncSession) -> list[RetentionPolicy
         )
         session.add(policy)
         policies.append(policy)
-        print(f"  Created retention policy: {policy_data['display_name']} ({policy_data['retention_days']} days)")
+        print(
+            f"  Created retention policy: {policy_data['display_name']} ({policy_data['retention_days']} days)"
+        )
 
     await session.flush()
     return policies
@@ -2015,7 +2222,9 @@ async def seed_additional_detection_rules(session: AsyncSession) -> list[Detecti
 
     for rule_data in DEMO_ADDITIONAL_RULES:
         # Check if rule already exists
-        result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_data["id"]))
+        result = await session.execute(
+            select(DetectionRule).where(DetectionRule.id == rule_data["id"])
+        )
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -2043,16 +2252,39 @@ async def seed_additional_detection_rules(session: AsyncSession) -> list[Detecti
     return rules
 
 
-async def seed_semantic_analysis_configs(session: AsyncSession, sources: dict[str, LogSource]) -> list[SemanticAnalysisConfig]:
+async def seed_semantic_analysis_configs(
+    session: AsyncSession, sources: dict[str, LogSource]
+) -> list[SemanticAnalysisConfig]:
     """Create semantic analysis configurations for log sources."""
     print("Creating semantic analysis configs...")
     configs = []
 
     config_settings = [
-        {"source_id": "adguard-home", "llm_provider": LLMProvider.CLAUDE, "rarity_threshold": 3, "batch_size": 50},
-        {"source_id": "unifi-firewall", "llm_provider": LLMProvider.CLAUDE, "rarity_threshold": 5, "batch_size": 30},
-        {"source_id": "endpoint-desktop", "llm_provider": LLMProvider.OLLAMA, "ollama_model": "llama3.2", "rarity_threshold": 3, "batch_size": 25},
-        {"source_id": "syslog-nas", "llm_provider": LLMProvider.CLAUDE, "rarity_threshold": 3, "batch_size": 50},
+        {
+            "source_id": "adguard-home",
+            "llm_provider": LLMProvider.CLAUDE,
+            "rarity_threshold": 3,
+            "batch_size": 50,
+        },
+        {
+            "source_id": "unifi-firewall",
+            "llm_provider": LLMProvider.CLAUDE,
+            "rarity_threshold": 5,
+            "batch_size": 30,
+        },
+        {
+            "source_id": "endpoint-desktop",
+            "llm_provider": LLMProvider.OLLAMA,
+            "ollama_model": "llama3.2",
+            "rarity_threshold": 3,
+            "batch_size": 25,
+        },
+        {
+            "source_id": "syslog-nas",
+            "llm_provider": LLMProvider.CLAUDE,
+            "rarity_threshold": 3,
+            "batch_size": 50,
+        },
     ]
 
     for cfg in config_settings:
@@ -2062,7 +2294,9 @@ async def seed_semantic_analysis_configs(session: AsyncSession, sources: dict[st
 
         # Check if config already exists
         result = await session.execute(
-            select(SemanticAnalysisConfig).where(SemanticAnalysisConfig.source_id == cfg["source_id"])
+            select(SemanticAnalysisConfig).where(
+                SemanticAnalysisConfig.source_id == cfg["source_id"]
+            )
         )
         existing = result.scalar_one_or_none()
 
@@ -2092,7 +2326,9 @@ async def seed_semantic_analysis_configs(session: AsyncSession, sources: dict[st
     return configs
 
 
-async def seed_log_patterns(session: AsyncSession, sources: dict[str, LogSource]) -> list[LogPattern]:
+async def seed_log_patterns(
+    session: AsyncSession, sources: dict[str, LogSource]
+) -> list[LogPattern]:
     """Create demo log patterns."""
     print("Creating demo log patterns...")
     patterns = []
@@ -2103,7 +2339,9 @@ async def seed_log_patterns(session: AsyncSession, sources: dict[str, LogSource]
     endpoint_source = sources.get("endpoint-desktop")
     syslog_source = sources.get("syslog-nas")
 
-    source_list = [s for s in [adguard_source, firewall_source, endpoint_source, syslog_source] if s]
+    source_list = [
+        s for s in [adguard_source, firewall_source, endpoint_source, syslog_source] if s
+    ]
     if not source_list:
         print("  No sources found, skipping patterns")
         return patterns
@@ -2202,7 +2440,11 @@ async def seed_semantic_analysis_runs(
             continue
 
         started_at = NOW - timedelta(hours=scenario["hours_ago"])
-        completed_at = started_at + timedelta(minutes=2) if scenario["status"] != AnalysisRunStatus.FAILED else None
+        completed_at = (
+            started_at + timedelta(minutes=2)
+            if scenario["status"] != AnalysisRunStatus.FAILED
+            else None
+        )
 
         run = SemanticAnalysisRun(
             id=uuid.uuid4(),
@@ -2214,7 +2456,8 @@ async def seed_semantic_analysis_runs(
             irregulars_found=scenario["irregulars_found"],
             llm_provider=scenario["llm_provider"],
             llm_response_summary=f"Analyzed {scenario['events_scanned']} events, found {scenario['irregulars_found']} irregularities"
-            if scenario["status"] == AnalysisRunStatus.COMPLETED else None,
+            if scenario["status"] == AnalysisRunStatus.COMPLETED
+            else None,
             error_message=scenario.get("error_message"),
         )
         session.add(run)
@@ -2353,8 +2596,18 @@ async def seed_suggested_rules(
             status=rule_data["status"],
             enabled=rule_data["status"] == SuggestedRuleStatus.IMPLEMENTED,
             rule_hash=rule_hash,
-            reviewed_by=admin_user.id if rule_data["status"] in [SuggestedRuleStatus.APPROVED, SuggestedRuleStatus.REJECTED, SuggestedRuleStatus.IMPLEMENTED] and admin_user else None,
-            reviewed_at=timestamp + timedelta(hours=2) if rule_data["status"] != SuggestedRuleStatus.PENDING else None,
+            reviewed_by=admin_user.id
+            if rule_data["status"]
+            in [
+                SuggestedRuleStatus.APPROVED,
+                SuggestedRuleStatus.REJECTED,
+                SuggestedRuleStatus.IMPLEMENTED,
+            ]
+            and admin_user
+            else None,
+            reviewed_at=timestamp + timedelta(hours=2)
+            if rule_data["status"] != SuggestedRuleStatus.PENDING
+            else None,
             rejection_reason=rule_data.get("rejection_reason"),
             created_at=timestamp,
             updated_at=NOW,
@@ -2368,7 +2621,11 @@ async def seed_suggested_rules(
     # Create history entries for non-pending rules
     print("  Creating suggested rule history...")
     for rule in suggested_rules:
-        if rule.status in [SuggestedRuleStatus.APPROVED, SuggestedRuleStatus.REJECTED, SuggestedRuleStatus.IMPLEMENTED]:
+        if rule.status in [
+            SuggestedRuleStatus.APPROVED,
+            SuggestedRuleStatus.REJECTED,
+            SuggestedRuleStatus.IMPLEMENTED,
+        ]:
             history = SuggestedRuleHistory(
                 id=uuid.uuid4(),
                 rule_hash=rule.rule_hash,
@@ -2429,8 +2686,12 @@ async def main():
             semantic_configs = await seed_semantic_analysis_configs(session, sources)
             log_patterns = await seed_log_patterns(session, sources)
             analysis_runs = await seed_semantic_analysis_runs(session, sources)
-            irregular_logs = await seed_irregular_logs(session, sources, events, log_patterns, analysis_runs)
-            suggested_rules = await seed_suggested_rules(session, sources, users, irregular_logs, analysis_runs)
+            irregular_logs = await seed_irregular_logs(
+                session, sources, events, log_patterns, analysis_runs
+            )
+            suggested_rules = await seed_suggested_rules(
+                session, sources, users, irregular_logs, analysis_runs
+            )
 
             # Commit all changes
             await session.commit()

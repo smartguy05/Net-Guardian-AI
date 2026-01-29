@@ -90,7 +90,9 @@ def upgrade() -> None:
         )
     """)
 
-    op.execute("CREATE INDEX ix_playbook_executions_playbook_id ON playbook_executions(playbook_id)")
+    op.execute(
+        "CREATE INDEX ix_playbook_executions_playbook_id ON playbook_executions(playbook_id)"
+    )
     op.execute("CREATE INDEX ix_playbook_executions_status ON playbook_executions(status)")
     op.execute("CREATE INDEX ix_playbook_executions_created_at ON playbook_executions(created_at)")
 

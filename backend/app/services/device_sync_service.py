@@ -78,6 +78,8 @@ class DeviceSyncService:
         if owns_session:
             session = AsyncSessionLocal()
 
+        assert session is not None  # Type narrowing for mypy
+
         try:
             result = await session.execute(select(Device))
             devices = list(result.scalars().all())

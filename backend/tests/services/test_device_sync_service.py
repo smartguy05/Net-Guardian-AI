@@ -67,9 +67,7 @@ class TestDeviceSyncService:
     @pytest.mark.asyncio
     async def test_sync_when_adguard_disabled(self, sync_service, mock_session):
         """Should return empty result when AdGuard is disabled."""
-        with patch(
-            "app.services.device_sync_service.get_adguard_service"
-        ) as mock_get_adguard:
+        with patch("app.services.device_sync_service.get_adguard_service") as mock_get_adguard:
             mock_adguard = MagicMock()
             mock_adguard.is_enabled = False
             mock_get_adguard.return_value = mock_adguard
@@ -83,9 +81,7 @@ class TestDeviceSyncService:
     @pytest.mark.asyncio
     async def test_sync_with_no_clients(self, sync_service, mock_session):
         """Should return empty result when no AdGuard clients exist."""
-        with patch(
-            "app.services.device_sync_service.get_adguard_service"
-        ) as mock_get_adguard:
+        with patch("app.services.device_sync_service.get_adguard_service") as mock_get_adguard:
             mock_adguard = AsyncMock()
             mock_adguard.is_enabled = True
             mock_adguard.get_device_name_mapping = AsyncMock(return_value={})
@@ -112,9 +108,7 @@ class TestDeviceSyncService:
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute.return_value = mock_result
 
-        with patch(
-            "app.services.device_sync_service.get_adguard_service"
-        ) as mock_get_adguard:
+        with patch("app.services.device_sync_service.get_adguard_service") as mock_get_adguard:
             mock_adguard = AsyncMock()
             mock_adguard.is_enabled = True
             mock_adguard.get_device_name_mapping = AsyncMock(return_value=name_mapping)
@@ -146,9 +140,7 @@ class TestDeviceSyncService:
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute.return_value = mock_result
 
-        with patch(
-            "app.services.device_sync_service.get_adguard_service"
-        ) as mock_get_adguard:
+        with patch("app.services.device_sync_service.get_adguard_service") as mock_get_adguard:
             mock_adguard = AsyncMock()
             mock_adguard.is_enabled = True
             mock_adguard.get_device_name_mapping = AsyncMock(return_value=name_mapping)
@@ -160,9 +152,7 @@ class TestDeviceSyncService:
             assert mock_devices[1].hostname == "Bedroom Laptop"
 
     @pytest.mark.asyncio
-    async def test_sync_overwrite_existing(
-        self, sync_service, mock_session, mock_devices
-    ):
+    async def test_sync_overwrite_existing(self, sync_service, mock_session, mock_devices):
         """Should overwrite existing hostnames when overwrite_existing=True."""
         name_mapping = {
             "192.168.1.103": "New Name for Device 4",  # Device 4 has existing hostname
@@ -174,9 +164,7 @@ class TestDeviceSyncService:
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute.return_value = mock_result
 
-        with patch(
-            "app.services.device_sync_service.get_adguard_service"
-        ) as mock_get_adguard:
+        with patch("app.services.device_sync_service.get_adguard_service") as mock_get_adguard:
             mock_adguard = AsyncMock()
             mock_adguard.is_enabled = True
             mock_adguard.get_device_name_mapping = AsyncMock(return_value=name_mapping)
@@ -202,9 +190,7 @@ class TestDeviceSyncService:
         mock_result.scalars.return_value = mock_scalars
         mock_session.execute.return_value = mock_result
 
-        with patch(
-            "app.services.device_sync_service.get_adguard_service"
-        ) as mock_get_adguard:
+        with patch("app.services.device_sync_service.get_adguard_service") as mock_get_adguard:
             mock_adguard = AsyncMock()
             mock_adguard.is_enabled = True
             mock_adguard.get_device_name_mapping = AsyncMock(return_value=name_mapping)

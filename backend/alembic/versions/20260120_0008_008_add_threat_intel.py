@@ -87,7 +87,9 @@ def upgrade() -> None:
     # Create indexes
     op.execute("CREATE INDEX ix_threat_indicators_value ON threat_indicators(value)")
     op.execute("CREATE INDEX ix_threat_indicators_feed_id ON threat_indicators(feed_id)")
-    op.execute("CREATE INDEX ix_threat_indicators_indicator_type ON threat_indicators(indicator_type)")
+    op.execute(
+        "CREATE INDEX ix_threat_indicators_indicator_type ON threat_indicators(indicator_type)"
+    )
     op.execute("CREATE INDEX ix_threat_indicators_severity ON threat_indicators(severity)")
     op.execute("CREATE INDEX ix_threat_intel_feeds_enabled ON threat_intel_feeds(enabled)")
 
