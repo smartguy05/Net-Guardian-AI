@@ -605,9 +605,7 @@ class TestFileWatchCollectorDirectoryMode:
             (Path(temp_dir) / "app1.log").write_text("test1\n")
             (Path(temp_dir) / "app2.log").write_text("test2\n")
 
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "*.log"})
             collector = FileWatchCollector(source, MagicMock())
 
             await collector.start()
@@ -623,9 +621,7 @@ class TestFileWatchCollectorDirectoryMode:
         with tempfile.TemporaryDirectory() as temp_dir:
             (Path(temp_dir) / "app.log").write_text("test\n")
 
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "*.log"})
             collector = FileWatchCollector(source, MagicMock())
 
             success, message = await collector.test_connection()
@@ -640,9 +636,7 @@ class TestFileWatchCollectorDirectoryMode:
         with tempfile.TemporaryDirectory() as temp_dir:
             (Path(temp_dir) / "app.txt").write_text("test\n")  # .txt not .log
 
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "*.log"})
             collector = FileWatchCollector(source, MagicMock())
 
             success, message = await collector.test_connection()
@@ -657,9 +651,7 @@ class TestFileWatchCollectorDirectoryMode:
             # Start with one file
             (Path(temp_dir) / "app1.log").write_text("initial\n")
 
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "*.log"})
             collector = FileWatchCollector(source, MagicMock())
 
             await collector.start()
@@ -686,9 +678,7 @@ class TestFileWatchCollectorDirectoryMode:
             file1.write_text("content1\n")
             file2.write_text("content2\n")
 
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "*.log"})
             collector = FileWatchCollector(source, MagicMock())
 
             await collector.start()
@@ -729,9 +719,7 @@ class TestFileEventHandlerPatternMatching:
     def test_matches_pattern_directory_mode(self):
         """Test pattern matching in directory mode."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "*.log"})
             collector = FileWatchCollector(source, MagicMock())
             handler = FileEventHandler(collector)
 
@@ -744,9 +732,7 @@ class TestFileEventHandlerPatternMatching:
     def test_matches_pattern_complex_glob(self):
         """Test pattern matching with complex glob patterns."""
         with tempfile.TemporaryDirectory() as temp_dir:
-            source = create_mock_source(
-                config={"path": temp_dir, "file_pattern": "app-*.log"}
-            )
+            source = create_mock_source(config={"path": temp_dir, "file_pattern": "app-*.log"})
             collector = FileWatchCollector(source, MagicMock())
             handler = FileEventHandler(collector)
 

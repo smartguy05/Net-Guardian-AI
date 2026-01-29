@@ -299,7 +299,11 @@ class FileWatchCollector(BaseCollector):
 
         if self.is_directory_mode:
             # Directory mode: read from modified files
-            files_to_read = list(self._modified_files) if self._modified_files else list(self._file_handles.keys())
+            files_to_read = (
+                list(self._modified_files)
+                if self._modified_files
+                else list(self._file_handles.keys())
+            )
             self._modified_files.clear()
 
             for path in files_to_read:
@@ -468,7 +472,10 @@ class FileWatchCollector(BaseCollector):
                     pass
 
             if readable_count > 0:
-                return True, f"Directory is readable: {path} ({len(matching_files)} files match '{pattern}')"
+                return (
+                    True,
+                    f"Directory is readable: {path} ({len(matching_files)} files match '{pattern}')",
+                )
             return False, f"Cannot read files in directory: {path}"
 
         # Single file mode
