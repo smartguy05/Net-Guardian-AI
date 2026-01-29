@@ -58,6 +58,12 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
   const [udpPort, setUdpPort] = useState(5514);
   const [udpHost, setUdpHost] = useState('0.0.0.0');
 
+  // Custom parser config
+  const [customPattern, setCustomPattern] = useState('');
+  const [customTimestampField, setCustomTimestampField] = useState('timestamp');
+  const [customTimestampFormat, setCustomTimestampFormat] = useState('');
+  const [customSeverityField, setCustomSeverityField] = useState('level');
+
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -89,6 +95,21 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
       } else if (source.source_type === 'udp_listen') {
         setUdpPort((config.port as number) || 5514);
         setUdpHost((config.host as string) || '0.0.0.0');
+      }
+
+      // Load custom parser config if parser_type is custom
+      if (source.parser_type === 'custom' && source.parser_config) {
+        const parserConfig = source.parser_config as Record<string, unknown>;
+        setCustomPattern((parserConfig.pattern as string) || '');
+        setCustomTimestampField((parserConfig.timestamp_field as string) || 'timestamp');
+        setCustomTimestampFormat((parserConfig.timestamp_format as string) || '');
+        setCustomSeverityField((parserConfig.severity_field as string) || 'level');
+      } else {
+        // Reset custom parser fields for non-custom parsers
+        setCustomPattern('');
+        setCustomTimestampField('timestamp');
+        setCustomTimestampFormat('');
+        setCustomSeverityField('level');
       }
 
       setErrors({});
@@ -125,6 +146,20 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
     if (source?.source_type === 'udp_listen') {
       if (!udpPort || udpPort < 1 || udpPort > 65535) {
         newErrors.udpPort = 'Port must be between 1 and 65535';
+      }
+    }
+
+    // Validate custom parser config
+    if (source?.parser_type === 'custom') {
+      if (!customPattern.trim()) {
+        newErrors.customPattern = 'Regex pattern is required for custom parser';
+      } else {
+        // Validate regex syntax
+        try {
+          new RegExp(customPattern);
+        } catch {
+          newErrors.customPattern = 'Invalid regular expression syntax';
+        }
       }
     }
 
@@ -194,6 +229,25 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
     return {};
   };
 
+  const buildParserConfig = (): Record<string, unknown> => {
+    if (source?.parser_type === 'custom') {
+      const config: Record<string, unknown> = {
+        pattern: customPattern,
+      };
+      if (customTimestampField.trim()) {
+        config.timestamp_field = customTimestampField;
+      }
+      if (customTimestampFormat.trim()) {
+        config.timestamp_format = customTimestampFormat;
+      }
+      if (customSeverityField.trim()) {
+        config.severity_field = customSeverityField;
+      }
+      return config;
+    }
+    return source?.parser_config || {};
+  };
+
   const handleSubmit = async () => {
     if (!source || !validateForm()) return;
 
@@ -203,6 +257,7 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
         name,
         description: description || undefined,
         config: buildConfig(),
+        parser_config: buildParserConfig(),
       });
       handleClose();
     } catch (error) {
@@ -524,6 +579,96 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
                   </code>
                 </div>
               </>
+            )}
+
+            {/* Custom Parser Configuration */}
+            {source.parser_type === 'custom' && (
+              <div className="space-y-4 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <Settings className="w-4 h-4" />
+                  Custom Parser Configuration
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Regex Pattern <span className="text-danger-500">*</span>
+                  </label>
+                  <textarea
+                    value={customPattern}
+                    onChange={(e) => setCustomPattern(e.target.value)}
+                    placeholder="(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) (?P<level>\w+) \((?P<component>[^)]+)\) \[(?P<module>[^\]]+)\] (?P<message>.*)"
+                    rows={3}
+                    className={clsx('input font-mono text-sm', errors.customPattern && 'border-danger-500')}
+                  />
+                  {errors.customPattern && (
+                    <p className="mt-1 text-sm text-danger-600">{errors.customPattern}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Use named capture groups like <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">(?P&lt;name&gt;...)</code> to extract fields.
+                    Common fields: timestamp, level, message, component, module.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Timestamp Field Name
+                    </label>
+                    <input
+                      type="text"
+                      value={customTimestampField}
+                      onChange={(e) => setCustomTimestampField(e.target.value)}
+                      placeholder="timestamp"
+                      className="input"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Name of the capture group containing the timestamp.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Severity Field Name
+                    </label>
+                    <input
+                      type="text"
+                      value={customSeverityField}
+                      onChange={(e) => setCustomSeverityField(e.target.value)}
+                      placeholder="level"
+                      className="input"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Name of the capture group containing the log level.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Timestamp Format <span className="text-gray-400 dark:text-gray-500">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={customTimestampFormat}
+                    onChange={(e) => setCustomTimestampFormat(e.target.value)}
+                    placeholder="%Y-%m-%d %H:%M:%S.%f"
+                    className="input"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Python strptime format. Leave empty for auto-detection.
+                    Example: <code className="bg-gray-100 dark:bg-zinc-800 px-1 rounded">%Y-%m-%d %H:%M:%S.%f</code>
+                  </p>
+                </div>
+
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                  <p className="text-xs text-amber-800 dark:text-amber-200 font-medium mb-1">
+                    Example: Home Assistant logs
+                  </p>
+                  <code className="block text-xs text-amber-700 dark:text-amber-300 break-all">
+                    (?P&lt;timestamp&gt;\d{'{'}4{'}'}-\d{'{'}2{'}'}-\d{'{'}2{'}'} \d{'{'}2{'}'}:\d{'{'}2{'}'}:\d{'{'}2{'}'}\.\d+) (?P&lt;level&gt;\w+) \((?P&lt;component&gt;[^)]+)\) \[(?P&lt;module&gt;[^\]]+)\] (?P&lt;message&gt;.*)
+                  </code>
+                </div>
+              </div>
             )}
 
             {/* API Push Info */}

@@ -81,6 +81,12 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
   const [udpPort, setUdpPort] = useState(5514);
   const [udpHost, setUdpHost] = useState('0.0.0.0');
 
+  // Custom parser config
+  const [customPattern, setCustomPattern] = useState('');
+  const [customTimestampField, setCustomTimestampField] = useState('timestamp');
+  const [customTimestampFormat, setCustomTimestampFormat] = useState('');
+  const [customSeverityField, setCustomSeverityField] = useState('level');
+
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -103,6 +109,10 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     setReadFromEnd(true);
     setUdpPort(5514);
     setUdpHost('0.0.0.0');
+    setCustomPattern('');
+    setCustomTimestampField('timestamp');
+    setCustomTimestampFormat('');
+    setCustomSeverityField('level');
     setErrors({});
   };
 
@@ -148,6 +158,20 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     if (sourceType === 'udp_listen') {
       if (!udpPort || udpPort < 1 || udpPort > 65535) {
         newErrors.udpPort = 'Port must be between 1 and 65535';
+      }
+    }
+
+    // Custom parser validation
+    if (parserType === 'custom') {
+      if (!customPattern.trim()) {
+        newErrors.customPattern = 'Regex pattern is required for custom parser';
+      } else {
+        // Try to validate the regex
+        try {
+          new RegExp(customPattern);
+        } catch {
+          newErrors.customPattern = 'Invalid regex pattern';
+        }
       }
     }
 
@@ -211,6 +235,25 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     return {};
   };
 
+  const buildParserConfig = (): Record<string, unknown> => {
+    if (parserType === 'custom') {
+      const config: Record<string, unknown> = {
+        pattern: customPattern,
+      };
+      if (customTimestampField.trim()) {
+        config.timestamp_field = customTimestampField;
+      }
+      if (customTimestampFormat.trim()) {
+        config.timestamp_format = customTimestampFormat;
+      }
+      if (customSeverityField.trim()) {
+        config.severity_field = customSeverityField;
+      }
+      return config;
+    }
+    return {};
+  };
+
   const handleSubmit = async () => {
     if (!validateStep2()) return;
 
@@ -222,7 +265,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
         source_type: sourceType,
         parser_type: parserType,
         config: buildConfig(),
-        parser_config: {},
+        parser_config: buildParserConfig(),
       });
       handleClose();
     } catch (error) {
@@ -626,6 +669,87 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                     <p className="mt-2 text-xs text-primary-600 dark:text-primary-400">
                       Include the API key in the X-API-Key header.
                     </p>
+                  </div>
+                )}
+
+                {/* Custom Parser Configuration */}
+                {parserType === 'custom' && (
+                  <div className="space-y-4 p-4 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                        Custom Parser Configuration
+                      </h4>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Regex Pattern <span className="text-danger-500">*</span>
+                      </label>
+                      <textarea
+                        value={customPattern}
+                        onChange={(e) => setCustomPattern(e.target.value)}
+                        placeholder="(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>\w+) (?P<message>.*)"
+                        rows={3}
+                        className={clsx('input font-mono text-sm', errors.customPattern && 'border-danger-500')}
+                      />
+                      {errors.customPattern && <p className="mt-1 text-sm text-danger-600">{errors.customPattern}</p>}
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Use named capture groups: (?P&lt;name&gt;pattern). Common groups: timestamp, level, message, component, logger
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Timestamp Field
+                        </label>
+                        <input
+                          type="text"
+                          value={customTimestampField}
+                          onChange={(e) => setCustomTimestampField(e.target.value)}
+                          placeholder="timestamp"
+                          className="input"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Capture group name for timestamp
+                        </p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Severity Field
+                        </label>
+                        <input
+                          type="text"
+                          value={customSeverityField}
+                          onChange={(e) => setCustomSeverityField(e.target.value)}
+                          placeholder="level"
+                          className="input"
+                        />
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Capture group name for severity/level
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Timestamp Format <span className="text-gray-400 dark:text-gray-500">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={customTimestampFormat}
+                        onChange={(e) => setCustomTimestampFormat(e.target.value)}
+                        placeholder="%Y-%m-%d %H:%M:%S.%f"
+                        className="input"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Python strptime format. Leave empty for auto-detection. Example: %Y-%m-%d %H:%M:%S.%f
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <p className="text-xs text-amber-800 dark:text-amber-200">
+                        <strong>Home Assistant example:</strong><br />
+                        <code className="font-mono">{'(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (?P<level>\\w+) \\((?P<component>[^)]+)\\) \\[(?P<logger>[^\\]]+)\\] (?P<message>.*)'}</code>
+                      </p>
+                    </div>
                   </div>
                 )}
 
