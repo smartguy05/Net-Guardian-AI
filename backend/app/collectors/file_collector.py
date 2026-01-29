@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, TextIO
 
 import structlog
 from watchdog.events import (
+    DirCreatedEvent,
+    DirDeletedEvent,
     DirModifiedEvent,
     FileCreatedEvent,
     FileDeletedEvent,
@@ -51,30 +53,32 @@ class FileEventHandler(FileSystemEventHandler):
     def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
         """Handle file modification events."""
         if not event.is_directory and self.collector._loop is not None:
-            if self._matches_pattern(event.src_path):
+            src_path = str(event.src_path)
+            if self._matches_pattern(src_path):
                 # Signal that file has new content
                 asyncio.run_coroutine_threadsafe(
-                    self.collector._on_file_modified(Path(event.src_path)),
+                    self.collector._on_file_modified(Path(src_path)),
                     self.collector._loop,
                 )
 
-    def on_created(self, event: FileCreatedEvent) -> None:
+    def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
         """Handle new file creation events (directory mode)."""
         if not event.is_directory and self.collector._loop is not None:
-            if self.collector.is_directory_mode and self._matches_pattern(event.src_path):
+            src_path = str(event.src_path)
+            if self.collector.is_directory_mode and self._matches_pattern(src_path):
                 # New file created that matches pattern
                 asyncio.run_coroutine_threadsafe(
-                    self.collector._on_file_created(Path(event.src_path)),
+                    self.collector._on_file_created(Path(src_path)),
                     self.collector._loop,
                 )
 
-    def on_deleted(self, event: FileDeletedEvent) -> None:
+    def on_deleted(self, event: DirDeletedEvent | FileDeletedEvent) -> None:
         """Handle file deletion events (directory mode)."""
         if not event.is_directory and self.collector._loop is not None:
             if self.collector.is_directory_mode:
                 # File deleted - close handle if we have one
                 asyncio.run_coroutine_threadsafe(
-                    self.collector._on_file_deleted(Path(event.src_path)),
+                    self.collector._on_file_deleted(Path(str(event.src_path))),
                     self.collector._loop,
                 )
 

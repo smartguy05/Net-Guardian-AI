@@ -138,7 +138,7 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
     if (source?.source_type === 'file_watch') {
       if (!filePath.trim()) newErrors.filePath = watchDirectory ? 'Directory path is required' : 'File path is required';
       else if (!filePath.startsWith('/')) newErrors.filePath = 'Path must be absolute (start with /)';
-      if (watchDirectory && filePattern.trim() && !/^[a-zA-Z0-9*?._\-\[\]]+$/.test(filePattern)) {
+      if (watchDirectory && filePattern.trim() && !/^[a-zA-Z0-9*?._\-[\]]+$/.test(filePattern)) {
         newErrors.filePattern = 'Invalid glob pattern';
       }
     }

@@ -150,7 +150,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     if (sourceType === 'file_watch') {
       if (!filePath.trim()) newErrors.filePath = watchDirectory ? 'Directory path is required' : 'File path is required';
       else if (!filePath.startsWith('/')) newErrors.filePath = 'Path must be absolute (start with /)';
-      if (watchDirectory && filePattern.trim() && !/^[a-zA-Z0-9*?._\-\[\]]+$/.test(filePattern)) {
+      if (watchDirectory && filePattern.trim() && !/^[a-zA-Z0-9*?._\-[\]]+$/.test(filePattern)) {
         newErrors.filePattern = 'Invalid glob pattern';
       }
     }
