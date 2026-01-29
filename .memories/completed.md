@@ -238,3 +238,18 @@ Fixed 460 mypy strict type check errors across 50+ files:
 - `frontend/src/content/helpContent.ts`: Added help section for Sync Names feature
 - `frontend/src/pages/DocsPage.tsx`: Added "Sync from AdGuard" subsection
 - `README.md`: Updated Device Inventory feature description
+
+---
+
+## File Watch Read From End Option (January 2026)
+
+**Feature**: Added "Read from end of file" option for file_watch log sources
+
+**Frontend**:
+- `AddSourceModal.tsx`: Added `readFromEnd` state and checkbox for file_watch sources
+- `EditSourceModal.tsx`: Added `readFromEnd` state and checkbox, loads from source config
+
+**Behavior**:
+- Default: `true` (only collect new log entries written after collector starts)
+- When disabled: Reads all existing entries from the beginning of the file
+- Useful for importing historical log data (e.g., nginx error logs with existing entries)

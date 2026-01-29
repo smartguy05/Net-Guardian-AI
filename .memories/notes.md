@@ -1176,3 +1176,26 @@ Fix:
 ```bash
 echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/registries.conf.d/docker.conf
 ```
+
+---
+
+## File Watch Collector - read_from_end Option (January 2026)
+
+**Problem:** Nginx error logs (or other file_watch sources) show 0 events even though the log file has entries.
+
+**Cause:** The `FileWatchCollector` defaults to `read_from_end=True` (`file_collector.py:93`). This means:
+- On startup, the collector seeks to the END of the file
+- Only NEW lines appended after the collector starts are processed
+- Existing entries in the file are NOT read
+
+**Solution:** Added `read_from_end` option to the frontend source configuration:
+- `AddSourceModal.tsx` and `EditSourceModal.tsx` now have a "Read from end of file" checkbox
+- Default is `true` (only new entries) - good for ongoing monitoring
+- Set to `false` to import historical data from existing log files
+
+**When to disable read_from_end:**
+- Importing historical logs that already exist in the file
+- Testing parser configuration with existing log data
+- One-time data migration scenarios
+
+**Note:** After importing historical data, consider re-enabling `read_from_end` to avoid re-processing the same entries on collector restart.

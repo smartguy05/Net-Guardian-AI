@@ -73,6 +73,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
   // File Watch config
   const [filePath, setFilePath] = useState('');
+  const [readFromEnd, setReadFromEnd] = useState(true);
 
   // UDP Listen config
   const [udpPort, setUdpPort] = useState(5514);
@@ -95,6 +96,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     setApiKey('');
     setPollInterval(30);
     setFilePath('');
+    setReadFromEnd(true);
     setUdpPort(5514);
     setUdpHost('0.0.0.0');
     setErrors({});
@@ -183,6 +185,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
         path: filePath,
         follow: true,
         encoding: 'utf-8',
+        read_from_end: readFromEnd,
       };
     }
 
@@ -466,22 +469,45 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
                 {/* File Watch Configuration */}
                 {sourceType === 'file_watch' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Log File Path
-                    </label>
-                    <input
-                      type="text"
-                      value={filePath}
-                      onChange={(e) => setFilePath(e.target.value)}
-                      placeholder="/logs/pfsense/filter.log"
-                      className={clsx('input', errors.filePath && 'border-danger-500')}
-                    />
-                    {errors.filePath && <p className="mt-1 text-sm text-danger-600">{errors.filePath}</p>}
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Path inside the container. Mount external logs to /logs directory.
-                    </p>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Log File Path
+                      </label>
+                      <input
+                        type="text"
+                        value={filePath}
+                        onChange={(e) => setFilePath(e.target.value)}
+                        placeholder="/logs/pfsense/filter.log"
+                        className={clsx('input', errors.filePath && 'border-danger-500')}
+                      />
+                      {errors.filePath && <p className="mt-1 text-sm text-danger-600">{errors.filePath}</p>}
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Path inside the container. Mount external logs to /logs directory.
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="readFromEnd"
+                        checked={readFromEnd}
+                        onChange={(e) => setReadFromEnd(e.target.checked)}
+                        className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <div>
+                        <label
+                          htmlFor="readFromEnd"
+                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Read from end of file
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          When enabled, only new log entries will be collected. Disable to read existing entries from the beginning of the file.
+                        </p>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {/* UDP Listen Configuration */}
