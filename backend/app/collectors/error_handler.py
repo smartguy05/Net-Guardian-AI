@@ -8,12 +8,12 @@ Provides:
 """
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import Any, Awaitable, TypeVar
+from typing import Any, TypeVar
 
 import httpx
 import structlog

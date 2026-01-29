@@ -1,7 +1,7 @@
 """Semantic analysis API endpoints."""
 
 from datetime import datetime
-from typing import Annotated, Any, cast
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status

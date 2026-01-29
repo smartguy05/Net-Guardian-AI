@@ -1,7 +1,7 @@
 """Chat and natural language query API endpoints."""
 
-from datetime import UTC, datetime, timedelta
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
 

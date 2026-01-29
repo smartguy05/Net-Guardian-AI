@@ -26,7 +26,7 @@ logger = structlog.get_logger()
 class FileEventHandler(FileSystemEventHandler):
     """Watchdog event handler for file modifications."""
 
-    def __init__(self, collector: "FileWatchCollector"):
+    def __init__(self, collector: FileWatchCollector):
         super().__init__()
         self.collector = collector
 

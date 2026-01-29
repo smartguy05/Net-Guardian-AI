@@ -2,8 +2,8 @@
 
 import statistics
 from collections import Counter, defaultdict
-from datetime import UTC, datetime, timedelta
 from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
