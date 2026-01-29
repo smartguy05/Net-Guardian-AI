@@ -1199,3 +1199,47 @@ echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/
 - One-time data migration scenarios
 
 **Note:** After importing historical data, consider re-enabling `read_from_end` to avoid re-processing the same entries on collector restart.
+
+---
+
+## File Watch Collector - Directory Mode (January 2026)
+
+**Feature:** The File Watcher Collector now supports watching an entire directory with glob pattern filtering.
+
+**Use cases:**
+- Rotated log files (e.g., `app.log`, `app.log.1`, `app.log.2`)
+- Date-based log files (e.g., `access-2026-01-01.log`, `access-2026-01-02.log`)
+- Multiple service logs in a shared directory
+
+**Configuration:**
+```json
+{
+  "path": "/var/log/myapp/",       // Directory path (not file)
+  "file_pattern": "*.log",         // Glob pattern for filtering
+  "follow": true,
+  "read_from_end": true
+}
+```
+
+**How it works:**
+1. When `path` is a directory, collector enters directory mode
+2. On start, scans for all files matching `file_pattern`
+3. Opens each matching file with independent position tracking
+4. Watches for `on_created` events to pick up new files
+5. Watches for `on_deleted` events to clean up handles
+6. Reads from all modified files on each poll cycle
+
+**Glob pattern examples:**
+- `*.log` - All .log files
+- `app-*.log` - All app-*.log files (e.g., app-error.log, app-access.log)
+- `access.log*` - All access.log variants (e.g., access.log, access.log.1)
+- `*` - All files (default)
+
+**Frontend UI:**
+- "Watch Directory" checkbox enables directory mode
+- "File Pattern" input appears when directory mode is enabled
+- Path label changes between "Log File Path" and "Log Directory Path"
+
+**Connection test shows:**
+- For directories: "Directory is readable: /path (N files match 'pattern')"
+- For files: "File is readable: /path" (unchanged behavior)

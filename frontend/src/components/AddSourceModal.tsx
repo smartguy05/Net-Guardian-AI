@@ -73,6 +73,8 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
 
   // File Watch config
   const [filePath, setFilePath] = useState('');
+  const [watchDirectory, setWatchDirectory] = useState(false);
+  const [filePattern, setFilePattern] = useState('*.log');
   const [readFromEnd, setReadFromEnd] = useState(true);
 
   // UDP Listen config
@@ -96,6 +98,8 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     setApiKey('');
     setPollInterval(30);
     setFilePath('');
+    setWatchDirectory(false);
+    setFilePattern('*.log');
     setReadFromEnd(true);
     setUdpPort(5514);
     setUdpHost('0.0.0.0');
@@ -134,8 +138,11 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     }
 
     if (sourceType === 'file_watch') {
-      if (!filePath.trim()) newErrors.filePath = 'File path is required';
+      if (!filePath.trim()) newErrors.filePath = watchDirectory ? 'Directory path is required' : 'File path is required';
       else if (!filePath.startsWith('/')) newErrors.filePath = 'Path must be absolute (start with /)';
+      if (watchDirectory && filePattern.trim() && !/^[a-zA-Z0-9*?._\-\[\]]+$/.test(filePattern)) {
+        newErrors.filePattern = 'Invalid glob pattern';
+      }
     }
 
     if (sourceType === 'udp_listen') {
@@ -181,12 +188,16 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     }
 
     if (sourceType === 'file_watch') {
-      return {
+      const config: Record<string, unknown> = {
         path: filePath,
         follow: true,
         encoding: 'utf-8',
         read_from_end: readFromEnd,
       };
+      if (watchDirectory && filePattern.trim()) {
+        config.file_pattern = filePattern;
+      }
+      return config;
     }
 
     if (sourceType === 'udp_listen') {
@@ -470,15 +481,36 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                 {/* File Watch Configuration */}
                 {sourceType === 'file_watch' && (
                   <>
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        id="watchDirectory"
+                        checked={watchDirectory}
+                        onChange={(e) => setWatchDirectory(e.target.checked)}
+                        className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <div>
+                        <label
+                          htmlFor="watchDirectory"
+                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Watch Directory
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Monitor all files in a directory that match a pattern (e.g., for rotated logs).
+                        </p>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Log File Path
+                        {watchDirectory ? 'Log Directory Path' : 'Log File Path'}
                       </label>
                       <input
                         type="text"
                         value={filePath}
                         onChange={(e) => setFilePath(e.target.value)}
-                        placeholder="/logs/pfsense/filter.log"
+                        placeholder={watchDirectory ? '/logs/myapp/' : '/logs/pfsense/filter.log'}
                         className={clsx('input', errors.filePath && 'border-danger-500')}
                       />
                       {errors.filePath && <p className="mt-1 text-sm text-danger-600">{errors.filePath}</p>}
@@ -486,6 +518,25 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                         Path inside the container. Mount external logs to /logs directory.
                       </p>
                     </div>
+
+                    {watchDirectory && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          File Pattern
+                        </label>
+                        <input
+                          type="text"
+                          value={filePattern}
+                          onChange={(e) => setFilePattern(e.target.value)}
+                          placeholder="*.log"
+                          className={clsx('input w-48', errors.filePattern && 'border-danger-500')}
+                        />
+                        {errors.filePattern && <p className="mt-1 text-sm text-danger-600">{errors.filePattern}</p>}
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          Glob pattern to filter files (e.g., *.log, app-*.log, access.log.*)
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-start gap-3">
                       <input
@@ -503,7 +554,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                           Read from end of file
                         </label>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          When enabled, only new log entries will be collected. Disable to read existing entries from the beginning of the file.
+                          When enabled, only new log entries will be collected. Disable to read existing entries from the beginning.
                         </p>
                       </div>
                     </div>
