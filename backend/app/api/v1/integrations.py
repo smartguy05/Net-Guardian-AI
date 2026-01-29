@@ -131,9 +131,35 @@ async def test_router_connection(
 
     # Get the appropriate router service
     if router_type == "unifi":
-        router_service = get_unifi_service()
+        unifi_service = get_unifi_service()
+        if not unifi_service.is_configured:
+            return TestConnectionResponse(
+                success=False,
+                message=f"{router_type} is not configured",
+                error="Missing URL, username, or password in configuration",
+            )
+        result = await unifi_service.test_connection()
+        return TestConnectionResponse(
+            success=result.success,
+            message=result.message,
+            details=result.details or {},
+            error=result.error,
+        )
     elif router_type in ("pfsense", "opnsense"):
-        router_service = get_pfsense_service()
+        pfsense_service = get_pfsense_service()
+        if not pfsense_service.is_configured:
+            return TestConnectionResponse(
+                success=False,
+                message=f"{router_type} is not configured",
+                error="Missing URL, username, or password in configuration",
+            )
+        result = await pfsense_service.test_connection()
+        return TestConnectionResponse(
+            success=result.success,
+            message=result.message,
+            details=result.details or {},
+            error=result.error,
+        )
     else:
         return TestConnectionResponse(
             success=False,
@@ -141,21 +167,6 @@ async def test_router_connection(
             error="Supported types: unifi, pfsense, opnsense",
         )
 
-    if not router_service.is_configured:
-        return TestConnectionResponse(
-            success=False,
-            message=f"{router_type} is not configured",
-            error="Missing URL, username, or password in configuration",
-        )
-
-    result = await router_service.test_connection()
-
-    return TestConnectionResponse(
-        success=result.success,
-        message=result.message,
-        details=result.details or {},
-        error=result.error,
-    )
 
 
 @router.get("/router/blocked", response_model=list[dict[str, Any]])
@@ -170,16 +181,17 @@ async def get_router_blocked_devices(
 
     # Get the appropriate router service
     if router_type == "unifi":
-        router_service = get_unifi_service()
+        unifi_service = get_unifi_service()
+        if not unifi_service.is_enabled:
+            return []
+        return await unifi_service.get_blocked_devices()
     elif router_type in ("pfsense", "opnsense"):
-        router_service = get_pfsense_service()
+        pfsense_service = get_pfsense_service()
+        if not pfsense_service.is_enabled:
+            return []
+        return await pfsense_service.get_blocked_devices()
     else:
         return []
-
-    if not router_service.is_enabled:
-        return []
-
-    return await router_service.get_blocked_devices()
 
 
 @router.post("/sync-quarantine", response_model=dict[str, Any])

@@ -27,7 +27,7 @@ class AdGuardParser(BaseParser):
         except (ValueError, AttributeError):
             return datetime.now(UTC)
 
-    def _determine_severity(self, entry: dict) -> EventSeverity:
+    def _determine_severity(self, entry: dict[str, Any]) -> EventSeverity:
         """Determine event severity based on the query result."""
         reason = entry.get("reason", "")
 
@@ -42,7 +42,7 @@ class AdGuardParser(BaseParser):
 
         return EventSeverity.INFO
 
-    def _determine_action(self, entry: dict) -> str:
+    def _determine_action(self, entry: dict[str, Any]) -> str:
         """Determine the action taken on the query."""
         reason = entry.get("reason", "")
 
@@ -63,7 +63,7 @@ class AdGuardParser(BaseParser):
 
         return reason_actions.get(reason, "unknown")
 
-    def _get_response_status(self, entry: dict) -> str:
+    def _get_response_status(self, entry: dict[str, Any]) -> str:
         """Get the response status for the query."""
         reason = entry.get("reason", "")
 

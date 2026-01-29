@@ -116,7 +116,7 @@ async def list_devices(
         if tag_list:
             # Filter devices that have ALL specified tags
             for tag in tag_list:
-                query = query.where(Device.tags.contains([tag]))
+                query = query.where(Device.profile_tags.contains([tag]))
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())

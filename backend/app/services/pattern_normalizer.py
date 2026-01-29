@@ -167,7 +167,7 @@ class PatternNormalizer:
         return normalized, pattern_hash
 
     @classmethod
-    def extract_variables(cls, message: str) -> dict:
+    def extract_variables(cls, message: str) -> dict[str, list[str]]:
         """Extract the dynamic values from a log message.
 
         This is useful for debugging and analysis to see what values
@@ -179,7 +179,7 @@ class PatternNormalizer:
         Returns:
             A dictionary mapping placeholder types to lists of extracted values.
         """
-        variables = {}
+        variables: dict[str, list[str]] = {}
 
         for pattern, replacement in cls._compiled_patterns:
             placeholder_name = replacement.strip("<>")

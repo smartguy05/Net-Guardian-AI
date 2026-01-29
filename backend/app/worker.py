@@ -5,6 +5,8 @@ This module runs as a separate process to collect logs from configured sources.
 
 import asyncio
 import signal
+from functools import partial
+from types import FrameType
 
 import structlog
 
@@ -32,7 +34,7 @@ logger = structlog.get_logger()
 class CollectorWorker:
     """Main collector worker process."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._shutdown_event: asyncio.Event = asyncio.Event()
         self._loop: asyncio.AbstractEventLoop | None = None
 
@@ -52,15 +54,21 @@ class CollectorWorker:
 
         # Set up signal handlers
         self._loop = asyncio.get_running_loop()
+
+        def windows_signal_handler(
+            sig: signal.Signals, signum: int, frame: FrameType | None
+        ) -> None:
+            self._signal_handler(sig)
+
         for sig in (signal.SIGTERM, signal.SIGINT):
             try:
                 self._loop.add_signal_handler(
                     sig,
-                    lambda s=sig: self._signal_handler(s),
+                    partial(self._signal_handler, sig),
                 )
             except NotImplementedError:
                 # Windows doesn't support add_signal_handler
-                signal.signal(sig, lambda s, f, sig=sig: self._signal_handler(sig))
+                signal.signal(sig, partial(windows_signal_handler, sig))
 
         try:
             # Initialize database connection

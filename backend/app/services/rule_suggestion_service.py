@@ -9,7 +9,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, func, select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
@@ -288,7 +288,7 @@ class RuleSuggestionService:
 
             stmt = (
                 select(SuggestedRule)
-                .where(and_(*conditions) if conditions else True)
+                .where(and_(*conditions) if conditions else true())
                 .order_by(SuggestedRule.created_at.desc())
                 .limit(filters.limit)
                 .offset(filters.offset)
@@ -347,7 +347,7 @@ class RuleSuggestionService:
                 conditions.append(SuggestedRule.rule_type == filters.rule_type)
 
             stmt = select(func.count(SuggestedRule.id)).where(
-                and_(*conditions) if conditions else True
+                and_(*conditions) if conditions else true()
             )
 
             result = await session.execute(stmt)
@@ -647,7 +647,7 @@ class RuleSuggestionService:
 
             stmt = (
                 select(SuggestedRuleHistory)
-                .where(and_(*conditions) if conditions else True)
+                .where(and_(*conditions) if conditions else true())
                 .order_by(SuggestedRuleHistory.created_at.desc())
                 .limit(filters.limit)
                 .offset(filters.offset)

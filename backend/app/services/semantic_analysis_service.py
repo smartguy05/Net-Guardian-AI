@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, func, select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import AsyncSessionLocal
@@ -468,7 +468,7 @@ class SemanticAnalysisService:
 
             stmt = (
                 select(SemanticAnalysisRun)
-                .where(and_(*conditions) if conditions else True)
+                .where(and_(*conditions) if conditions else true())
                 .order_by(SemanticAnalysisRun.started_at.desc())
                 .limit(limit)
             )
@@ -520,7 +520,7 @@ class SemanticAnalysisService:
 
             stmt = (
                 select(IrregularLog)
-                .where(and_(*conditions) if conditions else True)
+                .where(and_(*conditions) if conditions else true())
                 .order_by(IrregularLog.created_at.desc())
                 .limit(filters.limit)
                 .offset(filters.offset)
@@ -564,7 +564,7 @@ class SemanticAnalysisService:
                 conditions.append(IrregularLog.severity_score >= filters.min_severity)
 
             stmt = select(func.count(IrregularLog.id)).where(
-                and_(*conditions) if conditions else True
+                and_(*conditions) if conditions else true()
             )
 
             result = await session.execute(stmt)

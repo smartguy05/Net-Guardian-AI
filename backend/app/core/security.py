@@ -3,7 +3,7 @@
 import secrets
 from datetime import UTC, datetime, timedelta
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 import bcrypt
 from jose import JWTError, jwt
@@ -120,7 +120,9 @@ def create_access_token(
     if additional_claims:
         to_encode.update(additional_claims)
 
-    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+    return cast(
+        str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+    )
 
 
 def create_refresh_token(
@@ -151,7 +153,9 @@ def create_refresh_token(
         "jti": secrets.token_urlsafe(16),  # Unique token ID for revocation
     }
 
-    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+    return cast(
+        str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+    )
 
 
 def create_2fa_pending_token(
@@ -182,7 +186,9 @@ def create_2fa_pending_token(
         "iat": datetime.now(UTC),
     }
 
-    return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+    return cast(
+        str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
+    )
 
 
 def decode_token(token: str) -> dict[str, Any]:
@@ -203,7 +209,7 @@ def decode_token(token: str) -> dict[str, Any]:
             settings.secret_key,
             algorithms=[settings.jwt_algorithm],
         )
-        return payload
+        return cast(dict[str, Any], payload)
     except JWTError as e:
         raise AuthenticationError(
             message="Invalid or expired token",

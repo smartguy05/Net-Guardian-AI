@@ -32,18 +32,18 @@ class EventBus:
         """
         self.redis_url = redis_url or settings.redis_url
         self._redis: redis.Redis | None = None
-        self._consumer_tasks: list[asyncio.Task] = []
+        self._consumer_tasks: list[asyncio.Task[None]] = []
         self._running = False
 
     async def connect(self) -> None:
         """Connect to Redis."""
         if self._redis is None:
-            self._redis = redis.from_url(
+            self._redis = redis.from_url(  # type: ignore[no-untyped-call]
                 self.redis_url,
                 encoding="utf-8",
                 decode_responses=True,
             )
-            await self._redis.ping()
+            await self._redis.ping()  # type: ignore[misc]
             logger.info("event_bus_connected", redis_url=self.redis_url)
 
     async def disconnect(self) -> None:
@@ -91,14 +91,14 @@ class EventBus:
         """
         client = await self._ensure_connected()
 
-        message = {
+        message: dict[bytes | bytearray | memoryview[int] | str | int | float, bytes | bytearray | memoryview[int] | str | int | float] = {
             "id": str(uuid4()),
             "type": event_type,
             "timestamp": datetime.now(UTC).isoformat(),
             "data": json.dumps(data),
         }
 
-        message_id = await client.xadd(stream, message, maxlen=maxlen)
+        message_id: str = await client.xadd(stream, message, maxlen=maxlen)
 
         logger.debug(
             "event_published",
@@ -327,7 +327,7 @@ class EventBus:
         handler: Callable[[str, str, dict[str, Any]], Any],
         batch_size: int = 10,
         block_ms: int = 5000,
-    ) -> asyncio.Task:
+    ) -> asyncio.Task[None]:
         """Start a consumer as a background task.
 
         Args:
@@ -417,7 +417,8 @@ class EventBus:
             Number of messages removed.
         """
         client = await self._ensure_connected()
-        return await client.xtrim(stream, maxlen=maxlen)
+        result: int = await client.xtrim(stream, maxlen=maxlen)
+        return result
 
 
 # Global event bus instance

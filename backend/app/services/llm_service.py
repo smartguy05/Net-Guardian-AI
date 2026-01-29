@@ -3,10 +3,11 @@
 import json
 from collections.abc import AsyncGenerator
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 import structlog
 from anthropic import APIError, AsyncAnthropic
+from anthropic.types import MessageParam, TextBlock
 
 from app.config import settings
 
@@ -78,10 +79,26 @@ You have access to:
 - Historical patterns for each device"""
 
 
+def _extract_text_from_content(content: list[Any]) -> str:
+    """Extract text from Anthropic message content blocks.
+
+    Args:
+        content: List of content blocks from Anthropic response.
+
+    Returns:
+        Concatenated text from all TextBlock items.
+    """
+    texts: list[str] = []
+    for block in content:
+        if isinstance(block, TextBlock):
+            texts.append(block.text)
+    return "".join(texts)
+
+
 class LLMService:
     """Service for interacting with Claude API."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._client: AsyncAnthropic | None = None
         self._enabled = settings.llm_enabled and bool(settings.anthropic_api_key)
 
@@ -141,7 +158,7 @@ class LLMService:
 
         try:
             # Use prompt caching for the system prompt
-            messages = [{"role": "user", "content": prompt}]
+            messages: list[MessageParam] = [{"role": "user", "content": prompt}]
 
             response = await self.client.messages.create(
                 model=self._get_model(model_type),
@@ -158,7 +175,7 @@ class LLMService:
             )
 
             # Parse the response
-            analysis_text = response.content[0].text
+            analysis_text = _extract_text_from_content(response.content)
 
             # Try to extract structured data if JSON is present
             analysis_result = self._parse_analysis_response(analysis_text)
@@ -282,13 +299,13 @@ Format your response as JSON:
                 json_start = response_text.find("```json") + 7
                 json_end = response_text.find("```", json_start)
                 json_str = response_text[json_start:json_end].strip()
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
             elif "{" in response_text and "}" in response_text:
                 # Try to find JSON object
                 json_start = response_text.find("{")
                 json_end = response_text.rfind("}") + 1
                 json_str = response_text[json_start:json_end]
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
         except json.JSONDecodeError:
             pass
 
@@ -323,6 +340,7 @@ Format your response as JSON:
         prompt = self._build_query_prompt(query, context)
 
         try:
+            messages: list[MessageParam] = [{"role": "user", "content": prompt}]
             response = await self.client.messages.create(
                 model=self._get_model(model_type),
                 max_tokens=settings.llm_max_tokens,
@@ -334,10 +352,10 @@ Format your response as JSON:
                         "cache_control": {"type": "ephemeral"} if settings.llm_cache_enabled else None,
                     }
                 ] if settings.llm_cache_enabled else SYSTEM_PROMPT_CHAT_ASSISTANT,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
             )
 
-            return response.content[0].text
+            return _extract_text_from_content(response.content)
 
         except APIError as e:
             logger.error("llm_query_error", error=str(e))
@@ -418,6 +436,7 @@ Format your response as JSON:
         prompt = self._build_incident_summary_prompt(alerts, anomalies, events, device_data)
 
         try:
+            messages: list[MessageParam] = [{"role": "user", "content": prompt}]
             response = await self.client.messages.create(
                 model=self._get_model(LLMModel.DEFAULT),
                 max_tokens=settings.llm_max_tokens,
@@ -429,10 +448,10 @@ Format your response as JSON:
                         "cache_control": {"type": "ephemeral"} if settings.llm_cache_enabled else None,
                     }
                 ] if settings.llm_cache_enabled else SYSTEM_PROMPT_SECURITY_ANALYST,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
             )
 
-            return self._parse_incident_summary(response.content[0].text)
+            return self._parse_incident_summary(_extract_text_from_content(response.content))
 
         except Exception as e:
             logger.error("incident_summary_error", error=str(e))
@@ -500,11 +519,11 @@ Please provide an incident summary:
                 json_start = response_text.find("```json") + 7
                 json_end = response_text.find("```", json_start)
                 json_str = response_text[json_start:json_end].strip()
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
             elif "{" in response_text:
                 json_start = response_text.find("{")
                 json_end = response_text.rfind("}") + 1
-                return json.loads(response_text[json_start:json_end])
+                return cast(dict[str, Any], json.loads(response_text[json_start:json_end]))
         except json.JSONDecodeError:
             pass
 
@@ -536,7 +555,7 @@ Please provide an incident summary:
         context_message = self._build_query_prompt("", context)
 
         # Prepend context to first user message or add as system context
-        formatted_messages = []
+        formatted_messages: list[MessageParam] = []
         context_added = False
 
         for msg in messages:
@@ -547,7 +566,7 @@ Please provide an incident summary:
                 })
                 context_added = True
             else:
-                formatted_messages.append(msg)
+                formatted_messages.append({"role": msg["role"], "content": msg["content"]})  # type: ignore[typeddict-item]
 
         try:
             async with self.client.messages.stream(

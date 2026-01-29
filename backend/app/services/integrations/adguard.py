@@ -26,7 +26,7 @@ class AdGuardHomeService(IntegrationService):
 
     integration_type = IntegrationType.ADGUARD_HOME
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the AdGuard Home service."""
         self._client: httpx.AsyncClient | None = None
         self._use_pool = True  # Use shared connection pool
@@ -52,7 +52,7 @@ class AdGuardHomeService(IntegrationService):
         return url
 
     @property
-    def _auth(self) -> tuple:
+    def _auth(self) -> tuple[str, str]:
         """Get authentication tuple."""
         return (settings.adguard_username, settings.adguard_password)
 
@@ -77,7 +77,7 @@ class AdGuardHomeService(IntegrationService):
             )
         return self._client
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP client.
 
         Note: When using the shared pool, this only closes the instance client.
@@ -143,20 +143,21 @@ class AdGuardHomeService(IntegrationService):
         client = await self._get_client()
         response = await client.get("/control/clients")
         response.raise_for_status()
-        return response.json()
+        result: dict[str, Any] = response.json()
+        return result
 
     async def _find_client(
         self, mac_address: str, ip_address: str | None = None
     ) -> dict[str, Any] | None:
         """Find a client by MAC address or IP."""
         clients_data = await self._get_clients()
-        clients = clients_data.get("clients", [])
+        clients: list[dict[str, Any]] = clients_data.get("clients", [])
 
         # Normalize MAC for comparison
         mac_normalized = mac_address.lower().replace("-", ":")
 
         for client in clients:
-            client_ids = client.get("ids", [])
+            client_ids: list[str] = client.get("ids", [])
             for cid in client_ids:
                 # Check if it matches MAC
                 if cid.lower().replace("-", ":") == mac_normalized:

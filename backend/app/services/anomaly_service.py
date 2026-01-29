@@ -626,40 +626,35 @@ class AnomalyService:
             devices = result.scalars().all()
 
             detector = AnomalyDetector(session)
-            stats = {
-                "devices_checked": 0,
-                "anomalies_detected": 0,
-                "alerts_created": 0,
-                "by_type": {},
-                "by_severity": {},
-                "errors": 0,
-            }
+            devices_checked = 0
+            anomalies_detected = 0
+            alerts_created = 0
+            by_type: dict[str, int] = {}
+            by_severity: dict[str, int] = {}
+            errors = 0
 
             for device in devices:
                 try:
+                    device_uuid = UUID(str(device.id))
                     anomalies = await detector.detect_anomalies(
-                        device.id, time_window_hours, auto_create_alerts
+                        device_uuid, time_window_hours, auto_create_alerts
                     )
 
-                    stats["devices_checked"] += 1
-                    stats["anomalies_detected"] += len(anomalies)
+                    devices_checked += 1
+                    anomalies_detected += len(anomalies)
 
                     for anomaly in anomalies:
                         # Count by type
                         type_key = anomaly.anomaly_type.value
-                        stats["by_type"][type_key] = (
-                            stats["by_type"].get(type_key, 0) + 1
-                        )
+                        by_type[type_key] = by_type.get(type_key, 0) + 1
 
                         # Count by severity
                         sev_key = anomaly.severity.value
-                        stats["by_severity"][sev_key] = (
-                            stats["by_severity"].get(sev_key, 0) + 1
-                        )
+                        by_severity[sev_key] = by_severity.get(sev_key, 0) + 1
 
                         # Count alerts
                         if anomaly.alert_id:
-                            stats["alerts_created"] += 1
+                            alerts_created += 1
 
                 except Exception as e:
                     logger.error(
@@ -667,7 +662,16 @@ class AnomalyService:
                         device_id=str(device.id),
                         error=str(e),
                     )
-                    stats["errors"] += 1
+                    errors += 1
+
+            stats: dict[str, Any] = {
+                "devices_checked": devices_checked,
+                "anomalies_detected": anomalies_detected,
+                "alerts_created": alerts_created,
+                "by_type": by_type,
+                "by_severity": by_severity,
+                "errors": errors,
+            }
 
             await session.commit()
 

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 
 @dataclass
@@ -57,7 +57,7 @@ class LLMAnalysisResult:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], raw_response: str = None) -> "LLMAnalysisResult":
+    def from_dict(cls, data: dict[str, Any], raw_response: str | None = None) -> "LLMAnalysisResult":
         """Create a result from a parsed dictionary."""
         concerns = [
             LogConcern(
@@ -263,7 +263,7 @@ Respond ONLY with valid JSON matching the specified format.""")
 
         try:
             # Try direct JSON parse first
-            return json.loads(response_text)
+            return cast(dict[str, Any], json.loads(response_text))
         except json.JSONDecodeError:
             pass
 
@@ -273,12 +273,12 @@ Respond ONLY with valid JSON matching the specified format.""")
                 json_start = response_text.find("```json") + 7
                 json_end = response_text.find("```", json_start)
                 json_str = response_text[json_start:json_end].strip()
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
             elif "```" in response_text:
                 json_start = response_text.find("```") + 3
                 json_end = response_text.find("```", json_start)
                 json_str = response_text[json_start:json_end].strip()
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
         except json.JSONDecodeError:
             pass
 
@@ -288,7 +288,7 @@ Respond ONLY with valid JSON matching the specified format.""")
                 json_start = response_text.find("{")
                 json_end = response_text.rfind("}") + 1
                 json_str = response_text[json_start:json_end]
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
         except json.JSONDecodeError:
             pass
 

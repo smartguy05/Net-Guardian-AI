@@ -56,10 +56,10 @@ class ApiPullCollector(BaseCollector):
     def __init__(self, source: LogSource, parser: BaseParser):
         super().__init__(source, parser)
         self._client: httpx.AsyncClient | None = None
-        self._poll_task: asyncio.Task | None = None
+        self._poll_task: asyncio.Task[None] | None = None
         self._last_cursor: str | None = None
         self._last_timestamp: datetime | None = None
-        self._event_queue: asyncio.Queue = asyncio.Queue()
+        self._event_queue: asyncio.Queue[ParseResult] = asyncio.Queue()
 
         # Error handling setup
         retry_config = RetryConfig(
@@ -77,8 +77,8 @@ class ApiPullCollector(BaseCollector):
 
     def _build_url(self) -> str:
         """Build the full URL for the API request."""
-        base_url = self.config.get("url", "").rstrip("/")
-        endpoint = self.config.get("endpoint", "").lstrip("/")
+        base_url: str = self.config.get("url", "").rstrip("/")
+        endpoint: str = self.config.get("endpoint", "").lstrip("/")
         if endpoint:
             return f"{base_url}/{endpoint}"
         return base_url
@@ -98,12 +98,12 @@ class ApiPullCollector(BaseCollector):
 
         return headers
 
-    def _build_auth(self) -> tuple[str, str] | None:
+    def _build_auth(self) -> tuple[str | bytes, str | bytes] | None:
         """Build basic auth tuple if needed."""
         auth_type = self.config.get("auth_type", "none")
         if auth_type == "basic":
-            username = self.config.get("username", "")
-            password = self.config.get("password", "")
+            username: str = self.config.get("username", "")
+            password: str = self.config.get("password", "")
             return (username, password)
         return None
 
@@ -143,7 +143,7 @@ class ApiPullCollector(BaseCollector):
         if isinstance(response_data, dict):
             # Handle nested paths like "meta.next_cursor"
             parts = cursor_field.split(".")
-            current = response_data
+            current: Any = response_data
             for part in parts:
                 if isinstance(current, dict):
                     current = current.get(part)
@@ -177,13 +177,23 @@ class ApiPullCollector(BaseCollector):
 
         try:
             if method == "GET":
-                response = await self._client.get(
-                    url, headers=headers, params=params, auth=auth
-                )
+                if auth is not None:
+                    response = await self._client.get(
+                        url, headers=headers, params=params, auth=auth
+                    )
+                else:
+                    response = await self._client.get(
+                        url, headers=headers, params=params
+                    )
             elif method == "POST":
-                response = await self._client.post(
-                    url, headers=headers, params=params, json=body, auth=auth
-                )
+                if auth is not None:
+                    response = await self._client.post(
+                        url, headers=headers, params=params, json=body, auth=auth
+                    )
+                else:
+                    response = await self._client.post(
+                        url, headers=headers, params=params, json=body
+                    )
             else:
                 raise ValueError(f"Unsupported HTTP method: {method}")
 

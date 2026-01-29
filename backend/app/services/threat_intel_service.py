@@ -371,7 +371,7 @@ class ThreatIntelService:
         """Parse JSON format threat intelligence."""
         import json
 
-        indicators = []
+        indicators: list[dict[str, Any]] = []
 
         try:
             data = json.loads(content)

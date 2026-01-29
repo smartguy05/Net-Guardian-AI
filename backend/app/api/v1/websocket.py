@@ -18,7 +18,7 @@ router = APIRouter()
 class ConnectionManager:
     """Manages WebSocket connections and broadcasts messages to connected clients."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_connections: dict[str, WebSocket] = {}
         self._lock = asyncio.Lock()
 
@@ -108,7 +108,7 @@ def verify_ws_token(token: str) -> dict[str, Any]:
         ValueError: If token is invalid or expired.
     """
     try:
-        payload = jwt.decode(
+        payload: dict[str, Any] = jwt.decode(
             token,
             settings.secret_key,
             algorithms=[settings.jwt_algorithm],
@@ -124,7 +124,7 @@ def verify_ws_token(token: str) -> dict[str, Any]:
 async def websocket_endpoint(
     websocket: WebSocket,
     token: str = Query(..., description="JWT access token"),
-):
+) -> None:
     """WebSocket endpoint for real-time updates.
 
     Clients must provide a valid JWT access token as a query parameter.

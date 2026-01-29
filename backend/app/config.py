@@ -54,7 +54,7 @@ class Settings(BaseSettings):
     # CORS - stored as string to avoid pydantic-settings JSON parsing issues
     cors_origins_raw: str = "http://localhost:3000,http://localhost:5173"
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def cors_origins(self) -> list[str]:
         """Parse CORS origins from raw string."""

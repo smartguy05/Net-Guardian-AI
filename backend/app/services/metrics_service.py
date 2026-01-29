@@ -27,7 +27,7 @@ def _is_multiprocess() -> bool:
 # Use default registry or multiprocess registry
 if _is_multiprocess():
     registry = CollectorRegistry()
-    multiprocess.MultiProcessCollector(registry)
+    multiprocess.MultiProcessCollector(registry)  # type: ignore[no-untyped-call]
 else:
     registry = REGISTRY
 
@@ -249,9 +249,9 @@ def get_metrics_content_type() -> str:
     return CONTENT_TYPE_LATEST
 
 
-def track_request_duration(method: str, endpoint: str):
+def track_request_duration(method: str, endpoint: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator to track HTTP request duration."""
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             HTTP_REQUESTS_IN_PROGRESS.labels(method=method, endpoint=endpoint).inc()
@@ -344,7 +344,7 @@ def update_alert_counts(new: int, acknowledged: int, critical: int, high: int, m
     ALERTS_ACTIVE.labels(severity="low").set(low)
 
 
-def update_threat_intel_counts(enabled_feeds: int, disabled_feeds: int, indicators_by_type: dict) -> None:
+def update_threat_intel_counts(enabled_feeds: int, disabled_feeds: int, indicators_by_type: dict[str, int]) -> None:
     """Update threat intelligence counts."""
     THREAT_INTEL_FEEDS.labels(status="enabled").set(enabled_feeds)
     THREAT_INTEL_FEEDS.labels(status="disabled").set(disabled_feeds)

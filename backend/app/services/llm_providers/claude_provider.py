@@ -4,6 +4,7 @@ from typing import Any
 
 import structlog
 from anthropic import APIError, AsyncAnthropic
+from anthropic.types import TextBlock, TextBlockParam
 
 from app.config import settings
 from app.services.llm_providers.base import (
@@ -88,13 +89,14 @@ class ClaudeLLMProvider(BaseLLMProvider):
 
         try:
             # Build system prompt with optional caching
+            system: str | list[TextBlockParam]
             if self._enable_cache:
                 system = [
-                    {
-                        "type": "text",
-                        "text": SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
+                    TextBlockParam(
+                        type="text",
+                        text=SEMANTIC_ANALYSIS_SYSTEM_PROMPT,
+                        cache_control={"type": "ephemeral"},
+                    )
                 ]
             else:
                 system = SEMANTIC_ANALYSIS_SYSTEM_PROMPT
@@ -107,7 +109,12 @@ class ClaudeLLMProvider(BaseLLMProvider):
                 messages=[{"role": "user", "content": prompt}],
             )
 
-            response_text = response.content[0].text
+            first_block = response.content[0]
+            if not isinstance(first_block, TextBlock):
+                return LLMAnalysisResult.from_error(
+                    f"Unexpected response block type: {type(first_block).__name__}"
+                )
+            response_text = first_block.text
             tokens_used = response.usage.input_tokens + response.usage.output_tokens
 
             # Log cache performance

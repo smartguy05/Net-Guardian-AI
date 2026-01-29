@@ -182,26 +182,31 @@ class RetentionService:
         Returns:
             Dict with cleanup results.
         """
+        policies: list[RetentionPolicy]
         if policy_id:
-            policies = [await self.get_policy(policy_id)]
-            policies = [p for p in policies if p]
+            policy = await self.get_policy(policy_id)
+            policies = [policy] if policy else []
         else:
             result = await self.session.execute(
                 select(RetentionPolicy).where(RetentionPolicy.enabled.is_(True))
             )
             policies = list(result.scalars().all())
 
-        results = {
+        details: list[dict[str, Any]] = []
+        results: dict[str, Any] = {
             "dry_run": dry_run,
             "policies_processed": 0,
             "total_deleted": 0,
-            "details": [],
+            "details": details,
         }
+
+        policies_processed = 0
+        total_deleted = 0
 
         for policy in policies:
             if policy.retention_days == 0:
                 # 0 means keep forever
-                results["details"].append(
+                details.append(
                     {
                         "table": policy.table_name,
                         "status": "skipped",
@@ -223,9 +228,9 @@ class RetentionService:
                     policy.last_run = datetime.now(UTC)
                     policy.deleted_count = deleted
 
-                results["policies_processed"] += 1
-                results["total_deleted"] += deleted
-                results["details"].append(
+                policies_processed += 1
+                total_deleted += deleted
+                details.append(
                     {
                         "table": policy.table_name,
                         "status": "success",
@@ -247,7 +252,7 @@ class RetentionService:
                     table=policy.table_name,
                     error=str(e),
                 )
-                results["details"].append(
+                details.append(
                     {
                         "table": policy.table_name,
                         "status": "error",
@@ -258,6 +263,8 @@ class RetentionService:
         if not dry_run:
             await self.session.commit()
 
+        results["policies_processed"] = policies_processed
+        results["total_deleted"] = total_deleted
         return results
 
     async def _cleanup_table(
@@ -300,10 +307,12 @@ class RetentionService:
             delete_query = text(
                 f"DELETE FROM {table_name} WHERE {timestamp_col} < :cutoff"
             )
-            result = await self.session.execute(
+            cursor_result = await self.session.execute(
                 delete_query, {"cutoff": cutoff_date}
             )
-            return result.rowcount
+            # rowcount is available on CursorResult from text() execution
+            rowcount: int = getattr(cursor_result, "rowcount", 0) or 0
+            return rowcount
 
     async def get_storage_stats(self) -> dict[str, Any]:
         """Get storage statistics for all retention-managed tables.
@@ -311,7 +320,8 @@ class RetentionService:
         Returns:
             Dict with storage statistics per table.
         """
-        stats = {"tables": [], "total_rows": 0}
+        tables: list[dict[str, Any]] = []
+        total_rows = 0
 
         policies = await self.get_all_policies()
 
@@ -320,7 +330,7 @@ class RetentionService:
                 # Get row count
                 count_query = text(f"SELECT COUNT(*) FROM {policy.table_name}")
                 result = await self.session.execute(count_query)
-                row_count = result.scalar() or 0
+                row_count: int = result.scalar() or 0
 
                 # Get table size (PostgreSQL specific)
                 size_query = text(
@@ -329,7 +339,7 @@ class RetentionService:
                 result = await self.session.execute(size_query)
                 table_size = result.scalar() or "unknown"
 
-                stats["tables"].append(
+                tables.append(
                     {
                         "table_name": policy.table_name,
                         "display_name": policy.display_name,
@@ -341,7 +351,7 @@ class RetentionService:
                         "last_deleted": policy.deleted_count,
                     }
                 )
-                stats["total_rows"] += row_count
+                total_rows += row_count
 
             except Exception as e:
                 logger.warning(
@@ -349,7 +359,7 @@ class RetentionService:
                     table=policy.table_name,
                     error=str(e),
                 )
-                stats["tables"].append(
+                tables.append(
                     {
                         "table_name": policy.table_name,
                         "display_name": policy.display_name,
@@ -357,4 +367,4 @@ class RetentionService:
                     }
                 )
 
-        return stats
+        return {"tables": tables, "total_rows": total_rows}

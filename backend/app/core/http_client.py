@@ -21,7 +21,7 @@ class HttpClientPool:
     connection pooling enabled. Clients are reused across requests.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the client pool."""
         self._clients: dict[str, httpx.AsyncClient] = {}
 
@@ -44,7 +44,7 @@ class HttpClientPool:
         self,
         key: str,
         base_url: str | None = None,
-        auth: tuple | None = None,
+        auth: tuple[str, str] | None = None,
         verify: bool = True,
         headers: dict[str, str] | None = None,
     ) -> httpx.AsyncClient:
@@ -67,20 +67,14 @@ class HttpClientPool:
                 base_url=base_url,
             )
 
-            client_kwargs = {
-                "limits": self._create_limits(),
-                "timeout": self._create_timeout(),
-                "verify": verify,
-            }
-
-            if base_url:
-                client_kwargs["base_url"] = base_url
-            if auth:
-                client_kwargs["auth"] = auth
-            if headers:
-                client_kwargs["headers"] = headers
-
-            self._clients[key] = httpx.AsyncClient(**client_kwargs)
+            self._clients[key] = httpx.AsyncClient(
+                limits=self._create_limits(),
+                timeout=self._create_timeout(),
+                verify=verify,
+                base_url=base_url or "",
+                auth=auth,
+                headers=headers,
+            )
 
         return self._clients[key]
 

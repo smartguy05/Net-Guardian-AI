@@ -33,7 +33,7 @@ class AuditService:
             return self._session
         return AsyncSessionLocal()
 
-    async def _close_session(self, session: AsyncSession):
+    async def _close_session(self, session: AsyncSession) -> None:
         """Close session if it was created internally."""
         if session != self._session:
             await session.close()

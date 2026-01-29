@@ -5,10 +5,10 @@ frequently-accessed data like device lists, event summaries, and stats.
 """
 
 import json
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from functools import wraps
-from typing import Any, TypeVar
+from typing import Any, ParamSpec, TypeVar, cast
 
 import structlog
 from redis.asyncio import Redis
@@ -16,6 +16,7 @@ from redis.asyncio import Redis
 logger = structlog.get_logger()
 
 T = TypeVar("T")
+P = ParamSpec("P")
 
 # Default TTLs for different cache types
 CACHE_TTL_SHORT = timedelta(seconds=30)  # For real-time data
@@ -173,7 +174,7 @@ def set_cache_service(cache: CacheService) -> None:
 def cached(
     key_template: str,
     ttl: int | timedelta = CACHE_TTL_MEDIUM,
-):
+) -> Callable[[Callable[P, Awaitable[T]]], Callable[P, Awaitable[T]]]:
     """Decorator to cache function results.
 
     Args:
@@ -185,9 +186,9 @@ def cached(
         async def list_devices(page: int, limit: int):
             ...
     """
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+    def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @wraps(func)
-        async def wrapper(*args, **kwargs) -> T:
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
             cache = get_cache_service()
             if cache is None:
                 return await func(*args, **kwargs)
@@ -203,7 +204,7 @@ def cached(
             cached_value = await cache.get(cache_key)
             if cached_value is not None:
                 logger.debug("Cache hit", key=cache_key)
-                return cached_value
+                return cast(T, cached_value)
 
             # Execute function and cache result
             result = await func(*args, **kwargs)

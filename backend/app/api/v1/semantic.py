@@ -1,7 +1,7 @@
 """Semantic analysis API endpoints."""
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -239,7 +239,7 @@ class ResearchQueryResponse(BaseModel):
 # --- Helper Functions ---
 
 
-def _config_to_response(config) -> SemanticConfigResponse:
+def _config_to_response(config: Any) -> SemanticConfigResponse:
     """Convert config to response model."""
     return SemanticConfigResponse(
         id=str(config.id),
@@ -256,7 +256,7 @@ def _config_to_response(config) -> SemanticConfigResponse:
     )
 
 
-def _pattern_to_response(pattern) -> PatternResponse:
+def _pattern_to_response(pattern: Any) -> PatternResponse:
     """Convert pattern to response model."""
     return PatternResponse(
         id=str(pattern.id),
@@ -272,7 +272,7 @@ def _pattern_to_response(pattern) -> PatternResponse:
     )
 
 
-def _irregular_to_response(irregular) -> IrregularLogResponse:
+def _irregular_to_response(irregular: Any) -> IrregularLogResponse:
     """Convert irregular log to response model."""
     return IrregularLogResponse(
         id=str(irregular.id),
@@ -290,7 +290,7 @@ def _irregular_to_response(irregular) -> IrregularLogResponse:
     )
 
 
-def _run_to_response(run) -> AnalysisRunResponse:
+def _run_to_response(run: Any) -> AnalysisRunResponse:
     """Convert analysis run to response model."""
     return AnalysisRunResponse(
         id=str(run.id),
@@ -307,7 +307,7 @@ def _run_to_response(run) -> AnalysisRunResponse:
     )
 
 
-def _suggested_rule_to_response(rule) -> SuggestedRuleResponse:
+def _suggested_rule_to_response(rule: Any) -> SuggestedRuleResponse:
     """Convert suggested rule to response model."""
     return SuggestedRuleResponse(
         id=str(rule.id),
@@ -331,7 +331,7 @@ def _suggested_rule_to_response(rule) -> SuggestedRuleResponse:
     )
 
 
-def _history_to_response(history) -> RuleHistoryResponse:
+def _history_to_response(history: Any) -> RuleHistoryResponse:
     """Convert rule history to response model."""
     return RuleHistoryResponse(
         id=str(history.id),
@@ -672,7 +672,14 @@ Example good queries:
             ],
         )
 
-        query = response.content[0].text.strip()
+        # Extract text from the first content block
+        content_block = response.content[0]
+        if not hasattr(content_block, "text"):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Unexpected response format from LLM",
+            )
+        query = content_block.text.strip()
         # Clean up any quotes or extra formatting
         query = query.strip('"\'')
 

@@ -24,7 +24,7 @@ class TOTPService:
     BACKUP_CODE_COUNT = 10
     BACKUP_CODE_LENGTH = 8
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the TOTP service."""
         pass
 

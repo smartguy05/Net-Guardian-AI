@@ -4,7 +4,7 @@ import hashlib
 import json
 import secrets
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlencode
 
 import httpx
@@ -36,7 +36,7 @@ class OIDCTokenError(OIDCError):
 class OIDCService:
     """Service for handling OIDC authentication with Authentik."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._oidc_config_cache: dict[str, Any] | None = None
         self._oidc_config_expiry: datetime | None = None
         self._jwks_cache: dict[str, Any] | None = None
@@ -84,7 +84,7 @@ class OIDCService:
             self._oidc_config_expiry = now + timedelta(hours=1)
 
             logger.info("oidc_config_fetched", issuer=issuer_url)
-            return config
+            return cast(dict[str, Any], config)
 
         except httpx.HTTPError as e:
             logger.error("oidc_config_fetch_failed", error=str(e), url=discovery_url)
@@ -118,7 +118,7 @@ class OIDCService:
             self._jwks_expiry = now + timedelta(hours=1)
 
             logger.info("jwks_fetched", uri=jwks_uri)
-            return jwks
+            return cast(dict[str, Any], jwks)
 
         except httpx.HTTPError as e:
             logger.error("jwks_fetch_failed", error=str(e), url=jwks_uri)
@@ -134,10 +134,10 @@ class OIDCService:
         code_verifier = secrets.token_urlsafe(32)
 
         # Create code challenge using SHA256
-        code_challenge = hashlib.sha256(code_verifier.encode()).digest()
+        code_challenge_bytes = hashlib.sha256(code_verifier.encode()).digest()
         # Base64url encode without padding
         import base64
-        code_challenge = base64.urlsafe_b64encode(code_challenge).decode().rstrip('=')
+        code_challenge = base64.urlsafe_b64encode(code_challenge_bytes).decode().rstrip('=')
 
         return code_verifier, code_challenge
 
@@ -216,7 +216,7 @@ class OIDCService:
                     )
                     raise OIDCTokenError(f"Token exchange failed: {error_msg}")
 
-                return response.json()
+                return cast(dict[str, Any], response.json())
 
         except httpx.HTTPError as e:
             logger.error("oidc_token_exchange_http_error", error=str(e))
@@ -258,7 +258,7 @@ class OIDCService:
             )
 
             logger.info("id_token_validated", sub=claims.get("sub"))
-            return claims
+            return cast(dict[str, Any], claims)
 
         except JWTError as e:
             logger.error("id_token_validation_failed", error=str(e))

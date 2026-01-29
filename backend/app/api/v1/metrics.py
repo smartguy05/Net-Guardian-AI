@@ -9,7 +9,7 @@ router = APIRouter(prefix="/metrics", tags=["metrics"])
 
 
 @router.get("", response_class=PlainTextResponse)
-async def metrics():
+async def metrics() -> Response:
     """
     Expose Prometheus metrics.
 

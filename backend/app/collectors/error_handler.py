@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from functools import wraps
-from typing import TypeVar
+from typing import Any, Awaitable, TypeVar
 
 import httpx
 import structlog
@@ -51,10 +51,10 @@ class CollectorError:
     source_id: str
     timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     retryable: bool = True
-    details: dict = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
     original_exception: Exception | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging/storage."""
         return {
             "category": self.category.value,
@@ -289,7 +289,7 @@ class RetryHandler:
 
     async def execute(
         self,
-        func: Callable[[], T],
+        func: Callable[[], Awaitable[T]],
         source_id: str,
         operation_name: str = "operation",
     ) -> T:
@@ -394,7 +394,7 @@ def with_retry(
     max_retries: int = 3,
     initial_delay: float = 1.0,
     max_delay: float = 60.0,
-):
+) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
     """Decorator for adding retry logic to async methods.
 
     Args:
@@ -403,9 +403,9 @@ def with_retry(
         max_delay: Maximum delay between retries.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
         @wraps(func)
-        async def wrapper(self, *args, **kwargs):
+        async def wrapper(self: Any, *args: Any, **kwargs: Any) -> T:
             config = RetryConfig(
                 max_retries=max_retries,
                 initial_delay=initial_delay,
@@ -416,7 +416,7 @@ def with_retry(
             source_id = getattr(self, "source_id", "unknown")
             operation_name = func.__name__
 
-            async def call():
+            async def call() -> T:
                 return await func(self, *args, **kwargs)
 
             return await handler.execute(call, source_id, operation_name)
@@ -485,7 +485,7 @@ class ErrorTracker:
         errors = await self.get_recent_errors(minutes)
         return len(errors) / minutes if minutes > 0 else 0
 
-    async def get_error_summary(self) -> dict:
+    async def get_error_summary(self) -> dict[str, Any]:
         """Get a summary of error statistics."""
         errors = await self.get_recent_errors(60)  # Last hour
 

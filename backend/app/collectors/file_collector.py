@@ -1,18 +1,24 @@
 """File collector for watching and tailing log files."""
 
+from __future__ import annotations
+
 import asyncio
 import os
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import TYPE_CHECKING, TextIO
 
 import structlog
-from watchdog.events import FileModifiedEvent, FileSystemEventHandler
+from watchdog.events import DirModifiedEvent, FileModifiedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
 from app.collectors.base import BaseCollector
 from app.collectors.registry import register_collector
 from app.models.log_source import LogSource, SourceType
 from app.parsers.base import BaseParser, ParseResult
+
+if TYPE_CHECKING:
+    from watchdog.observers.api import BaseObserver
 
 logger = structlog.get_logger()
 
@@ -24,9 +30,9 @@ class FileEventHandler(FileSystemEventHandler):
         super().__init__()
         self.collector = collector
 
-    def on_modified(self, event: FileModifiedEvent) -> None:
+    def on_modified(self, event: DirModifiedEvent | FileModifiedEvent) -> None:
         """Handle file modification events."""
-        if not event.is_directory:
+        if not event.is_directory and self.collector._loop is not None:
             # Signal that file has new content
             asyncio.run_coroutine_threadsafe(
                 self.collector._on_file_modified(),
@@ -48,12 +54,12 @@ class FileWatchCollector(BaseCollector):
 
     def __init__(self, source: LogSource, parser: BaseParser):
         super().__init__(source, parser)
-        self._observer: Observer | None = None
-        self._file_handle = None
+        self._observer: BaseObserver | None = None
+        self._file_handle: TextIO | None = None
         self._file_position: int = 0
-        self._event_queue: asyncio.Queue = asyncio.Queue()
+        self._event_queue: asyncio.Queue[ParseResult] = asyncio.Queue()
         self._loop: asyncio.AbstractEventLoop | None = None
-        self._read_task: asyncio.Task | None = None
+        self._read_task: asyncio.Task[None] | None = None
         self._file_modified = asyncio.Event()
 
     @property
@@ -64,7 +70,8 @@ class FileWatchCollector(BaseCollector):
     @property
     def encoding(self) -> str:
         """Get the file encoding."""
-        return self.config.get("encoding", "utf-8")
+        encoding: str = self.config.get("encoding", "utf-8")
+        return encoding
 
     async def _on_file_modified(self) -> None:
         """Handle file modification notification."""
@@ -79,12 +86,13 @@ class FileWatchCollector(BaseCollector):
         if not path.exists():
             raise FileNotFoundError(f"Log file not found: {path}")
 
-        self._file_handle = open(path, encoding=self.encoding)
+        file_handle: TextIO = open(path, encoding=self.encoding)
+        self._file_handle = file_handle
 
         # Position at end if configured
         if self.config.get("read_from_end", True):
-            self._file_handle.seek(0, os.SEEK_END)
-            self._file_position = self._file_handle.tell()
+            file_handle.seek(0, os.SEEK_END)
+            self._file_position = file_handle.tell()
         else:
             self._file_position = 0
 

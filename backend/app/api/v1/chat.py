@@ -1,6 +1,7 @@
 """Chat and natural language query API endpoints."""
 
 from datetime import UTC, datetime, timedelta
+from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -257,7 +258,7 @@ async def chat(
     request: ChatRequest,
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _current_user: Annotated[User, Depends(get_current_user)],
-):
+) -> StreamingResponse | ChatResponse:
     """Chat with the AI assistant about your network.
 
     Supports both regular and streaming responses. For streaming,
@@ -279,7 +280,7 @@ async def chat(
 
     if request.stream:
         # Return streaming response
-        async def generate():
+        async def generate() -> AsyncGenerator[str, None]:
             async for chunk in llm_service.stream_chat(messages, context):
                 yield f"data: {chunk}\n\n"
             yield "data: [DONE]\n\n"

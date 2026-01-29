@@ -23,12 +23,12 @@ class UniFiService(IntegrationService):
     firewall rules or by blocking them at the access point level.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._session_cookie: str | None = None
         self._csrf_token: str | None = None
 
     @property
-    def integration_type(self) -> IntegrationType:
+    def integration_type(self) -> IntegrationType:  # type: ignore[override]
         return IntegrationType.UNIFI
 
     @property
@@ -158,8 +158,8 @@ class UniFiService(IntegrationService):
     async def block_device(
         self,
         mac_address: str,
+        ip_address: str | None = None,
         reason: str | None = None,
-        device_name: str | None = None,
     ) -> IntegrationResult:
         """Block a device by MAC address using UniFi Controller.
 
@@ -206,7 +206,7 @@ class UniFiService(IntegrationService):
                             "Device blocked via UniFi",
                             extra={
                                 "mac_address": mac_address,
-                                "device_name": device_name,
+                                "ip_address": ip_address,
                                 "reason": reason,
                             },
                         )
@@ -217,7 +217,7 @@ class UniFiService(IntegrationService):
                             target=mac_address,
                             message=f"Successfully blocked device {mac_address}",
                             details={
-                                "device_name": device_name,
+                                "ip_address": ip_address,
                                 "reason": reason,
                                 "method": "block-sta",
                             },
@@ -249,8 +249,7 @@ class UniFiService(IntegrationService):
     async def unblock_device(
         self,
         mac_address: str,
-        reason: str | None = None,
-        device_name: str | None = None,
+        ip_address: str | None = None,
     ) -> IntegrationResult:
         """Unblock a device by MAC address."""
         if not self.is_enabled:
@@ -293,8 +292,7 @@ class UniFiService(IntegrationService):
                             "Device unblocked via UniFi",
                             extra={
                                 "mac_address": mac_address,
-                                "device_name": device_name,
-                                "reason": reason,
+                                "ip_address": ip_address,
                             },
                         )
                         return IntegrationResult(
@@ -304,8 +302,7 @@ class UniFiService(IntegrationService):
                             target=mac_address,
                             message=f"Successfully unblocked device {mac_address}",
                             details={
-                                "device_name": device_name,
-                                "reason": reason,
+                                "ip_address": ip_address,
                             },
                         )
 
@@ -332,15 +329,19 @@ class UniFiService(IntegrationService):
                 error=str(e),
             )
 
-    async def is_device_blocked(self, mac_address: str) -> bool | None:
+    async def is_device_blocked(
+        self,
+        mac_address: str,
+        ip_address: str | None = None,
+    ) -> bool:
         """Check if a device is currently blocked."""
         if not self.is_enabled:
-            return None
+            return False
 
         try:
             async with await self._get_client() as client:
                 if not await self._login(client):
-                    return None
+                    return False
 
                 # Get client info
                 response = await client.get(
@@ -353,16 +354,17 @@ class UniFiService(IntegrationService):
                     data = response.json()
                     clients = data.get("data", [])
                     if clients:
-                        return clients[0].get("blocked", False)
+                        blocked: bool = clients[0].get("blocked", False)
+                        return blocked
 
-                return None
+                return False
 
         except Exception as e:
             logger.error(
                 "Error checking device block status",
                 extra={"mac_address": mac_address, "error": str(e)},
             )
-            return None
+            return False
 
     async def get_blocked_devices(self) -> list[dict[str, Any]]:
         """Get list of all blocked devices."""

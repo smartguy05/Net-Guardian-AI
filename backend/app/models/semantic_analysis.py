@@ -1,5 +1,6 @@
 """Semantic analysis models for intelligent log pattern detection."""
 
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import Any, Optional
@@ -72,7 +73,7 @@ class LogPattern(Base, TimestampMixin):
 
     __tablename__ = "log_patterns"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -137,7 +138,7 @@ class SemanticAnalysisConfig(Base, TimestampMixin):
 
     __tablename__ = "semantic_analysis_configs"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -209,12 +210,12 @@ class IrregularLog(Base, TimestampMixin):
 
     __tablename__ = "irregular_logs"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
     )
-    event_id: Mapped[UUID] = mapped_column(
+    event_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         nullable=False,
         index=True,
@@ -229,7 +230,7 @@ class IrregularLog(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    pattern_id: Mapped[UUID | None] = mapped_column(
+    pattern_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("log_patterns.id", ondelete="SET NULL"),
         nullable=True,
@@ -294,7 +295,7 @@ class SemanticAnalysisRun(Base, TimestampMixin):
 
     __tablename__ = "semantic_analysis_runs"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -382,7 +383,7 @@ class SuggestedRule(Base, TimestampMixin):
 
     __tablename__ = "suggested_rules"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -393,12 +394,12 @@ class SuggestedRule(Base, TimestampMixin):
         nullable=True,
         index=True,
     )
-    analysis_run_id: Mapped[UUID] = mapped_column(
+    analysis_run_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("semantic_analysis_runs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    irregular_log_id: Mapped[UUID] = mapped_column(
+    irregular_log_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("irregular_logs.id", ondelete="CASCADE"),
         nullable=False,
@@ -459,7 +460,7 @@ class SuggestedRule(Base, TimestampMixin):
     )
 
     # Audit
-    reviewed_by: Mapped[UUID | None] = mapped_column(
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
@@ -502,7 +503,7 @@ class SuggestedRuleHistory(Base):
 
     __tablename__ = "suggested_rule_history"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid4,
@@ -513,7 +514,7 @@ class SuggestedRuleHistory(Base):
         unique=True,
         index=True,
     )
-    original_rule_id: Mapped[UUID] = mapped_column(
+    original_rule_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("suggested_rules.id", ondelete="CASCADE"),
         nullable=False,

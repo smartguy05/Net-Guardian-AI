@@ -166,12 +166,16 @@ class NtfyService:
 
         message = "\n".join(message_parts)
 
+        priority = config["priority"]
+        tags = config["tags"]
+        assert isinstance(priority, int)
+        assert isinstance(tags, list)
         return await self.send_notification(
             message=message,
             title=title,
             topic=topic,
-            priority=config["priority"],
-            tags=config["tags"],
+            priority=priority,
+            tags=tags,
         )
 
     async def send_anomaly_notification(

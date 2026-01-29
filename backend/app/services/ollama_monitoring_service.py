@@ -7,10 +7,16 @@ This service monitors local Ollama instances to detect:
 - Unusual usage patterns
 """
 
+from __future__ import annotations
+
 import asyncio
+import json
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 from uuid import uuid4
+
+if TYPE_CHECKING:
+    from app.services.llm_service import LLMService
 
 import httpx
 import structlog
@@ -93,13 +99,13 @@ class OllamaMonitoringService:
     - Creates alerts for detected threats
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._client: httpx.AsyncClient | None = None
         self._running = False
-        self._poll_task: asyncio.Task | None = None
+        self._poll_task: asyncio.Task[None] | None = None
         self._recent_threats: list[ThreatDetection] = []
         self._max_threats_cache = 100
-        self._llm_service = None
+        self._llm_service: LLMService | None = None
 
     @property
     def client(self) -> httpx.AsyncClient:
@@ -396,8 +402,9 @@ Respond in JSON:
                 messages=[{"role": "user", "content": analysis_prompt}],
             )
 
-            # Parse response
-            response_text = response.content[0].text
+            # Parse response - content[0] should be a TextBlock
+            first_block = response.content[0]
+            response_text = first_block.text if hasattr(first_block, "text") else str(first_block)
             return self._parse_llm_analysis(response_text)
 
         except Exception as e:
@@ -406,18 +413,16 @@ Respond in JSON:
 
     def _parse_llm_analysis(self, response_text: str) -> dict[str, Any] | None:
         """Parse LLM analysis response."""
-        import json
-
         try:
             if "```json" in response_text:
                 json_start = response_text.find("```json") + 7
                 json_end = response_text.find("```", json_start)
                 json_str = response_text[json_start:json_end].strip()
-                return json.loads(json_str)
+                return cast(dict[str, Any], json.loads(json_str))
             elif "{" in response_text:
                 json_start = response_text.find("{")
                 json_end = response_text.rfind("}") + 1
-                return json.loads(response_text[json_start:json_end])
+                return cast(dict[str, Any], json.loads(response_text[json_start:json_end]))
         except json.JSONDecodeError:
             pass
 

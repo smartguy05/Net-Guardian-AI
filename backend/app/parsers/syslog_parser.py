@@ -115,7 +115,7 @@ class SyslogParser(BaseParser):
         except ValueError:
             return datetime.now(UTC)
 
-    def _parse_rfc3164(self, line: str, match: re.Match) -> ParseResult | None:
+    def _parse_rfc3164(self, line: str, match: re.Match[str]) -> ParseResult | None:
         """Parse RFC 3164 format message."""
         pri = int(match.group("pri"))
         facility, severity = self._parse_pri(pri)
@@ -142,7 +142,7 @@ class SyslogParser(BaseParser):
             },
         )
 
-    def _parse_rfc5424(self, line: str, match: re.Match) -> ParseResult | None:
+    def _parse_rfc5424(self, line: str, match: re.Match[str]) -> ParseResult | None:
         """Parse RFC 5424 format message."""
         pri = int(match.group("pri"))
         facility, severity = self._parse_pri(pri)
@@ -186,7 +186,7 @@ class SyslogParser(BaseParser):
             parsed_fields=parsed_fields,
         )
 
-    def _parse_simple(self, line: str, match: re.Match) -> ParseResult | None:
+    def _parse_simple(self, line: str, match: re.Match[str]) -> ParseResult | None:
         """Parse simple syslog format without PRI."""
         timestamp = self._parse_rfc3164_timestamp(match.group("timestamp"))
         hostname = match.group("hostname")

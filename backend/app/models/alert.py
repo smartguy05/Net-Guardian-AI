@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
-from uuid import uuid4
 
 if TYPE_CHECKING:
     from app.models.anomaly import AnomalyDetection
@@ -60,17 +60,17 @@ class Alert(Base, TimestampMixin):
 
     __tablename__ = "alerts"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid4,
+        default=uuid.uuid4,
     )
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         index=True,
     )
-    device_id: Mapped[UUID | None] = mapped_column(
+    device_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="SET NULL"),
         nullable=True,
@@ -111,7 +111,7 @@ class Alert(Base, TimestampMixin):
     )
 
     # Audit fields
-    acknowledged_by: Mapped[UUID | None] = mapped_column(
+    acknowledged_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
@@ -120,7 +120,7 @@ class Alert(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
     )
-    resolved_by: Mapped[UUID | None] = mapped_column(
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

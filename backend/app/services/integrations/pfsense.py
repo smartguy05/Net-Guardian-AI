@@ -26,12 +26,10 @@ class PfSenseService(IntegrationService):
     the specified MAC address.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._is_opnsense: bool | None = None
 
-    @property
-    def integration_type(self) -> IntegrationType:
-        return IntegrationType.PFSENSE
+    integration_type = IntegrationType.PFSENSE
 
     @property
     def is_configured(self) -> bool:
@@ -191,6 +189,7 @@ class PfSenseService(IntegrationService):
     async def block_device(
         self,
         mac_address: str,
+        ip_address: str | None = None,
         reason: str | None = None,
         device_name: str | None = None,
     ) -> IntegrationResult:
@@ -306,6 +305,7 @@ class PfSenseService(IntegrationService):
     async def unblock_device(
         self,
         mac_address: str,
+        ip_address: str | None = None,
         reason: str | None = None,
         device_name: str | None = None,
     ) -> IntegrationResult:
@@ -422,10 +422,14 @@ class PfSenseService(IntegrationService):
                 error=str(e),
             )
 
-    async def is_device_blocked(self, mac_address: str) -> bool | None:
+    async def is_device_blocked(
+        self,
+        mac_address: str,
+        ip_address: str | None = None,
+    ) -> bool:
         """Check if a device is currently blocked."""
         if not self.is_enabled:
-            return None
+            return False
 
         try:
             async with await self._get_client() as client:
@@ -453,14 +457,14 @@ class PfSenseService(IntegrationService):
                                     return True
                         return False
 
-                return None
+                return False
 
         except Exception as e:
             logger.error(
                 "Error checking device block status",
                 extra={"mac_address": mac_address, "error": str(e)},
             )
-            return None
+            return False
 
     async def get_blocked_devices(self) -> list[dict[str, Any]]:
         """Get list of all devices blocked by NetGuardian rules."""

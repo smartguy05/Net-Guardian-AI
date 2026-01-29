@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, func, select, true, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -289,7 +289,7 @@ class PatternService:
 
             stmt = (
                 select(LogPattern)
-                .where(and_(*conditions) if conditions else True)
+                .where(and_(*conditions) if conditions else true())
                 .order_by(LogPattern.occurrence_count.asc())  # Rarest first
                 .limit(filters.limit)
                 .offset(filters.offset)
@@ -333,7 +333,7 @@ class PatternService:
                 conditions.append(LogPattern.normalized_pattern.ilike(f"%{filters.search}%"))
 
             stmt = select(func.count(LogPattern.id)).where(
-                and_(*conditions) if conditions else True
+                and_(*conditions) if conditions else true()
             )
 
             result = await session.execute(stmt)

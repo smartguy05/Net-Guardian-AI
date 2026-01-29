@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import uuid4
 
 import structlog
@@ -282,7 +282,7 @@ async def change_password(
     request: PasswordChangeRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> dict:
+) -> dict[str, str]:
     """Change current user's password."""
     # Verify current password
     if not verify_password(request.current_password, current_user.password_hash):
@@ -317,7 +317,7 @@ async def change_password(
 @router.post("/logout")
 async def logout(
     current_user: Annotated[User, Depends(get_current_user)],
-) -> dict:
+) -> dict[str, str]:
     """Logout current user.
 
     Note: Since we're using stateless JWTs, this endpoint is mostly symbolic.
@@ -473,7 +473,7 @@ async def enable_2fa(
     body: TwoFactorEnableRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> dict:
+) -> dict[str, str]:
     """Enable 2FA after verifying the code from setup.
 
     The user must have called /2fa/setup first and verify the code
@@ -512,7 +512,7 @@ async def disable_2fa(
     body: TwoFactorDisableRequest,
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> dict:
+) -> dict[str, str]:
     """Disable 2FA for the current user.
 
     Requires password verification and optionally 2FA code.
@@ -531,7 +531,7 @@ async def disable_2fa(
         )
 
     # Verify 2FA code if provided
-    if body.code:
+    if body.code and current_user.totp_secret:
         totp_service = get_totp_service()
         if not totp_service.verify_totp(current_user.totp_secret, body.code):
             raise HTTPException(
@@ -575,7 +575,7 @@ async def regenerate_backup_codes(
 @router.get("/2fa/status")
 async def get_2fa_status(
     current_user: Annotated[User, Depends(get_current_user)],
-) -> dict:
+) -> dict[str, Any]:
     """Get current 2FA status for the user."""
     return {
         "enabled": current_user.totp_enabled,

@@ -1,5 +1,6 @@
 """Threat intelligence feed API endpoints."""
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -26,8 +27,8 @@ class FeedCreate(BaseModel):
     enabled: bool = True
     update_interval_hours: int = Field(default=24, ge=1, le=168)
     auth_type: str = Field(default="none", pattern="^(none|basic|bearer|api_key)$")
-    auth_config: dict = Field(default_factory=dict)
-    field_mapping: dict = Field(default_factory=dict)
+    auth_config: dict[str, Any] = Field(default_factory=dict)
+    field_mapping: dict[str, Any] = Field(default_factory=dict)
 
 
 class FeedUpdate(BaseModel):
@@ -40,8 +41,8 @@ class FeedUpdate(BaseModel):
     enabled: bool | None = None
     update_interval_hours: int | None = Field(None, ge=1, le=168)
     auth_type: str | None = Field(None, pattern="^(none|basic|bearer|api_key)$")
-    auth_config: dict | None = None
-    field_mapping: dict | None = None
+    auth_config: dict[str, Any] | None = None
+    field_mapping: dict[str, Any] | None = None
 
 
 class FeedResponse(BaseModel):
@@ -55,8 +56,8 @@ class FeedResponse(BaseModel):
     enabled: bool
     update_interval_hours: int
     auth_type: str
-    auth_config: dict
-    field_mapping: dict
+    auth_config: dict[str, Any]
+    field_mapping: dict[str, Any]
     last_fetch_at: str | None
     last_fetch_status: str | None
     last_fetch_message: str | None
@@ -84,7 +85,7 @@ class IndicatorResponse(BaseModel):
     first_seen_at: str | None
     last_seen_at: str | None
     expires_at: str | None
-    metadata: dict
+    metadata: dict[str, Any]
     hit_count: int
     last_hit_at: str | None
     created_at: str
@@ -141,7 +142,7 @@ async def list_feeds(
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> FeedListResponse:
     """List all threat intelligence feeds."""
     service = ThreatIntelService(session)
     feeds, total = await service.get_feeds(
@@ -182,7 +183,7 @@ async def get_feed(
     feed_id: UUID,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> FeedResponse:
     """Get a specific threat intelligence feed."""
     service = ThreatIntelService(session)
     feed = await service.get_feed(feed_id)
@@ -215,7 +216,7 @@ async def create_feed(
     data: FeedCreate,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(require_admin),
-):
+) -> FeedResponse:
     """Create a new threat intelligence feed."""
     service = ThreatIntelService(session)
     feed = await service.create_feed(
@@ -256,7 +257,7 @@ async def update_feed(
     data: FeedUpdate,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(require_admin),
-):
+) -> FeedResponse:
     """Update a threat intelligence feed."""
     service = ThreatIntelService(session)
     feed = await service.get_feed(feed_id)
@@ -268,25 +269,28 @@ async def update_feed(
     if "url" in update_data:
         update_data["url"] = str(update_data["url"])
 
-    feed = await service.update_feed(feed_id, **update_data)
+    updated_feed = await service.update_feed(feed_id, **update_data)
+
+    if not updated_feed:
+        raise HTTPException(status_code=404, detail="Feed not found after update")
 
     return FeedResponse(
-        id=feed.id,
-        name=feed.name,
-        description=feed.description,
-        feed_type=feed.feed_type.value,
-        url=feed.url,
-        enabled=feed.enabled,
-        update_interval_hours=feed.update_interval_hours,
-        auth_type=feed.auth_type,
-        auth_config=feed.auth_config,
-        field_mapping=feed.field_mapping,
-        last_fetch_at=feed.last_fetch_at.isoformat() if feed.last_fetch_at else None,
-        last_fetch_status=feed.last_fetch_status,
-        last_fetch_message=feed.last_fetch_message,
-        indicator_count=feed.indicator_count,
-        created_at=feed.created_at.isoformat(),
-        updated_at=feed.updated_at.isoformat(),
+        id=updated_feed.id,
+        name=updated_feed.name,
+        description=updated_feed.description,
+        feed_type=updated_feed.feed_type.value,
+        url=updated_feed.url,
+        enabled=updated_feed.enabled,
+        update_interval_hours=updated_feed.update_interval_hours,
+        auth_type=updated_feed.auth_type,
+        auth_config=updated_feed.auth_config,
+        field_mapping=updated_feed.field_mapping,
+        last_fetch_at=updated_feed.last_fetch_at.isoformat() if updated_feed.last_fetch_at else None,
+        last_fetch_status=updated_feed.last_fetch_status,
+        last_fetch_message=updated_feed.last_fetch_message,
+        indicator_count=updated_feed.indicator_count,
+        created_at=updated_feed.created_at.isoformat(),
+        updated_at=updated_feed.updated_at.isoformat(),
     )
 
 
@@ -295,7 +299,7 @@ async def delete_feed(
     feed_id: UUID,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(require_admin),
-):
+) -> None:
     """Delete a threat intelligence feed."""
     service = ThreatIntelService(session)
     feed = await service.get_feed(feed_id)
@@ -312,7 +316,7 @@ async def fetch_feed(
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(require_admin),
-):
+) -> dict[str, str]:
     """Trigger a feed fetch (runs in background)."""
     service = ThreatIntelService(session)
     feed = await service.get_feed(feed_id)
@@ -321,7 +325,7 @@ async def fetch_feed(
         raise HTTPException(status_code=404, detail="Feed not found")
 
     # Run fetch in background
-    async def do_fetch():
+    async def do_fetch() -> None:
         async for s in get_async_session():
             svc = ThreatIntelService(s)
             await svc.fetch_feed(feed_id)
@@ -336,7 +340,7 @@ async def enable_feed(
     feed_id: UUID,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(require_admin),
-):
+) -> FeedResponse:
     """Enable a threat intelligence feed."""
     service = ThreatIntelService(session)
     feed = await service.get_feed(feed_id)
@@ -344,25 +348,28 @@ async def enable_feed(
     if not feed:
         raise HTTPException(status_code=404, detail="Feed not found")
 
-    feed = await service.update_feed(feed_id, enabled=True)
+    updated_feed = await service.update_feed(feed_id, enabled=True)
+
+    if not updated_feed:
+        raise HTTPException(status_code=404, detail="Feed not found after update")
 
     return FeedResponse(
-        id=feed.id,
-        name=feed.name,
-        description=feed.description,
-        feed_type=feed.feed_type.value,
-        url=feed.url,
-        enabled=feed.enabled,
-        update_interval_hours=feed.update_interval_hours,
-        auth_type=feed.auth_type,
-        auth_config=feed.auth_config,
-        field_mapping=feed.field_mapping,
-        last_fetch_at=feed.last_fetch_at.isoformat() if feed.last_fetch_at else None,
-        last_fetch_status=feed.last_fetch_status,
-        last_fetch_message=feed.last_fetch_message,
-        indicator_count=feed.indicator_count,
-        created_at=feed.created_at.isoformat(),
-        updated_at=feed.updated_at.isoformat(),
+        id=updated_feed.id,
+        name=updated_feed.name,
+        description=updated_feed.description,
+        feed_type=updated_feed.feed_type.value,
+        url=updated_feed.url,
+        enabled=updated_feed.enabled,
+        update_interval_hours=updated_feed.update_interval_hours,
+        auth_type=updated_feed.auth_type,
+        auth_config=updated_feed.auth_config,
+        field_mapping=updated_feed.field_mapping,
+        last_fetch_at=updated_feed.last_fetch_at.isoformat() if updated_feed.last_fetch_at else None,
+        last_fetch_status=updated_feed.last_fetch_status,
+        last_fetch_message=updated_feed.last_fetch_message,
+        indicator_count=updated_feed.indicator_count,
+        created_at=updated_feed.created_at.isoformat(),
+        updated_at=updated_feed.updated_at.isoformat(),
     )
 
 
@@ -371,7 +378,7 @@ async def disable_feed(
     feed_id: UUID,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(require_admin),
-):
+) -> FeedResponse:
     """Disable a threat intelligence feed."""
     service = ThreatIntelService(session)
     feed = await service.get_feed(feed_id)
@@ -379,25 +386,28 @@ async def disable_feed(
     if not feed:
         raise HTTPException(status_code=404, detail="Feed not found")
 
-    feed = await service.update_feed(feed_id, enabled=False)
+    updated_feed = await service.update_feed(feed_id, enabled=False)
+
+    if not updated_feed:
+        raise HTTPException(status_code=404, detail="Feed not found after update")
 
     return FeedResponse(
-        id=feed.id,
-        name=feed.name,
-        description=feed.description,
-        feed_type=feed.feed_type.value,
-        url=feed.url,
-        enabled=feed.enabled,
-        update_interval_hours=feed.update_interval_hours,
-        auth_type=feed.auth_type,
-        auth_config=feed.auth_config,
-        field_mapping=feed.field_mapping,
-        last_fetch_at=feed.last_fetch_at.isoformat() if feed.last_fetch_at else None,
-        last_fetch_status=feed.last_fetch_status,
-        last_fetch_message=feed.last_fetch_message,
-        indicator_count=feed.indicator_count,
-        created_at=feed.created_at.isoformat(),
-        updated_at=feed.updated_at.isoformat(),
+        id=updated_feed.id,
+        name=updated_feed.name,
+        description=updated_feed.description,
+        feed_type=updated_feed.feed_type.value,
+        url=updated_feed.url,
+        enabled=updated_feed.enabled,
+        update_interval_hours=updated_feed.update_interval_hours,
+        auth_type=updated_feed.auth_type,
+        auth_config=updated_feed.auth_config,
+        field_mapping=updated_feed.field_mapping,
+        last_fetch_at=updated_feed.last_fetch_at.isoformat() if updated_feed.last_fetch_at else None,
+        last_fetch_status=updated_feed.last_fetch_status,
+        last_fetch_message=updated_feed.last_fetch_message,
+        indicator_count=updated_feed.indicator_count,
+        created_at=updated_feed.created_at.isoformat(),
+        updated_at=updated_feed.updated_at.isoformat(),
     )
 
 
@@ -411,7 +421,7 @@ async def list_indicators(
     offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> IndicatorListResponse:
     """List threat indicators."""
     service = ThreatIntelService(session)
     indicators, total = await service.search_indicators(
@@ -455,7 +465,7 @@ async def check_indicator(
     data: IndicatorCheckRequest,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> IndicatorCheckResponse:
     """Check if a value matches any threat indicators."""
     service = ThreatIntelService(session)
     matches = await service.check_indicator(
@@ -494,7 +504,7 @@ async def check_indicator(
 async def get_stats(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> StatsResponse:
     """Get threat intelligence statistics."""
     service = ThreatIntelService(session)
     stats = await service.get_stats()

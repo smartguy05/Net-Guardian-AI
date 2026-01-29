@@ -1,6 +1,6 @@
 """Admin-only API endpoints for system configuration."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -52,13 +52,13 @@ class RetentionCleanupResult(BaseModel):
     dry_run: bool
     policies_processed: int
     total_deleted: int
-    details: list[dict]
+    details: list[dict[str, Any]]
 
 
 class StorageStatsResponse(BaseModel):
     """Response model for storage statistics."""
 
-    tables: list[dict]
+    tables: list[dict[str, Any]]
     total_rows: int
 
 

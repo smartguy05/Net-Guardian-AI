@@ -208,7 +208,7 @@ async def delete_source(
     source_id: str,
     session: Annotated[AsyncSession, Depends(get_async_session)],
     _admin: Annotated[User, Depends(require_admin)],
-) -> dict:
+) -> dict[str, str]:
     """Delete a log source."""
     result = await session.execute(select(LogSource).where(LogSource.id == source_id))
     source = result.scalar_one_or_none()
@@ -277,7 +277,7 @@ async def test_source(
         if success and source.source_type == SourceType.API_PULL:
             try:
                 # Poll once to get sample events
-                results = await collector._poll_once()
+                results = await collector._poll_once()  # type: ignore[attr-defined]
                 sample_events = [
                     {
                         "event_type": r.event_type.value if r.event_type else None,

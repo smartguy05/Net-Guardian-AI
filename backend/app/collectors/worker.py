@@ -32,9 +32,9 @@ class CollectorWorker:
     5. Auto-discovers devices from event IP addresses
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._collectors: dict[str, BaseCollector] = {}
-        self._tasks: dict[str, asyncio.Task] = {}
+        self._tasks: dict[str, asyncio.Task[None]] = {}
         self._running = False
         self._event_bus: EventBus | None = None
         self._shutdown_event = asyncio.Event()
@@ -301,7 +301,7 @@ async def main() -> None:
     # Handle shutdown signals
     loop = asyncio.get_running_loop()
 
-    def signal_handler():
+    def signal_handler() -> None:
         worker.shutdown()
 
     for sig in (signal.SIGINT, signal.SIGTERM):

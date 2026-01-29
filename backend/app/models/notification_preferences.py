@@ -1,6 +1,6 @@
 """Notification preferences model for user notification settings."""
 
-from uuid import uuid4
+import uuid
 
 from sqlalchemy import Boolean, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -37,12 +37,12 @@ class NotificationPreferences(Base, TimestampMixin):
 
     __tablename__ = "notification_preferences"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid4,
+        default=uuid.uuid4,
     )
-    user_id: Mapped[UUID] = mapped_column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         unique=True,

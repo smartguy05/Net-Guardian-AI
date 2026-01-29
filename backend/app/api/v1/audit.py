@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin
 from app.db.session import get_async_session
-from app.models.audit_log import AuditAction
+from app.models.audit_log import AuditAction, AuditLog
 from app.models.user import User
 from app.services.audit_service import AuditService
 from app.services.export_service import (
@@ -54,7 +54,7 @@ class AuditStatsResponse(BaseModel):
     user_actions_24h: int
 
 
-def _audit_to_response(audit) -> AuditLogResponse:
+def _audit_to_response(audit: AuditLog) -> AuditLogResponse:
     return AuditLogResponse(
         id=str(audit.id),
         timestamp=audit.timestamp.isoformat(),

@@ -3,6 +3,7 @@
 import statistics
 from collections import Counter, defaultdict
 from datetime import UTC, datetime, timedelta
+from collections.abc import Sequence
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -84,7 +85,7 @@ class BaselineCalculator:
 
         return baseline
 
-    def _calculate_dns_metrics(self, events: list[RawEvent]) -> dict[str, Any]:
+    def _calculate_dns_metrics(self, events: Sequence[RawEvent]) -> dict[str, Any]:
         """Calculate DNS-specific metrics from events."""
         if not events:
             return {
@@ -98,7 +99,7 @@ class BaselineCalculator:
             }
 
         # Track domains
-        domain_counter: Counter = Counter()
+        domain_counter: Counter[str] = Counter()
         hourly_distribution = [0] * 24
         daily_volumes: dict[str, int] = defaultdict(int)
         blocked_count = 0
@@ -190,7 +191,7 @@ class BaselineCalculator:
 
         return baseline
 
-    def _calculate_traffic_metrics(self, events: list[RawEvent]) -> dict[str, Any]:
+    def _calculate_traffic_metrics(self, events: Sequence[RawEvent]) -> dict[str, Any]:
         """Calculate traffic-specific metrics from events."""
         if not events:
             return {
@@ -204,8 +205,8 @@ class BaselineCalculator:
             }
 
         # Track patterns
-        protocol_counter: Counter = Counter()
-        port_counter: Counter = Counter()
+        protocol_counter: Counter[str] = Counter()
+        port_counter: Counter[str] = Counter()
         hourly_distribution = [0] * 24
         daily_volumes: dict[str, int] = defaultdict(int)
         blocked_count = 0
@@ -296,7 +297,7 @@ class BaselineCalculator:
 
         return baseline
 
-    def _calculate_connection_metrics(self, events: list[RawEvent]) -> dict[str, Any]:
+    def _calculate_connection_metrics(self, events: Sequence[RawEvent]) -> dict[str, Any]:
         """Calculate connection-specific metrics from events."""
         if not events:
             return {
@@ -311,8 +312,8 @@ class BaselineCalculator:
             }
 
         # Track patterns
-        dest_counter: Counter = Counter()
-        port_counter: Counter = Counter()
+        dest_counter: Counter[str] = Counter()
+        port_counter: Counter[str] = Counter()
         hourly_distribution = [0] * 24
         daily_connections: dict[str, int] = defaultdict(int)
         internal_count = 0
@@ -515,7 +516,7 @@ class BaselineService:
 
             for device in devices:
                 try:
-                    baselines = await calculator.calculate_all_baselines(device.id)
+                    baselines = await calculator.calculate_all_baselines(UUID(str(device.id)))
                     stats["updated"] += 1
 
                     # Count statuses

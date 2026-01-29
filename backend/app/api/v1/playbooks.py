@@ -11,7 +11,9 @@ from app.api.v1.auth import get_current_user, require_admin, require_operator
 from app.db.session import get_async_session
 from app.models.playbook import (
     ExecutionStatus,
+    Playbook,
     PlaybookActionType,
+    PlaybookExecution,
     PlaybookStatus,
     PlaybookTriggerType,
 )
@@ -101,7 +103,7 @@ class ManualTriggerRequest(BaseModel):
     event_data: dict[str, Any] = {}
 
 
-def _playbook_to_response(playbook) -> PlaybookResponse:
+def _playbook_to_response(playbook: Playbook) -> PlaybookResponse:
     return PlaybookResponse(
         id=str(playbook.id),
         name=playbook.name,
@@ -118,7 +120,7 @@ def _playbook_to_response(playbook) -> PlaybookResponse:
     )
 
 
-def _execution_to_response(execution) -> ExecutionResponse:
+def _execution_to_response(execution: PlaybookExecution) -> ExecutionResponse:
     return ExecutionResponse(
         id=str(execution.id),
         playbook_id=str(execution.playbook_id),

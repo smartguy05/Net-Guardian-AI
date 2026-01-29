@@ -1,5 +1,6 @@
 """Parser registry for managing available parsers."""
 
+from collections.abc import Callable
 from typing import Any
 
 import structlog
@@ -66,7 +67,7 @@ def get_parser(name: str, config: dict[str, Any] | None = None) -> BaseParser:
     return ParserRegistry.get(name, config)
 
 
-def register_parser(name: str):
+def register_parser(name: str) -> Callable[[type[BaseParser]], type[BaseParser]]:
     """Decorator to register a parser class.
 
     Usage:

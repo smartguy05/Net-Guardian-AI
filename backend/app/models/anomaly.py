@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
-from uuid import uuid4
 
 if TYPE_CHECKING:
     from app.models.alert import Alert
@@ -65,12 +65,12 @@ class AnomalyDetection(Base, TimestampMixin):
 
     __tablename__ = "anomaly_detections"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid4,
+        default=uuid.uuid4,
     )
-    device_id: Mapped[UUID] = mapped_column(
+    device_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="CASCADE"),
         nullable=False,
@@ -115,7 +115,7 @@ class AnomalyDetection(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    alert_id: Mapped[UUID | None] = mapped_column(
+    alert_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("alerts.id", ondelete="SET NULL"),
         nullable=True,
@@ -123,7 +123,7 @@ class AnomalyDetection(Base, TimestampMixin):
     )
 
     # Review tracking
-    reviewed_by: Mapped[UUID | None] = mapped_column(
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

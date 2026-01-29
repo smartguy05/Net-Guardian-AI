@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from enum import Enum
 from typing import TYPE_CHECKING, Any
-from uuid import uuid4
 
 if TYPE_CHECKING:
     from app.models.device import Device
@@ -55,12 +55,12 @@ class DeviceBaseline(Base, TimestampMixin):
 
     __tablename__ = "device_baselines"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid4,
+        default=uuid.uuid4,
     )
-    device_id: Mapped[UUID] = mapped_column(
+    device_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("devices.id", ondelete="CASCADE"),
         nullable=False,

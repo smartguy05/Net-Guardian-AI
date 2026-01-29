@@ -1,7 +1,7 @@
 """Playbook engine for automated response actions."""
 
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import structlog
@@ -49,7 +49,7 @@ class PlaybookEngine:
             return self._session
         return AsyncSessionLocal()
 
-    async def _close_session(self, session: AsyncSession):
+    async def _close_session(self, session: AsyncSession) -> None:
         """Close session if it was created internally."""
         if session != self._session:
             await session.close()
@@ -205,7 +205,7 @@ class PlaybookEngine:
                 )
             )
         )
-        count = result.scalar() or 0
+        count = cast(int, result.scalar()) or 0
         if count >= playbook.max_executions_per_hour:
             logger.debug(
                 "Playbook exceeded hourly limit",
@@ -390,13 +390,16 @@ class PlaybookEngine:
             return {"success": False, "error": "No device ID provided"}
 
         # Create a system user for automatic actions if needed
+        effective_user: Any
         if not user:
             # Use a placeholder for automatic actions
             class SystemUser:
                 id = None
                 username = "playbook_engine"
 
-            user = SystemUser()
+            effective_user = SystemUser()
+        else:
+            effective_user = user
 
         reason = params.get(
             "reason", f"Automatic quarantine: {trigger_event.get('description', 'playbook triggered')}"
@@ -404,7 +407,7 @@ class PlaybookEngine:
 
         result = await self._quarantine.quarantine_device(
             device_id=device_id,
-            user=user,
+            user=effective_user,
             reason=reason,
         )
 
@@ -427,12 +430,15 @@ class PlaybookEngine:
         if not device_id:
             return {"success": False, "error": "No device ID provided"}
 
+        effective_user: Any
         if not user:
             class SystemUser:
                 id = None
                 username = "playbook_engine"
 
-            user = SystemUser()
+            effective_user = SystemUser()
+        else:
+            effective_user = user
 
         reason = params.get(
             "reason", f"Automatic release: {trigger_event.get('description', 'playbook triggered')}"
@@ -440,7 +446,7 @@ class PlaybookEngine:
 
         result = await self._quarantine.release_device(
             device_id=device_id,
-            user=user,
+            user=effective_user,
             reason=reason,
         )
 
@@ -470,7 +476,7 @@ class PlaybookEngine:
                 severity=severity,
                 title=title,
                 description=description,
-                status=AlertStatus.OPEN,
+                status=AlertStatus.NEW,
             )
             session.add(alert)
             await session.commit()
@@ -724,7 +730,7 @@ class PlaybookEngine:
         description: str | None = None,
         trigger_conditions: dict[str, Any] | None = None,
         created_by: UUID | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Playbook:
         """Create a new playbook."""
         session = await self._get_session()
@@ -758,7 +764,7 @@ class PlaybookEngine:
     async def update_playbook(
         self,
         playbook_id: UUID,
-        **updates,
+        **updates: Any,
     ) -> Playbook | None:
         """Update a playbook."""
         session = await self._get_session()

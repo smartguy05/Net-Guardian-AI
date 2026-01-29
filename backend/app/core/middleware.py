@@ -2,11 +2,10 @@
 
 import re
 import time
-from collections.abc import Callable
 
 import structlog
 from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
 from app.services.metrics_service import (
@@ -47,7 +46,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp):
         super().__init__(app)
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip metrics endpoint to avoid recursion
         if request.url.path.endswith("/metrics"):
             return await call_next(request)
@@ -83,7 +82,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         self.log_request_body = log_request_body
         self.log_response_body = log_response_body
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip health check and metrics endpoints for cleaner logs
         if request.url.path in ["/health", "/api/v1/metrics"]:
             return await call_next(request)

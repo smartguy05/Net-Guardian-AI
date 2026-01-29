@@ -9,13 +9,15 @@ Provides:
 
 import asyncio
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import wraps
+from typing import Any
 
 import structlog
 from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp
 
 logger = structlog.get_logger()
 
@@ -60,7 +62,7 @@ class TokenBucket:
         """
         self.capacity = capacity
         self.refill_rate = refill_rate
-        self.tokens = capacity
+        self.tokens: float = float(capacity)
         self.last_refill = time.time()
         self._lock = asyncio.Lock()
 
@@ -108,7 +110,7 @@ class TokenBucket:
 class InMemoryRateLimiter:
     """In-memory rate limiter for single-instance deployments."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the rate limiter."""
         self._buckets: dict[str, TokenBucket] = {}
         self._lock = asyncio.Lock()
@@ -128,7 +130,7 @@ class InMemoryRateLimiter:
         self,
         key: str,
         config: RateLimitConfig | None = None,
-    ) -> tuple[bool, dict]:
+    ) -> tuple[bool, dict[str, str]]:
         """Check if request is allowed.
 
         Args:
@@ -145,7 +147,7 @@ class InMemoryRateLimiter:
 
         allowed = await bucket.consume()
 
-        headers = {
+        headers: dict[str, str] = {
             "X-RateLimit-Limit": str(config.requests_per_minute),
             "X-RateLimit-Remaining": str(max(0, int(bucket.tokens))),
             "X-RateLimit-Reset": str(int(time.time() + 60)),
@@ -180,7 +182,7 @@ class InMemoryRateLimiter:
 class RedisRateLimiter:
     """Redis-backed rate limiter for distributed deployments."""
 
-    def __init__(self, redis_client):
+    def __init__(self, redis_client: Any) -> None:
         """Initialize with Redis client.
 
         Args:
@@ -192,7 +194,7 @@ class RedisRateLimiter:
         self,
         key: str,
         config: RateLimitConfig | None = None,
-    ) -> tuple[bool, dict]:
+    ) -> tuple[bool, dict[str, str]]:
         """Check if request is allowed using Redis.
 
         Uses sliding window counter algorithm.
@@ -221,7 +223,7 @@ class RedisRateLimiter:
             remaining = max(0, config.requests_per_minute - current_count)
             allowed = current_count <= config.requests_per_minute
 
-            headers = {
+            headers: dict[str, str] = {
                 "X-RateLimit-Limit": str(config.requests_per_minute),
                 "X-RateLimit-Remaining": str(remaining),
                 "X-RateLimit-Reset": str(window_start + 60),
@@ -305,10 +307,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app,
+        app: ASGIApp,
         enabled: bool = True,
         exclude_paths: list[str] | None = None,
-    ):
+    ) -> None:
         """Initialize middleware.
 
         Args:
@@ -326,7 +328,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             "/openapi.json",
         ]
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Process the request with rate limiting."""
         # Skip if disabled
         if not self.enabled:
@@ -377,7 +381,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 def rate_limit(
     requests_per_minute: int = 60,
     key_func: Callable[[Request], str] | None = None,
-):
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator for rate limiting specific endpoints.
 
     Args:
@@ -385,9 +389,9 @@ def rate_limit(
         key_func: Function to get rate limit key from request.
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        async def wrapper(request: Request, *args, **kwargs):
+        async def wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
             # Get key
             if key_func:
                 key = key_func(request)

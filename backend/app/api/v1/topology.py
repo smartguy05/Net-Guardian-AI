@@ -1,6 +1,7 @@
 """Network topology API endpoints."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -46,7 +47,7 @@ class TopologyData(BaseModel):
 
     nodes: list[TopologyNode]
     links: list[TopologyLink]
-    stats: dict
+    stats: dict[str, Any]
 
 
 @router.get("", response_model=TopologyData)
@@ -55,7 +56,7 @@ async def get_network_topology(
     include_inactive: bool = Query(False, description="Include inactive devices"),
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> TopologyData:
     """
     Get network topology data for visualization.
 
@@ -83,7 +84,9 @@ async def get_network_topology(
         .group_by(RawEvent.device_id)
     )
     event_result = await session.execute(event_counts_query)
-    event_counts = {str(row.device_id): row.count for row in event_result}
+    event_counts: dict[str, int] = {
+        str(row.device_id): cast(int, row.count) for row in event_result
+    }
 
     # Get connection pairs (source IP to destination based on DNS/HTTP events)
     # This identifies which devices communicate with each other or external services
@@ -217,7 +220,7 @@ async def get_device_connections(
     limit: int = Query(50, ge=1, le=200),
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(get_current_user),
-):
+) -> dict[str, Any]:
     """Get connection details for a specific device."""
     cutoff_time = datetime.now(UTC) - timedelta(hours=hours)
 

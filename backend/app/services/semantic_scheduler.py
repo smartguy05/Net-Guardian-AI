@@ -18,9 +18,9 @@ logger = structlog.get_logger(__name__)
 class SemanticAnalysisScheduler:
     """Background scheduler for periodic semantic analysis."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._running = False
-        self._task: asyncio.Task | None = None
+        self._task: asyncio.Task[None] | None = None
         self._check_interval_seconds = 60  # Check every minute
 
     async def start(self) -> None:

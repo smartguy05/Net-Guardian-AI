@@ -63,7 +63,7 @@ class JsonParser(BaseParser):
             for field, path in self.field_mappings.items()
         }
 
-    def _extract_value(self, data: dict, path: str) -> Any:
+    def _extract_value(self, data: dict[str, Any], path: str) -> Any:
         """Extract a value using JSONPath."""
         expr = jsonpath_parse(path)
         matches = expr.find(data)
@@ -71,7 +71,7 @@ class JsonParser(BaseParser):
             return matches[0].value
         return None
 
-    def _extract_mapped_value(self, data: dict, field: str) -> Any:
+    def _extract_mapped_value(self, data: dict[str, Any], field: str) -> Any:
         """Extract a value using pre-compiled field mapping."""
         expr = self._field_exprs.get(field)
         if expr:
@@ -104,7 +104,7 @@ class JsonParser(BaseParser):
 
         return datetime.now(UTC)
 
-    def _parse_severity(self, data: dict) -> EventSeverity:
+    def _parse_severity(self, data: dict[str, Any]) -> EventSeverity:
         """Parse severity from data."""
         severity_value = data.get(self.severity_field)
         if severity_value is None:
@@ -116,9 +116,9 @@ class JsonParser(BaseParser):
 
         # Normalize to lowercase string
         severity_str = str(severity_value).lower()
-        return self.severity_map.get(severity_str, EventSeverity.INFO)
+        return self.severity_map.get(severity_str) or EventSeverity.INFO
 
-    def _get_field(self, data: dict, field: str, default: Any = None) -> Any:
+    def _get_field(self, data: dict[str, Any], field: str, default: Any = None) -> Any:
         """Get a field value, checking mappings first."""
         # Check field mappings
         mapped_value = self._extract_mapped_value(data, field)

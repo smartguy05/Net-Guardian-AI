@@ -20,12 +20,12 @@ logger = structlog.get_logger()
 class UDPServerProtocol(asyncio.DatagramProtocol):
     """UDP protocol handler for flow data."""
 
-    def __init__(self, queue: asyncio.Queue, parser: BaseParser):
+    def __init__(self, queue: asyncio.Queue[ParseResult], parser: BaseParser):
         self.queue = queue
         self.parser = parser
         self.transport: asyncio.DatagramTransport | None = None
 
-    def connection_made(self, transport: asyncio.DatagramTransport) -> None:
+    def connection_made(self, transport: asyncio.DatagramTransport) -> None:  # type: ignore[override]
         """Called when the socket is ready."""
         self.transport = transport
 
@@ -75,7 +75,7 @@ class UDPListenerCollector(BaseCollector):
     def __init__(self, source: LogSource, parser: BaseParser):
         """Initialize the UDP listener collector."""
         super().__init__(source, parser)
-        self._queue: asyncio.Queue = asyncio.Queue(
+        self._queue: asyncio.Queue[ParseResult] = asyncio.Queue(
             maxsize=self.config.get("queue_size", 10000)
         )
         self._transport: asyncio.DatagramTransport | None = None

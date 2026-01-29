@@ -77,7 +77,7 @@ class NetFlowParser(BaseParser):
             exporter_ip: IP address of the exporter for context
         """
         super().__init__(config)
-        self._templates: dict[int, dict[int, tuple]] = {}  # NetFlow v9 templates
+        self._templates: dict[int, dict[int, tuple[tuple[int, int], ...]]] = {}  # NetFlow v9 templates
         self.min_bytes = self.config.get("min_bytes", 0)
         self.min_packets = self.config.get("min_packets", 0)
         self.exporter_ip = self.config.get("exporter_ip")
@@ -331,7 +331,7 @@ class NetFlowParser(BaseParser):
     def _parse_v9_data(
         self,
         data: bytes,
-        template: tuple,
+        template: tuple[tuple[int, int], ...],
         timestamp: datetime,
     ) -> list[ParseResult]:
         """Parse NetFlow v9 data records using template."""
@@ -368,7 +368,7 @@ class NetFlowParser(BaseParser):
 
         return results
 
-    def _parse_v9_record(self, data: bytes, template: tuple) -> dict[str, Any] | None:
+    def _parse_v9_record(self, data: bytes, template: tuple[tuple[int, int], ...]) -> dict[str, Any] | None:
         """Parse a single NetFlow v9 record."""
         # Common field type mappings
         field_types = {
@@ -405,7 +405,9 @@ class NetFlowParser(BaseParser):
 
         # Convert protocol number to name
         if "protocol" in result:
-            result["protocol"] = PROTOCOL_MAP.get(result["protocol"], str(result["protocol"]))
+            proto_num = result["protocol"]
+            if isinstance(proto_num, int):
+                result["protocol"] = PROTOCOL_MAP.get(proto_num, str(proto_num))
 
         return result if result else None
 

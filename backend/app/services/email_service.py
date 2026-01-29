@@ -91,17 +91,14 @@ class EmailService:
             msg.attach(MIMEText(body_html, "html"))
 
             # Send email
-            smtp_kwargs = {
-                "hostname": self.host,
-                "port": self.port,
-                "use_tls": self.use_tls,
-            }
-
-            if self.username and self.password:
-                smtp_kwargs["username"] = self.username
-                smtp_kwargs["password"] = self.password
-
-            await aiosmtplib.send(msg, **smtp_kwargs)
+            await aiosmtplib.send(
+                msg,
+                hostname=self.host,
+                port=self.port,
+                use_tls=self.use_tls,
+                username=self.username if self.username and self.password else None,
+                password=self.password if self.username and self.password else None,
+            )
 
             logger.info(
                 "Email sent",
@@ -318,17 +315,13 @@ This is an automated message from NetGuardian AI.
             }
 
         try:
-            smtp_kwargs = {
-                "hostname": self.host,
-                "port": self.port,
-                "use_tls": self.use_tls,
-            }
-
-            if self.username and self.password:
-                smtp_kwargs["username"] = self.username
-                smtp_kwargs["password"] = self.password
-
-            async with aiosmtplib.SMTP(**smtp_kwargs) as smtp:
+            async with aiosmtplib.SMTP(
+                hostname=self.host,
+                port=self.port,
+                use_tls=self.use_tls,
+                username=self.username if self.username and self.password else None,
+                password=self.password if self.username and self.password else None,
+            ) as smtp:
                 await smtp.noop()
 
             return {

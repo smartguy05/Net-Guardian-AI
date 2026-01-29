@@ -83,7 +83,7 @@ class AuthentikParser(BaseParser):
         """Determine event severity based on action type."""
         return self.ACTION_SEVERITY_MAP.get(action, EventSeverity.INFO)
 
-    def _extract_client_ip(self, event: dict) -> str | None:
+    def _extract_client_ip(self, event: dict[str, Any]) -> str | None:
         """Extract client IP from event context."""
         context = event.get("context", {})
 
@@ -92,20 +92,20 @@ class AuthentikParser(BaseParser):
         if http_request:
             ip = http_request.get("client_ip") or http_request.get("args", {}).get("client_ip")
             if ip:
-                return ip
+                return str(ip)
 
         # Direct context field
         if context.get("client_ip"):
-            return context["client_ip"]
+            return str(context["client_ip"])
 
         # Check geo context
         geo = context.get("geo", {})
         if geo.get("ip"):
-            return geo["ip"]
+            return str(geo["ip"])
 
         return None
 
-    def _build_message(self, event: dict) -> str:
+    def _build_message(self, event: dict[str, Any]) -> str:
         """Build a descriptive message from the event."""
         action = event.get("action", "unknown")
         user = event.get("user", {})
@@ -142,7 +142,7 @@ class AuthentikParser(BaseParser):
             # Generic message
             return f"Authentik {action.replace('_', ' ')}: {username}"
 
-    def _extract_action_result(self, event: dict) -> str:
+    def _extract_action_result(self, event: dict[str, Any]) -> str:
         """Extract action result (success/failure)."""
         action = event.get("action", "")
         context = event.get("context", {})

@@ -1,6 +1,8 @@
 """Factory for creating LLM providers."""
 
 
+from typing import Any
+
 from app.models.semantic_analysis import LLMProvider
 from app.services.llm_providers.base import BaseLLMProvider
 from app.services.llm_providers.claude_provider import ClaudeLLMProvider
@@ -15,7 +17,7 @@ class LLMProviderFactory:
         provider_type: LLMProvider | str,
         ollama_model: str | None = None,
         ollama_url: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> BaseLLMProvider:
         """Get an LLM provider instance.
 
@@ -41,7 +43,7 @@ class LLMProviderFactory:
             return ClaudeLLMProvider(**kwargs)
 
         elif provider_str == "ollama":
-            provider_kwargs = {}
+            provider_kwargs: dict[str, Any] = {}
             if ollama_model:
                 provider_kwargs["model"] = ollama_model
             if ollama_url:

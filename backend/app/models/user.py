@@ -1,7 +1,7 @@
 """User model for authentication and authorization."""
 
+import uuid
 from datetime import datetime
-from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy import Enum as SQLEnum
@@ -32,10 +32,10 @@ class User(Base, TimestampMixin):
 
     __tablename__ = "users"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid4,
+        default=uuid.uuid4,
     )
     username: Mapped[str] = mapped_column(
         String(50),
@@ -72,7 +72,7 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
     )
-    created_by: Mapped[UUID | None] = mapped_column(
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,

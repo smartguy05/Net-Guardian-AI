@@ -1,6 +1,6 @@
 """Notification preferences API endpoints."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -260,7 +260,7 @@ async def send_test_notification(
 @router.post("/test/email")
 async def test_email_connection(
     current_user: Annotated[User, Depends(get_current_user)],
-) -> dict:
+) -> dict[str, Any]:
     """Test SMTP connection without sending an email."""
     email_service = get_email_service()
     result = await email_service.test_connection()
@@ -271,7 +271,7 @@ async def test_email_connection(
 async def test_ntfy_connection(
     current_user: Annotated[User, Depends(get_current_user)],
     topic: str | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """Test ntfy.sh connection by sending a test notification."""
     ntfy_service = get_ntfy_service()
     result = await ntfy_service.test_connection(topic=topic)

@@ -209,7 +209,7 @@ async def deactivate_user(
     user_id: UUID,
     session: Annotated[AsyncSession, Depends(get_async_session)],
     admin: Annotated[User, Depends(require_admin)],
-) -> dict:
+) -> dict[str, str]:
     """Deactivate user (Admin only)."""
     if user_id == admin.id:
         raise HTTPException(

@@ -1,5 +1,6 @@
 """Collector registry for managing available collectors."""
 
+from collections.abc import Callable
 
 import structlog
 
@@ -71,7 +72,7 @@ def get_collector(source: LogSource) -> BaseCollector:
     return CollectorRegistry.get(source)
 
 
-def register_collector(source_type: SourceType):
+def register_collector(source_type: SourceType) -> Callable[[type[BaseCollector]], type[BaseCollector]]:
     """Decorator to register a collector class.
 
     Usage:

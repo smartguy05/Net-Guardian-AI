@@ -1,7 +1,7 @@
 """Retention policy model for data lifecycle management."""
 
+import uuid
 from datetime import datetime
-from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -28,10 +28,10 @@ class RetentionPolicy(Base, TimestampMixin):
 
     __tablename__ = "retention_policies"
 
-    id: Mapped[UUID] = mapped_column(
+    id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid4,
+        default=uuid.uuid4,
     )
     table_name: Mapped[str] = mapped_column(
         String(64),

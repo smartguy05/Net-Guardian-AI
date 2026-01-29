@@ -46,7 +46,7 @@ class CustomParser(BaseParser):
         super().__init__(config)
 
         # Compile patterns
-        self.patterns: list[re.Pattern] = []
+        self.patterns: list[re.Pattern[str]] = []
 
         if "pattern" in self.config:
             self.patterns.append(re.compile(self.config["pattern"]))
@@ -63,7 +63,7 @@ class CustomParser(BaseParser):
             self.config.get("event_type", EventType.UNKNOWN.value)
         )
         self.severity_field = self.config.get("severity_field", "severity")
-        self.severity_map = {
+        self.severity_map: dict[str, EventSeverity] = {
             **self.DEFAULT_SEVERITY_MAP,
             **self.config.get("severity_map", {}),
         }
@@ -111,7 +111,9 @@ class CustomParser(BaseParser):
         severity_value = groups.get(self.severity_field)
         if severity_value:
             severity_str = str(severity_value).lower()
-            return self.severity_map.get(severity_str, EventSeverity.INFO)
+            severity = self.severity_map.get(severity_str)
+            if severity is not None:
+                return severity
         return EventSeverity.INFO
 
     def _map_field(self, groups: dict[str, Any], field: str) -> Any | None:

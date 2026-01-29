@@ -141,7 +141,7 @@ async def get_top_domains(
     since = datetime.now(UTC) - timedelta(hours=hours)
 
     result = await session.execute(
-        select(RawEvent.domain, func.count().label("count"))
+        select(RawEvent.domain, func.count().label("domain_count"))
         .where(RawEvent.timestamp >= since)
         .where(RawEvent.event_type == EventType.DNS)
         .where(RawEvent.domain.isnot(None))
@@ -150,7 +150,7 @@ async def get_top_domains(
         .limit(limit)
     )
 
-    return [TopDomain(domain=row.domain, count=row.count) for row in result]
+    return [TopDomain(domain=row.domain, count=row.domain_count) for row in result]
 
 
 @router.get("/dns/timeline", response_model=list[TimelineBucket])
@@ -167,7 +167,7 @@ async def get_dns_timeline(
     result = await session.execute(
         select(
             func.time_bucket(f"{bucket_minutes} minutes", RawEvent.timestamp).label("bucket"),
-            func.count().label("count"),
+            func.count().label("event_count"),
         )
         .where(RawEvent.timestamp >= since)
         .where(RawEvent.event_type == EventType.DNS)
@@ -176,7 +176,7 @@ async def get_dns_timeline(
     )
 
     return [
-        TimelineBucket(timestamp=row.bucket.isoformat(), count=row.count)
+        TimelineBucket(timestamp=row.bucket.isoformat(), count=row.event_count)
         for row in result
     ]
 

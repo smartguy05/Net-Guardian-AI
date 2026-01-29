@@ -75,10 +75,11 @@ class QuarantineService:
         self._audit = audit_service or get_audit_service()
 
         # Auto-detect router service based on configuration
+        self._router: IntegrationService | None
         if router_service:
             self._router = router_service
         elif settings.router_integration_type == "unifi":
-            self._router: IntegrationService | None = get_unifi_service()
+            self._router = get_unifi_service()
         elif settings.router_integration_type in ("pfsense", "opnsense"):
             self._router = get_pfsense_service()
         else:
@@ -90,7 +91,7 @@ class QuarantineService:
             return self._session
         return AsyncSessionLocal()
 
-    async def _close_session(self, session: AsyncSession):
+    async def _close_session(self, session: AsyncSession) -> None:
         """Close session if it was created internally."""
         if session != self._session:
             await session.close()
@@ -182,8 +183,8 @@ class QuarantineService:
             if self._router and self._router.is_enabled:
                 router_result = await self._router.block_device(
                     mac_address=device.mac_address,
+                    ip_address=device_ip,
                     reason=reason,
-                    device_name=device.hostname,
                 )
                 integration_results.append(router_result.to_dict())
 
@@ -210,7 +211,7 @@ class QuarantineService:
 
             # Create audit log
             await self._audit.log_device_quarantine(
-                device_id=device.id,
+                device_id=UUID(str(device.id)),
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
                 user=user,
@@ -231,7 +232,7 @@ class QuarantineService:
             # Even if some integrations failed
             return QuarantineResult(
                 success=True,
-                device_id=device.id,
+                device_id=UUID(str(device.id)),
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
                 message="Device quarantined successfully" + (
@@ -346,8 +347,7 @@ class QuarantineService:
             if self._router and self._router.is_enabled:
                 router_result = await self._router.unblock_device(
                     mac_address=device.mac_address,
-                    reason=reason,
-                    device_name=device.hostname,
+                    ip_address=device_ip,
                 )
                 integration_results.append(router_result.to_dict())
 
@@ -374,7 +374,7 @@ class QuarantineService:
 
             # Create audit log
             await self._audit.log_device_release(
-                device_id=device.id,
+                device_id=UUID(str(device.id)),
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
                 user=user,
@@ -393,7 +393,7 @@ class QuarantineService:
 
             return QuarantineResult(
                 success=True,
-                device_id=device.id,
+                device_id=UUID(str(device.id)),
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
                 message="Device released from quarantine" + (
@@ -475,11 +475,9 @@ class QuarantineService:
             Summary of sync actions taken
         """
         session = await self._get_session()
-        sync_results = {
-            "checked": 0,
-            "synced": 0,
-            "errors": [],
-        }
+        checked: int = 0
+        synced: int = 0
+        errors: list[str] = []
 
         try:
             # Get all quarantined devices from DB
@@ -489,31 +487,32 @@ class QuarantineService:
             quarantined_devices = result.scalars().all()
 
             for device in quarantined_devices:
-                sync_results["checked"] += 1
+                checked += 1
+                device_ip = device.ip_addresses[0] if device.ip_addresses else None
 
                 # Sync with AdGuard
                 if self._adguard.is_enabled:
                     is_blocked = await self._adguard.is_device_blocked(
                         device.mac_address,
-                        device.ip_addresses[0] if device.ip_addresses else None,
+                        device_ip,
                     )
 
                     if not is_blocked:
                         # Re-block in AdGuard
                         block_result = await self._adguard.block_device(
                             device.mac_address,
-                            device.ip_addresses[0] if device.ip_addresses else None,
+                            device_ip,
                             reason="Quarantine sync",
                         )
 
                         if block_result.success:
-                            sync_results["synced"] += 1
+                            synced += 1
                             logger.info(
                                 "Synced quarantine to AdGuard",
                                 mac=device.mac_address,
                             )
                         else:
-                            sync_results["errors"].append(
+                            errors.append(
                                 f"AdGuard sync failed for {device.mac_address}: {block_result.error}"
                             )
 
@@ -525,23 +524,23 @@ class QuarantineService:
                         # Re-block via router
                         block_result = await self._router.block_device(
                             mac_address=device.mac_address,
+                            ip_address=device_ip,
                             reason="Quarantine sync",
-                            device_name=device.hostname,
                         )
 
                         if block_result.success:
-                            sync_results["synced"] += 1
+                            synced += 1
                             logger.info(
                                 "Synced quarantine to router",
                                 mac=device.mac_address,
                                 router=self._router.integration_type.value,
                             )
                         else:
-                            sync_results["errors"].append(
+                            errors.append(
                                 f"Router sync failed for {device.mac_address}: {block_result.error}"
                             )
 
-            return sync_results
+            return {"checked": checked, "synced": synced, "errors": errors}
 
         finally:
             await self._close_session(session)
