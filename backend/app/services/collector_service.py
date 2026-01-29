@@ -370,7 +370,7 @@ class CollectorService:
 
     def _generate_placeholder_mac(self, ip: str) -> str:
         """Generate a deterministic placeholder MAC from IP hash."""
-        ip_hash = hashlib.md5(ip.encode()).hexdigest()[:8]
+        ip_hash = hashlib.md5(ip.encode(), usedforsecurity=False).hexdigest()[:8]  # nosec B324
         return f"00:00:{ip_hash[0:2]}:{ip_hash[2:4]}:{ip_hash[4:6]}:{ip_hash[6:8]}"
 
     async def _batch_get_or_create_devices(

@@ -80,7 +80,7 @@ class UDPListenerCollector(BaseCollector):
         )
         self._transport: asyncio.DatagramTransport | None = None
         self._protocol: UDPServerProtocol | None = None
-        self._host = self.config.get("host", "0.0.0.0")
+        self._host = self.config.get("host", "0.0.0.0")  # nosec B104 - intentional bind for syslog receiver
         self._port = self.config.get("port")
         self._allowed_sources = set(self.config.get("allowed_sources", []))
 

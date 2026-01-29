@@ -204,7 +204,7 @@ class EndpointParser(BaseParser):
             return EventSeverity.WARNING
 
         # Running from temp/suspicious paths
-        suspicious_paths = ["/tmp/", "\\temp\\", "\\appdata\\local\\temp\\"]
+        suspicious_paths = ["/tmp/", "\\temp\\", "\\appdata\\local\\temp\\"]  # nosec B108 - detection pattern, not file creation
         if any(s in path for s in suspicious_paths):
             return EventSeverity.INFO
 
@@ -222,7 +222,7 @@ class EndpointParser(BaseParser):
 
         # Listening on all interfaces
         local_ip = data.get("local_ip", "")
-        if state == "listen" and local_ip in ["0.0.0.0", "::"]:
+        if state == "listen" and local_ip in ["0.0.0.0", "::"]:  # nosec B104 - detection check, not binding
             return EventSeverity.INFO
 
         return EventSeverity.DEBUG
