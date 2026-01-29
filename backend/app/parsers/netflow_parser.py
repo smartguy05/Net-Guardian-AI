@@ -77,7 +77,9 @@ class NetFlowParser(BaseParser):
             exporter_ip: IP address of the exporter for context
         """
         super().__init__(config)
-        self._templates: dict[int, dict[int, tuple[tuple[int, int], ...]]] = {}  # NetFlow v9 templates
+        self._templates: dict[
+            int, dict[int, tuple[tuple[int, int], ...]]
+        ] = {}  # NetFlow v9 templates
         self.min_bytes = self.config.get("min_bytes", 0)
         self.min_packets = self.config.get("min_packets", 0)
         self.exporter_ip = self.config.get("exporter_ip")
@@ -167,7 +169,17 @@ class NetFlowParser(BaseParser):
 
         # Parse header
         header = struct.unpack("!HHIIIIBBH", data[0:24])
-        version, count, sys_uptime, unix_secs, unix_nsecs, flow_seq, engine_type, engine_id, sampling = header
+        (
+            version,
+            count,
+            sys_uptime,
+            unix_secs,
+            unix_nsecs,
+            flow_seq,
+            engine_type,
+            engine_id,
+            sampling,
+        ) = header
 
         if count == 0:
             return []
@@ -185,16 +197,32 @@ class NetFlowParser(BaseParser):
         offset = 24
 
         for i in range(count):
-            record_data = data[offset:offset + 48]
+            record_data = data[offset : offset + 48]
             if len(record_data) < 48:
                 break
 
             record = struct.unpack("!IIIHHIIIIHHBBBBHHBBH", record_data)
             (
-                src_addr, dst_addr, nexthop, input_if, output_if,
-                packets, octets, first, last,
-                src_port, dst_port, pad1, tcp_flags, protocol, tos,
-                src_as, dst_as, src_mask, dst_mask, pad2
+                src_addr,
+                dst_addr,
+                nexthop,
+                input_if,
+                output_if,
+                packets,
+                octets,
+                first,
+                last,
+                src_port,
+                dst_port,
+                pad1,
+                tcp_flags,
+                protocol,
+                tos,
+                src_as,
+                dst_as,
+                src_mask,
+                dst_mask,
+                pad2,
             ) = record
 
             # Filter by configured thresholds
@@ -234,29 +262,31 @@ class NetFlowParser(BaseParser):
             proto_name = PROTOCOL_MAP.get(protocol, str(protocol))
 
             # Determine severity based on characteristics
-            severity = self._get_flow_severity(
-                protocol, dst_port, octets, packets, tcp_flags
-            )
+            severity = self._get_flow_severity(protocol, dst_port, octets, packets, tcp_flags)
 
             # Build raw message
-            _port_service = WELL_KNOWN_PORTS.get(dst_port, str(dst_port))  # Available for enrichment
+            _port_service = WELL_KNOWN_PORTS.get(
+                dst_port, str(dst_port)
+            )  # Available for enrichment
             raw_message = (
                 f"Flow: {src_ip}:{src_port} -> {dst_ip}:{dst_port} "
                 f"({proto_name}) {packets} pkts / {octets} bytes"
             )
 
-            results.append(ParseResult(
-                timestamp=base_timestamp,
-                event_type=EventType.FLOW,
-                severity=severity,
-                raw_message=raw_message,
-                client_ip=src_ip,
-                target_ip=dst_ip,
-                port=dst_port,
-                protocol=proto_name,
-                action="flow",
-                parsed_fields=parsed_fields,
-            ))
+            results.append(
+                ParseResult(
+                    timestamp=base_timestamp,
+                    event_type=EventType.FLOW,
+                    severity=severity,
+                    raw_message=raw_message,
+                    client_ip=src_ip,
+                    target_ip=dst_ip,
+                    port=dst_port,
+                    protocol=proto_name,
+                    action="flow",
+                    parsed_fields=parsed_fields,
+                )
+            )
 
             offset += 48
 
@@ -283,12 +313,12 @@ class NetFlowParser(BaseParser):
 
         # Process flow sets
         while offset < len(data) - 4:
-            flowset_id, flowset_length = struct.unpack("!HH", data[offset:offset + 4])
+            flowset_id, flowset_length = struct.unpack("!HH", data[offset : offset + 4])
 
             if flowset_length < 4:
                 break
 
-            flowset_data = data[offset + 4:offset + flowset_length]
+            flowset_data = data[offset + 4 : offset + flowset_length]
 
             if flowset_id == 0:
                 # Template FlowSet
@@ -300,9 +330,7 @@ class NetFlowParser(BaseParser):
                 # Data FlowSet
                 template = self._templates.get(source_id, {}).get(flowset_id)
                 if template:
-                    results.extend(
-                        self._parse_v9_data(flowset_data, template, base_timestamp)
-                    )
+                    results.extend(self._parse_v9_data(flowset_data, template, base_timestamp))
 
             offset += flowset_length
 
@@ -312,21 +340,23 @@ class NetFlowParser(BaseParser):
         """Parse NetFlow v9 template."""
         offset = 0
         while offset < len(data) - 4:
-            template_id, field_count = struct.unpack("!HH", data[offset:offset + 4])
+            template_id, field_count = struct.unpack("!HH", data[offset : offset + 4])
             offset += 4
 
             fields = []
             for _ in range(field_count):
                 if offset + 4 > len(data):
                     break
-                field_type, field_length = struct.unpack("!HH", data[offset:offset + 4])
+                field_type, field_length = struct.unpack("!HH", data[offset : offset + 4])
                 fields.append((field_type, field_length))
                 offset += 4
 
             if source_id not in self._templates:
                 self._templates[source_id] = {}
             self._templates[source_id][template_id] = tuple(fields)
-            logger.debug("netflow_v9_template_received", template_id=template_id, fields=len(fields))
+            logger.debug(
+                "netflow_v9_template_received", template_id=template_id, fields=len(fields)
+            )
 
     def _parse_v9_data(
         self,
@@ -344,31 +374,35 @@ class NetFlowParser(BaseParser):
         offset = 0
 
         while offset + record_size <= len(data):
-            record_data = data[offset:offset + record_size]
+            record_data = data[offset : offset + record_size]
             parsed = self._parse_v9_record(record_data, template)
 
             if parsed:
-                results.append(ParseResult(
-                    timestamp=timestamp,
-                    event_type=EventType.FLOW,
-                    severity=EventSeverity.DEBUG,
-                    raw_message=self._build_v9_message(parsed),
-                    client_ip=parsed.get("src_ip"),
-                    target_ip=parsed.get("dst_ip"),
-                    port=parsed.get("dst_port"),
-                    protocol=parsed.get("protocol"),
-                    action="flow",
-                    parsed_fields={
-                        "netflow_version": 9,
-                        **parsed,
-                    },
-                ))
+                results.append(
+                    ParseResult(
+                        timestamp=timestamp,
+                        event_type=EventType.FLOW,
+                        severity=EventSeverity.DEBUG,
+                        raw_message=self._build_v9_message(parsed),
+                        client_ip=parsed.get("src_ip"),
+                        target_ip=parsed.get("dst_ip"),
+                        port=parsed.get("dst_port"),
+                        protocol=parsed.get("protocol"),
+                        action="flow",
+                        parsed_fields={
+                            "netflow_version": 9,
+                            **parsed,
+                        },
+                    )
+                )
 
             offset += record_size
 
         return results
 
-    def _parse_v9_record(self, data: bytes, template: tuple[tuple[int, int], ...]) -> dict[str, Any] | None:
+    def _parse_v9_record(
+        self, data: bytes, template: tuple[tuple[int, int], ...]
+    ) -> dict[str, Any] | None:
         """Parse a single NetFlow v9 record."""
         # Common field type mappings
         field_types = {
@@ -388,7 +422,7 @@ class NetFlowParser(BaseParser):
             if offset + field_length > len(data):
                 break
 
-            field_data = data[offset:offset + field_length]
+            field_data = data[offset : offset + field_length]
 
             if field_type in field_types:
                 name, fmt = field_types[field_type]
@@ -396,7 +430,7 @@ class NetFlowParser(BaseParser):
                     if fmt == "4s":
                         value = self._int_to_ip(struct.unpack("!I", field_data)[0])
                     else:
-                        value = struct.unpack(f"!{fmt}", field_data[:struct.calcsize(fmt)])[0]
+                        value = struct.unpack(f"!{fmt}", field_data[: struct.calcsize(fmt)])[0]
                     result[name] = value
                 except struct.error:
                     pass

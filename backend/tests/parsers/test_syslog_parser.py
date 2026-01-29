@@ -1,6 +1,5 @@
 """Tests for the syslog parser."""
 
-
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.syslog_parser import SyslogParser
 
@@ -43,7 +42,7 @@ class TestSyslogParser:
 
     def test_parse_rfc5424_basic(self):
         """Test parsing RFC 5424 format syslog message."""
-        log_line = '<165>1 2024-01-15T12:00:00.000Z myhost myapp 1234 ID47 - This is the message'
+        log_line = "<165>1 2024-01-15T12:00:00.000Z myhost myapp 1234 ID47 - This is the message"
 
         results = self.parser.parse(log_line)
 

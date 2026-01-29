@@ -53,30 +53,36 @@ class TestUDPListenerCollectorInit:
 
     def test_init_with_custom_host(self):
         """Test initialization with custom host."""
-        source = create_mock_source(config={
-            "host": "192.168.1.1",
-            "port": 9995,
-        })
+        source = create_mock_source(
+            config={
+                "host": "192.168.1.1",
+                "port": 9995,
+            }
+        )
         collector = UDPListenerCollector(source, MagicMock())
 
         assert collector._host == "192.168.1.1"
 
     def test_init_queue_size(self):
         """Test initialization with custom queue size."""
-        source = create_mock_source(config={
-            "port": 9995,
-            "queue_size": 500,
-        })
+        source = create_mock_source(
+            config={
+                "port": 9995,
+                "queue_size": 500,
+            }
+        )
         collector = UDPListenerCollector(source, MagicMock())
 
         assert collector._queue.maxsize == 500
 
     def test_init_allowed_sources(self):
         """Test initialization with allowed sources."""
-        source = create_mock_source(config={
-            "port": 9995,
-            "allowed_sources": ["192.168.1.1", "192.168.1.2"],
-        })
+        source = create_mock_source(
+            config={
+                "port": 9995,
+                "allowed_sources": ["192.168.1.1", "192.168.1.2"],
+            }
+        )
         collector = UDPListenerCollector(source, MagicMock())
 
         assert "192.168.1.1" in collector._allowed_sources
@@ -241,10 +247,12 @@ class TestUDPListenerCollectorCollect:
     @pytest.mark.asyncio
     async def test_collect_filters_by_allowed_sources(self):
         """Test that collect filters by allowed_sources."""
-        source = create_mock_source(config={
-            "port": 0,
-            "allowed_sources": ["192.168.1.1"],  # Only allow this IP
-        })
+        source = create_mock_source(
+            config={
+                "port": 0,
+                "allowed_sources": ["192.168.1.1"],  # Only allow this IP
+            }
+        )
         collector = UDPListenerCollector(source, MagicMock())
 
         # Put results from different IPs
@@ -274,10 +282,12 @@ class TestUDPListenerCollectorCollect:
     @pytest.mark.asyncio
     async def test_collect_no_filter_when_no_allowed_sources(self):
         """Test that collect allows all when allowed_sources is empty."""
-        source = create_mock_source(config={
-            "port": 0,
-            "allowed_sources": [],  # Allow all
-        })
+        source = create_mock_source(
+            config={
+                "port": 0,
+                "allowed_sources": [],  # Allow all
+            }
+        )
         collector = UDPListenerCollector(source, MagicMock())
 
         mock_result = MagicMock(spec=ParseResult)

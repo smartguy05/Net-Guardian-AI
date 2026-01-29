@@ -40,7 +40,12 @@ class DetectionRule(Base, TimestampMixin):
         nullable=True,
     )
     severity: Mapped[AlertSeverity] = mapped_column(
-        SQLEnum(AlertSeverity, name="alertseverity", create_type=False, values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            AlertSeverity,
+            name="alertseverity",
+            create_type=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
     )
     enabled: Mapped[bool] = mapped_column(

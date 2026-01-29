@@ -110,20 +110,14 @@ class TestAnomalySeverityCalculation:
             == AlertSeverity.CRITICAL
         )
         assert (
-            AnomalyDetection.calculate_severity(4.0, AnomalyType.NEW_DOMAIN)
-            == AlertSeverity.HIGH
+            AnomalyDetection.calculate_severity(4.0, AnomalyType.NEW_DOMAIN) == AlertSeverity.HIGH
         )
         assert (
-            AnomalyDetection.calculate_severity(3.0, AnomalyType.NEW_DOMAIN)
-            == AlertSeverity.MEDIUM
+            AnomalyDetection.calculate_severity(3.0, AnomalyType.NEW_DOMAIN) == AlertSeverity.MEDIUM
         )
+        assert AnomalyDetection.calculate_severity(2.0, AnomalyType.NEW_DOMAIN) == AlertSeverity.LOW
         assert (
-            AnomalyDetection.calculate_severity(2.0, AnomalyType.NEW_DOMAIN)
-            == AlertSeverity.LOW
-        )
-        assert (
-            AnomalyDetection.calculate_severity(1.5, AnomalyType.NEW_DOMAIN)
-            == AlertSeverity.INFO
+            AnomalyDetection.calculate_severity(1.5, AnomalyType.NEW_DOMAIN) == AlertSeverity.INFO
         )
 
     def test_calculate_severity_volume_spike(self):
@@ -133,8 +127,7 @@ class TestAnomalySeverityCalculation:
             == AlertSeverity.CRITICAL
         )
         assert (
-            AnomalyDetection.calculate_severity(4.5, AnomalyType.VOLUME_SPIKE)
-            == AlertSeverity.HIGH
+            AnomalyDetection.calculate_severity(4.5, AnomalyType.VOLUME_SPIKE) == AlertSeverity.HIGH
         )
         assert (
             AnomalyDetection.calculate_severity(3.5, AnomalyType.VOLUME_SPIKE)
@@ -148,8 +141,7 @@ class TestAnomalySeverityCalculation:
             == AlertSeverity.CRITICAL
         )
         assert (
-            AnomalyDetection.calculate_severity(2.5, AnomalyType.TIME_ANOMALY)
-            == AlertSeverity.LOW
+            AnomalyDetection.calculate_severity(2.5, AnomalyType.TIME_ANOMALY) == AlertSeverity.LOW
         )
 
     def test_calculate_severity_pattern_change(self):
@@ -270,9 +262,7 @@ class TestConnectionAnomalyDetection:
 
     def test_new_external_connection_detection(self, detector, connection_baseline):
         """Test detection of new external connections."""
-        known_destinations = set(
-            connection_baseline.metrics["unique_destinations"]
-        )
+        known_destinations = set(connection_baseline.metrics["unique_destinations"])
 
         new_ip = "185.125.190.56"  # Unknown external IP
         assert new_ip not in known_destinations
@@ -315,26 +305,18 @@ class TestAnomalyScoreThresholds:
     def test_z_score_threshold_boundaries(self):
         """Test z-score threshold boundaries."""
         # Score of 2.0 is the minimum for detection
-        assert (
-            AnomalyDetection.calculate_severity(2.0, AnomalyType.NEW_DOMAIN)
-            == AlertSeverity.LOW
-        )
+        assert AnomalyDetection.calculate_severity(2.0, AnomalyType.NEW_DOMAIN) == AlertSeverity.LOW
 
         # Score of 1.9 should still be INFO
         assert (
-            AnomalyDetection.calculate_severity(1.9, AnomalyType.NEW_DOMAIN)
-            == AlertSeverity.INFO
+            AnomalyDetection.calculate_severity(1.9, AnomalyType.NEW_DOMAIN) == AlertSeverity.INFO
         )
 
     def test_high_risk_lower_thresholds(self):
         """Test that high-risk types have lower severity thresholds."""
         # Same score should result in higher severity for high-risk types
-        standard_severity = AnomalyDetection.calculate_severity(
-            3.0, AnomalyType.NEW_DOMAIN
-        )
-        high_risk_severity = AnomalyDetection.calculate_severity(
-            3.0, AnomalyType.NEW_CONNECTION
-        )
+        standard_severity = AnomalyDetection.calculate_severity(3.0, AnomalyType.NEW_DOMAIN)
+        high_risk_severity = AnomalyDetection.calculate_severity(3.0, AnomalyType.NEW_CONNECTION)
 
         # Convert to comparable values
         severity_order = [
@@ -379,8 +361,32 @@ class TestAnomalyDetectorAsyncMethods:
         baseline.metrics = {
             "unique_domains": ["google.com", "facebook.com", "twitter.com", "example.com"],
             "domain_frequencies": {"google.com": 100, "facebook.com": 50, "twitter.com": 30},
-            "hourly_distribution": [50, 45, 40, 35, 30, 25, 20, 30, 60, 80, 90, 100,
-                                    95, 90, 85, 80, 75, 70, 65, 60, 55, 50, 50, 50],
+            "hourly_distribution": [
+                50,
+                45,
+                40,
+                35,
+                30,
+                25,
+                20,
+                30,
+                60,
+                80,
+                90,
+                100,
+                95,
+                90,
+                85,
+                80,
+                75,
+                70,
+                65,
+                60,
+                55,
+                50,
+                50,
+                50,
+            ],
             "volume_mean": 100.0,
             "volume_std": 20.0,
             "blocked_ratio": 0.05,
@@ -436,7 +442,9 @@ class TestAnomalyDetectorAsyncMethods:
         assert len(anomalies) == 0
 
     @pytest.mark.asyncio
-    async def test_detect_anomalies_learning_baselines(self, detector, sample_device_id, mock_session):
+    async def test_detect_anomalies_learning_baselines(
+        self, detector, sample_device_id, mock_session
+    ):
         """Test detection when baselines are still learning."""
         learning_baseline = MagicMock(spec=DeviceBaseline)
         learning_baseline.status = BaselineStatus.LEARNING

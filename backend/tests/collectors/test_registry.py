@@ -62,6 +62,7 @@ class TestCollectorRegistryRegister:
         original_collectors = CollectorRegistry._collectors.copy()
 
         try:
+
             class FirstCollector(MockCollector):
                 pass
 

@@ -299,9 +299,7 @@ async def bulk_tag_devices(
             detail="Must specify tags_to_add or tags_to_remove",
         )
 
-    result = await session.execute(
-        select(Device).where(Device.id.in_(request.device_ids))
-    )
+    result = await session.execute(select(Device).where(Device.id.in_(request.device_ids)))
     devices = list(result.scalars().all())
 
     if not devices:

@@ -85,10 +85,12 @@ class TestFileWatchCollectorOpenFile:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "read_from_end": True,
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": True,
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             collector._open_file()
@@ -108,10 +110,12 @@ class TestFileWatchCollectorOpenFile:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "read_from_end": False,
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             collector._open_file()
@@ -155,10 +159,12 @@ class TestFileWatchCollectorReadLines:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "read_from_end": False,  # Start from beginning
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,  # Start from beginning
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             collector._open_file()
@@ -190,11 +196,13 @@ class TestFileWatchCollectorReadLines:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "read_from_end": False,
-                "batch_size": 50,  # Limit to 50 lines per batch
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                    "batch_size": 50,  # Limit to 50 lines per batch
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             collector._open_file()
@@ -213,10 +221,12 @@ class TestFileWatchCollectorReadLines:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "read_from_end": False,
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             collector._open_file()
@@ -242,10 +252,12 @@ class TestFileWatchCollectorStartStop:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "follow": True,
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "follow": True,
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             await collector.start()
@@ -266,10 +278,12 @@ class TestFileWatchCollectorStartStop:
             temp_path = f.name
 
         try:
-            source = create_mock_source(config={
-                "path": temp_path,
-                "follow": False,
-            })
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "follow": False,
+                }
+            )
             collector = FileWatchCollector(source, MagicMock())
 
             await collector.start()

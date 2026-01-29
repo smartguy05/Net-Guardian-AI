@@ -152,9 +152,7 @@ class AnomalyDetector:
                 baseline_comparison={
                     "baseline_domain_count": len(baseline_domains),
                     "new_percentage": (
-                        len(new_domains) / len(current_domains) * 100
-                        if current_domains
-                        else 0
+                        len(new_domains) / len(current_domains) * 100 if current_domains else 0
                     ),
                 },
             )
@@ -167,9 +165,7 @@ class AnomalyDetector:
         expected_hourly = baseline_volume_mean / 24  # Convert daily to hourly
 
         if baseline_volume_std > 0 and expected_hourly > 0:
-            z_score = (current_hourly_volume - expected_hourly) / (
-                baseline_volume_std / 24
-            )
+            z_score = (current_hourly_volume - expected_hourly) / (baseline_volume_std / 24)
 
             if z_score >= Z_SCORE_THRESHOLD:
                 anomaly = self._create_anomaly(
@@ -320,9 +316,7 @@ class AnomalyDetector:
         expected_hourly = baseline_volume_mean / 24
 
         if baseline_volume_std > 0 and expected_hourly > 0:
-            z_score = (current_hourly_volume - expected_hourly) / (
-                baseline_volume_std / 24
-            )
+            z_score = (current_hourly_volume - expected_hourly) / (baseline_volume_std / 24)
 
             if z_score >= Z_SCORE_THRESHOLD:
                 anomaly = self._create_anomaly(
@@ -427,12 +421,8 @@ class AnomalyDetector:
                 anomalies.append(anomaly)
 
         # Detect pattern change (internal/external ratio shift)
-        internal_count = sum(
-            1 for e in recent_events if self._is_internal_ip(e.target_ip or "")
-        )
-        current_internal_ratio = (
-            internal_count / len(recent_events) if recent_events else 0
-        )
+        internal_count = sum(1 for e in recent_events if self._is_internal_ip(e.target_ip or ""))
+        current_internal_ratio = internal_count / len(recent_events) if recent_events else 0
 
         # Significant shift to more external connections
         if baseline_internal_ratio > 0.3:  # Baseline was mostly internal

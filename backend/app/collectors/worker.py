@@ -41,9 +41,7 @@ class CollectorWorker:
 
     async def _load_sources(self, session: AsyncSession) -> list[LogSource]:
         """Load all enabled log sources from database."""
-        result = await session.execute(
-            select(LogSource).where(LogSource.enabled.is_(True))
-        )
+        result = await session.execute(select(LogSource).where(LogSource.enabled.is_(True)))
         return list(result.scalars().all())
 
     async def _get_or_create_device(
@@ -78,7 +76,9 @@ class CollectorWorker:
             select(Device).where(Device.mac_address == placeholder_mac)
         )
         if existing.scalar_one_or_none():
-            placeholder_mac = f"00:00:{uuid4().hex[:2]}:{uuid4().hex[:2]}:{uuid4().hex[:2]}:{uuid4().hex[:2]}"
+            placeholder_mac = (
+                f"00:00:{uuid4().hex[:2]}:{uuid4().hex[:2]}:{uuid4().hex[:2]}:{uuid4().hex[:2]}"
+            )
 
         now = datetime.now(UTC)
         device = Device(
@@ -132,9 +132,15 @@ class CollectorWorker:
             device_id=device.id if device else None,
             # DNS-specific fields
             query_type=result.parsed_fields.get("query_type") if result.parsed_fields else None,
-            response_status=result.parsed_fields.get("response_status") if result.parsed_fields else None,
-            blocked_reason=result.parsed_fields.get("blocked_reason") if result.parsed_fields else None,
-            entropy_score=result.parsed_fields.get("entropy_score") if result.parsed_fields else None,
+            response_status=result.parsed_fields.get("response_status")
+            if result.parsed_fields
+            else None,
+            blocked_reason=result.parsed_fields.get("blocked_reason")
+            if result.parsed_fields
+            else None,
+            entropy_score=result.parsed_fields.get("entropy_score")
+            if result.parsed_fields
+            else None,
         )
         session.add(raw_event)
 
@@ -150,15 +156,17 @@ class CollectorWorker:
 
         # Publish to event bus for real-time processing
         if self._event_bus:
-            await self._event_bus.publish_raw_event({
-                "id": str(raw_event.id),
-                "timestamp": result.timestamp.isoformat(),
-                "source_id": source.id,
-                "event_type": event_type.value,
-                "client_ip": result.client_ip,
-                "domain": result.domain,
-                "action": result.action,
-            })
+            await self._event_bus.publish_raw_event(
+                {
+                    "id": str(raw_event.id),
+                    "timestamp": result.timestamp.isoformat(),
+                    "source_id": source.id,
+                    "event_type": event_type.value,
+                    "client_ip": result.client_ip,
+                    "domain": result.domain,
+                    "action": result.action,
+                }
+            )
 
     async def _run_collector(self, source: LogSource) -> None:
         """Run a single collector and process its events."""
@@ -202,9 +210,7 @@ class CollectorWorker:
             try:
                 async with AsyncSessionLocal() as session:
                     await session.execute(
-                        update(LogSource)
-                        .where(LogSource.id == source.id)
-                        .values(last_error=str(e))
+                        update(LogSource).where(LogSource.id == source.id).values(last_error=str(e))
                     )
                     await session.commit()
             except Exception:

@@ -215,14 +215,10 @@ class RetentionService:
                 )
                 continue
 
-            cutoff_date = datetime.now(UTC) - timedelta(
-                days=policy.retention_days
-            )
+            cutoff_date = datetime.now(UTC) - timedelta(days=policy.retention_days)
 
             try:
-                deleted = await self._cleanup_table(
-                    policy.table_name, cutoff_date, dry_run
-                )
+                deleted = await self._cleanup_table(policy.table_name, cutoff_date, dry_run)
 
                 if not dry_run:
                     policy.last_run = datetime.now(UTC)
@@ -294,22 +290,14 @@ class RetentionService:
 
         if dry_run:
             # Count records that would be deleted
-            count_query = text(
-                f"SELECT COUNT(*) FROM {table_name} WHERE {timestamp_col} < :cutoff"
-            )
-            result = await self.session.execute(
-                count_query, {"cutoff": cutoff_date}
-            )
+            count_query = text(f"SELECT COUNT(*) FROM {table_name} WHERE {timestamp_col} < :cutoff")
+            result = await self.session.execute(count_query, {"cutoff": cutoff_date})
             count = result.scalar()
             return count or 0
         else:
             # Delete old records
-            delete_query = text(
-                f"DELETE FROM {table_name} WHERE {timestamp_col} < :cutoff"
-            )
-            cursor_result = await self.session.execute(
-                delete_query, {"cutoff": cutoff_date}
-            )
+            delete_query = text(f"DELETE FROM {table_name} WHERE {timestamp_col} < :cutoff")
+            cursor_result = await self.session.execute(delete_query, {"cutoff": cutoff_date})
             # rowcount is available on CursorResult from text() execution
             rowcount: int = getattr(cursor_result, "rowcount", 0) or 0
             return rowcount

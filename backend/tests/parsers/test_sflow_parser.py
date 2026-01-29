@@ -86,8 +86,14 @@ class TestSFlowParser:
         sample = struct.pack("!II", sample_type, sample_length)
         sample += struct.pack(
             "!IIIIIIII",
-            sequence, source_id, sampling_rate, sample_pool,
-            drops, input_if, output_if, num_records,
+            sequence,
+            source_id,
+            sampling_rate,
+            sample_pool,
+            drops,
+            input_if,
+            output_if,
+            num_records,
         )
         sample += raw_packet
 
@@ -250,7 +256,7 @@ class TestSFlowParser:
         data = {
             "timestamp": "2024-01-15T10:30:00Z",
             "source_ip": "192.168.1.100",  # Alternative name
-            "destination_ip": "8.8.8.8",   # Alternative name
+            "destination_ip": "8.8.8.8",  # Alternative name
             "source_port": 54321,
             "destination_port": 443,
             "protocol": "TCP",
@@ -360,8 +366,14 @@ class TestSFlowBinaryParsing:
 
         sample_data = struct.pack(
             "!IIIIIIII",
-            sequence, source_id, sampling_rate, sample_pool,
-            drops, input_if, output_if, num_records,
+            sequence,
+            source_id,
+            sampling_rate,
+            sample_pool,
+            drops,
+            input_if,
+            output_if,
+            num_records,
         )
         sample_data += raw_packet_record
 
@@ -398,8 +410,14 @@ class TestSFlowBinaryParsing:
 
         ip_header = struct.pack(
             "!BBHHHBBH",
-            version_ihl, dscp_ecn, total_length, identification,
-            flags_fragment, ttl, protocol, checksum
+            version_ihl,
+            dscp_ecn,
+            total_length,
+            identification,
+            flags_fragment,
+            ttl,
+            protocol,
+            checksum,
         )
         ip_header += self._ip_to_bytes(src_ip)
         ip_header += self._ip_to_bytes(dst_ip)
@@ -408,7 +426,9 @@ class TestSFlowBinaryParsing:
         if protocol == 6:  # TCP
             transport_header = struct.pack("!HH", src_port, dst_port)
             transport_header += struct.pack("!II", 0, 0)  # seq, ack
-            transport_header += struct.pack("!BBHHH", 0x50, 0x02, 65535, 0, 0)  # data offset, flags, window, checksum, urgent
+            transport_header += struct.pack(
+                "!BBHHH", 0x50, 0x02, 65535, 0, 0
+            )  # data offset, flags, window, checksum, urgent
         else:  # UDP
             transport_header = struct.pack("!HHHH", src_port, dst_port, 8, 0)
 
@@ -445,9 +465,7 @@ class TestSFlowBinaryParsing:
         sample_type = 3
 
         # Build raw packet header record
-        raw_packet_record = self._build_raw_packet_record(
-            src_ip, dst_ip, 54321, 443, 6, 1500
-        )
+        raw_packet_record = self._build_raw_packet_record(src_ip, dst_ip, 54321, 443, 6, 1500)
 
         # Expanded flow sample has similar structure to standard flow sample
         sequence = 1
@@ -461,8 +479,14 @@ class TestSFlowBinaryParsing:
 
         sample_data = struct.pack(
             "!IIIIIIII",
-            sequence, source_id, sampling_rate, sample_pool,
-            drops, input_if, output_if, num_records,
+            sequence,
+            source_id,
+            sampling_rate,
+            sample_pool,
+            drops,
+            input_if,
+            output_if,
+            num_records,
         )
         sample_data += raw_packet_record
 
@@ -692,7 +716,9 @@ class TestSFlowIPv6:
         eth_header += struct.pack("!H", 0x86DD)  # IPv6 ethertype
 
         # IPv6 header (40 bytes)
-        ip_header = struct.pack("!IHBB", 0x60000000, 20, 6, 64)  # version, payload_len, next_header (TCP), hop_limit
+        ip_header = struct.pack(
+            "!IHBB", 0x60000000, 20, 6, 64
+        )  # version, payload_len, next_header (TCP), hop_limit
         # Source IPv6
         ip_header += b"\x20\x01\x0d\xb8\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
         # Dest IPv6

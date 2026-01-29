@@ -82,7 +82,9 @@ class AnomalyDetection(Base, TimestampMixin):
         index=True,
     )
     severity: Mapped[AlertSeverity] = mapped_column(
-        SQLEnum(AlertSeverity, name="alertseverity", values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            AlertSeverity, name="alertseverity", values_callable=lambda x: [e.value for e in x]
+        ),
         nullable=False,
         index=True,
     )
@@ -91,7 +93,9 @@ class AnomalyDetection(Base, TimestampMixin):
         nullable=False,
     )
     status: Mapped[AnomalyStatus] = mapped_column(
-        SQLEnum(AnomalyStatus, name="anomalystatus", values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            AnomalyStatus, name="anomalystatus", values_callable=lambda x: [e.value for e in x]
+        ),
         default=AnomalyStatus.ACTIVE,
         nullable=False,
         index=True,

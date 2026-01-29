@@ -224,9 +224,7 @@ class CircuitBreaker:
             if self._state == self.State.OPEN:
                 # Check if recovery timeout has passed
                 if self._last_failure_time:
-                    elapsed = (
-                        datetime.now(UTC) - self._last_failure_time
-                    ).total_seconds()
+                    elapsed = (datetime.now(UTC) - self._last_failure_time).total_seconds()
                     if elapsed >= self.recovery_timeout:
                         # Try half-open
                         self._state = self.State.HALF_OPEN
@@ -276,9 +274,7 @@ class RetryHandler:
         """
         import random
 
-        delay = self.config.initial_delay * (
-            self.config.exponential_base ** attempt
-        )
+        delay = self.config.initial_delay * (self.config.exponential_base**attempt)
         delay = min(delay, self.config.max_delay)
 
         # Add jitter
@@ -312,9 +308,7 @@ class RetryHandler:
         while attempts <= self.config.max_retries:
             # Check circuit breaker
             if self.circuit_breaker and not await self.circuit_breaker.can_proceed():
-                raise CollectorCircuitOpenError(
-                    f"Circuit breaker open for {source_id}"
-                )
+                raise CollectorCircuitOpenError(f"Circuit breaker open for {source_id}")
 
             try:
                 result = await func()
@@ -491,9 +485,7 @@ class ErrorTracker:
 
         by_category: dict[str, int] = {}
         for error in errors:
-            by_category[error.category.value] = (
-                by_category.get(error.category.value, 0) + 1
-            )
+            by_category[error.category.value] = by_category.get(error.category.value, 0) + 1
 
         return {
             "total_errors_last_hour": len(errors),

@@ -15,9 +15,9 @@ from app.models.base import Base, TimestampMixin
 class SourceType(str, Enum):
     """Type of log source."""
 
-    API_PULL = "api_pull"      # Pull logs from external API
+    API_PULL = "api_pull"  # Pull logs from external API
     FILE_WATCH = "file_watch"  # Watch mounted log files
-    API_PUSH = "api_push"      # Receive logs via API
+    API_PUSH = "api_push"  # Receive logs via API
     UDP_LISTEN = "udp_listen"  # Listen for UDP packets (NetFlow/sFlow)
 
 

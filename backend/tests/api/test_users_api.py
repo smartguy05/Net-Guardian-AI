@@ -23,7 +23,9 @@ class TestListUsers:
     """Tests for the list users endpoint."""
 
     @pytest.mark.asyncio
-    async def test_list_users_returns_paginated_results(self, mock_db_session, mock_current_user_admin):
+    async def test_list_users_returns_paginated_results(
+        self, mock_db_session, mock_current_user_admin
+    ):
         """Should return paginated list of users."""
         # Create mock users
         users = [
@@ -171,7 +173,9 @@ class TestCreateUser:
         assert "already exists" in exc_info.value.detail
 
     @pytest.mark.asyncio
-    async def test_create_user_default_role_is_viewer(self, mock_db_session, mock_current_user_admin):
+    async def test_create_user_default_role_is_viewer(
+        self, mock_db_session, mock_current_user_admin
+    ):
         """Should default to viewer role if not specified."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None

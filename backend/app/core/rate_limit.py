@@ -64,10 +64,10 @@ class RateLimiter:
         cutoff = now - (self.window_seconds * 10)  # Keep 10 windows of history
 
         expired_keys = [
-            key for key, entry in self._entries.items()
-            if entry.window_start < cutoff and (
-                entry.blocked_until is None or entry.blocked_until < now
-            )
+            key
+            for key, entry in self._entries.items()
+            if entry.window_start < cutoff
+            and (entry.blocked_until is None or entry.blocked_until < now)
         ]
 
         for key in expired_keys:
@@ -150,19 +150,19 @@ class RateLimiter:
 
 # Pre-configured rate limiters for different endpoints
 login_rate_limiter = RateLimiter(
-    requests_per_window=5,   # 5 login attempts
-    window_seconds=60,        # per minute
-    block_seconds=300,        # 5 minute block
+    requests_per_window=5,  # 5 login attempts
+    window_seconds=60,  # per minute
+    block_seconds=300,  # 5 minute block
 )
 
 api_rate_limiter = RateLimiter(
     requests_per_window=100,  # 100 requests
-    window_seconds=60,        # per minute
-    block_seconds=60,         # 1 minute block
+    window_seconds=60,  # per minute
+    block_seconds=60,  # 1 minute block
 )
 
 ingest_rate_limiter = RateLimiter(
     requests_per_window=1000,  # 1000 events
-    window_seconds=60,         # per minute
-    block_seconds=60,          # 1 minute block
+    window_seconds=60,  # per minute
+    block_seconds=60,  # 1 minute block
 )

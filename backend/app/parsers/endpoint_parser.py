@@ -176,16 +176,29 @@ class EndpointParser(BaseParser):
 
         # Suspicious process names
         suspicious_names = [
-            "mimikatz", "pwdump", "procdump", "nc.exe", "netcat",
-            "powershell_ise", "psexec", "wmic", "certutil",
+            "mimikatz",
+            "pwdump",
+            "procdump",
+            "nc.exe",
+            "netcat",
+            "powershell_ise",
+            "psexec",
+            "wmic",
+            "certutil",
         ]
         if any(s in name for s in suspicious_names):
             return EventSeverity.WARNING
 
         # Suspicious command line patterns
         suspicious_cmdline = [
-            "-encodedcommand", "downloadstring", "invoke-expression",
-            "bypass", "hidden", "-nop", "-noni", "-enc",
+            "-encodedcommand",
+            "downloadstring",
+            "invoke-expression",
+            "bypass",
+            "hidden",
+            "-nop",
+            "-noni",
+            "-enc",
         ]
         if any(s in cmdline for s in suspicious_cmdline):
             return EventSeverity.WARNING
@@ -221,9 +234,15 @@ class EndpointParser(BaseParser):
 
         # Sensitive file paths
         sensitive_paths = [
-            "/etc/passwd", "/etc/shadow", "/etc/sudoers",
-            "\\sam", "\\system", "\\security",
-            ".ssh/", "credentials", "secrets",
+            "/etc/passwd",
+            "/etc/shadow",
+            "/etc/sudoers",
+            "\\sam",
+            "\\system",
+            "\\security",
+            ".ssh/",
+            "credentials",
+            "secrets",
         ]
         if any(s in path for s in sensitive_paths):
             if action in ["write", "delete", "modify"]:

@@ -182,11 +182,11 @@ async def ingest_syslog_events(
         0: EventSeverity.CRITICAL,  # Emergency
         1: EventSeverity.CRITICAL,  # Alert
         2: EventSeverity.CRITICAL,  # Critical
-        3: EventSeverity.ERROR,     # Error
-        4: EventSeverity.WARNING,   # Warning
-        5: EventSeverity.INFO,      # Notice
-        6: EventSeverity.INFO,      # Informational
-        7: EventSeverity.DEBUG,     # Debug
+        3: EventSeverity.ERROR,  # Error
+        4: EventSeverity.WARNING,  # Warning
+        5: EventSeverity.INFO,  # Notice
+        6: EventSeverity.INFO,  # Informational
+        7: EventSeverity.DEBUG,  # Debug
     }
 
     for syslog_event in request.events:

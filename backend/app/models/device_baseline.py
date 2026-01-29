@@ -72,7 +72,9 @@ class DeviceBaseline(Base, TimestampMixin):
         index=True,
     )
     status: Mapped[BaselineStatus] = mapped_column(
-        SQLEnum(BaselineStatus, name="baselinestatus", values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            BaselineStatus, name="baselinestatus", values_callable=lambda x: [e.value for e in x]
+        ),
         default=BaselineStatus.LEARNING,
         nullable=False,
         index=True,

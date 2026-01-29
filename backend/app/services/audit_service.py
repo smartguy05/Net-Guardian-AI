@@ -313,10 +313,12 @@ class AuditService:
                 select(AuditLog)
                 .where(
                     and_(
-                        AuditLog.action.in_([
-                            AuditAction.DEVICE_QUARANTINE,
-                            AuditAction.DEVICE_RELEASE,
-                        ]),
+                        AuditLog.action.in_(
+                            [
+                                AuditAction.DEVICE_QUARANTINE,
+                                AuditAction.DEVICE_RELEASE,
+                            ]
+                        ),
                         AuditLog.timestamp >= start_time,
                     )
                 )

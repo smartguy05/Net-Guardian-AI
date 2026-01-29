@@ -402,12 +402,15 @@ async def update_config(
 
     config = await service.create_or_update_config(
         source_id=source_id,
-        enabled=request.enabled if request.enabled is not None else (existing.enabled if existing else True),
+        enabled=request.enabled
+        if request.enabled is not None
+        else (existing.enabled if existing else True),
         llm_provider=llm_provider,
         ollama_model=request.ollama_model or (existing.ollama_model if existing else None),
         rarity_threshold=request.rarity_threshold or (existing.rarity_threshold if existing else 3),
         batch_size=request.batch_size or (existing.batch_size if existing else 50),
-        batch_interval_minutes=request.batch_interval_minutes or (existing.batch_interval_minutes if existing else 60),
+        batch_interval_minutes=request.batch_interval_minutes
+        or (existing.batch_interval_minutes if existing else 60),
     )
 
     return _config_to_response(config)
@@ -602,9 +605,7 @@ async def generate_research_query(
         )
 
     # Fetch the log source to get its name and type
-    source_result = await session.execute(
-        select(LogSource).where(LogSource.id == log.source_id)
-    )
+    source_result = await session.execute(select(LogSource).where(LogSource.id == log.source_id))
     source = source_result.scalar_one_or_none()
 
     # Build context for the LLM
@@ -626,10 +627,13 @@ async def generate_research_query(
 
     if log.severity_score is not None:
         severity_label = (
-            "Critical" if log.severity_score >= 0.8 else
-            "High" if log.severity_score >= 0.6 else
-            "Medium" if log.severity_score >= 0.4 else
-            "Low"
+            "Critical"
+            if log.severity_score >= 0.8
+            else "High"
+            if log.severity_score >= 0.6
+            else "Medium"
+            if log.severity_score >= 0.4
+            else "Low"
         )
         context_parts.append(f"Severity: {severity_label} ({log.severity_score:.0%})")
 
@@ -681,7 +685,7 @@ Example good queries:
             )
         query = content_block.text.strip()
         # Clean up any quotes or extra formatting
-        query = query.strip('"\'')
+        query = query.strip("\"'")
 
         search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
 

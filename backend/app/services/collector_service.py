@@ -144,9 +144,7 @@ class CollectorService:
     async def _load_sources(self) -> None:
         """Load all enabled log sources and start collectors."""
         async with AsyncSessionLocal() as session:
-            result = await session.execute(
-                select(LogSource).where(LogSource.enabled.is_(True))
-            )
+            result = await session.execute(select(LogSource).where(LogSource.enabled.is_(True)))
             sources = result.scalars().all()
 
             for source in sources:
@@ -177,9 +175,7 @@ class CollectorService:
             await collector.start()
 
             # Start event processing task
-            task = asyncio.create_task(
-                self._process_events(source.id, collector)
-            )
+            task = asyncio.create_task(self._process_events(source.id, collector))
             self._collector_tasks[source.id] = task
 
             logger.info(
@@ -237,16 +233,13 @@ class CollectorService:
             batch.append(event)
 
             # Flush batch if full or timeout reached
-            should_flush = (
-                len(batch) >= BATCH_SIZE or
-                (batch and time.time() - last_flush >= BATCH_TIMEOUT)
+            should_flush = len(batch) >= BATCH_SIZE or (
+                batch and time.time() - last_flush >= BATCH_TIMEOUT
             )
 
             if should_flush:
                 # Process batch concurrently (limited by semaphore)
-                asyncio.create_task(
-                    self._process_batch(source_id, batch.copy())
-                )
+                asyncio.create_task(self._process_batch(source_id, batch.copy()))
                 batch.clear()
                 last_flush = time.time()
 
@@ -329,16 +322,18 @@ class CollectorService:
                 session.add(raw_event)
 
                 # Prepare event bus data
-                event_data_for_bus.append({
-                    "id": str(raw_event.id),
-                    "source_id": source_id,
-                    "event_type": event.event_type.value,
-                    "severity": event.severity.value,
-                    "client_ip": event.client_ip,
-                    "domain": event.domain,
-                    "action": event.action,
-                    "device_id": str(device_id) if device_id else None,
-                })
+                event_data_for_bus.append(
+                    {
+                        "id": str(raw_event.id),
+                        "source_id": source_id,
+                        "event_type": event.event_type.value,
+                        "severity": event.severity.value,
+                        "client_ip": event.client_ip,
+                        "domain": event.domain,
+                        "action": event.action,
+                        "device_id": str(device_id) if device_id else None,
+                    }
+                )
 
             # Update source metadata (single update for the whole batch)
             source = await session.get(LogSource, source_id)
@@ -405,9 +400,7 @@ class CollectorService:
         ip_conditions = [Device.ip_addresses.contains([ip]) for ip in ip_addresses]
         mac_condition = Device.mac_address.in_(placeholder_macs)
 
-        result = await session.execute(
-            select(Device).where(or_(*ip_conditions, mac_condition))
-        )
+        result = await session.execute(select(Device).where(or_(*ip_conditions, mac_condition)))
         existing_devices = result.scalars().all()
 
         # Map IPs to existing devices
@@ -454,9 +447,7 @@ class CollectorService:
             await session.rollback()
 
             # Re-query to get the devices that were created by another batch
-            result = await session.execute(
-                select(Device).where(or_(*ip_conditions, mac_condition))
-            )
+            result = await session.execute(select(Device).where(or_(*ip_conditions, mac_condition)))
             existing_devices = result.scalars().all()
 
             result_map.clear()
@@ -486,10 +477,7 @@ class CollectorService:
 
                 # Wait for first event (with timeout to check running flag)
                 try:
-                    event = await asyncio.wait_for(
-                        self._semantic_queue.get(),
-                        timeout=1.0
-                    )
+                    event = await asyncio.wait_for(self._semantic_queue.get(), timeout=1.0)
                     batch.append(event)
                 except TimeoutError:
                     continue
@@ -567,8 +555,7 @@ class CollectorService:
     def get_status(self) -> dict[str, bool]:
         """Get status of all collectors."""
         return {
-            source_id: collector.is_running()
-            for source_id, collector in self._collectors.items()
+            source_id: collector.is_running() for source_id, collector in self._collectors.items()
         }
 
     def get_stats(self) -> dict[str, Any]:

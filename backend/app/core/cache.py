@@ -186,6 +186,7 @@ def cached(
         async def list_devices(page: int, limit: int):
             ...
     """
+
     def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -214,4 +215,5 @@ def cached(
             return result
 
         return wrapper
+
     return decorator

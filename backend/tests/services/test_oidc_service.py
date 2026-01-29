@@ -30,7 +30,9 @@ class TestOIDCService:
             mock.authentik_client_secret = "test-client-secret"
             mock.authentik_redirect_uri = "http://localhost:8000/api/v1/auth/oidc/callback"
             mock.authentik_scopes = "openid profile email groups"
-            mock.authentik_group_mappings = '{"netguardian-admins": "admin", "netguardian-operators": "operator"}'
+            mock.authentik_group_mappings = (
+                '{"netguardian-admins": "admin", "netguardian-operators": "operator"}'
+            )
             mock.authentik_auto_create_users = True
             mock.authentik_default_role = "viewer"
             yield mock
@@ -60,7 +62,10 @@ class TestOIDCService:
 
         # Verifier should be URL-safe base64
         assert len(verifier) > 32
-        assert all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_" for c in verifier)
+        assert all(
+            c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+            for c in verifier
+        )
 
         # Challenge should be different from verifier (it's hashed)
         assert challenge != verifier
@@ -90,7 +95,9 @@ class TestOIDCService:
             mock_response.json.return_value = mock_config
             mock_response.raise_for_status = MagicMock()
 
-            mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
+            mock_client.return_value.__aenter__.return_value.get = AsyncMock(
+                return_value=mock_response
+            )
 
             config = await oidc_service.get_oidc_config()
 
@@ -230,6 +237,7 @@ class TestGetOIDCService:
         """Test that get_oidc_service returns the same instance."""
         # Reset singleton
         import app.services.oidc_service
+
         app.services.oidc_service._oidc_service = None
 
         service1 = get_oidc_service()
@@ -240,6 +248,7 @@ class TestGetOIDCService:
     def test_returns_oidc_service_instance(self):
         """Test that get_oidc_service returns OIDCService instance."""
         import app.services.oidc_service
+
         app.services.oidc_service._oidc_service = None
 
         service = get_oidc_service()

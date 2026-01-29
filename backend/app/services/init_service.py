@@ -33,9 +33,7 @@ def _check_security_configuration() -> None:
 
     # Check for debug mode in production
     if settings.debug:
-        warnings.append(
-            "DEBUG mode is enabled. Disable in production (DEBUG=false)."
-        )
+        warnings.append("DEBUG mode is enabled. Disable in production (DEBUG=false).")
 
     # Check CORS configuration
     if "*" in settings.cors_origins:
@@ -47,8 +45,7 @@ def _check_security_configuration() -> None:
     # Check for default database password
     if "password" in settings.database_url.lower() and "localhost" not in settings.database_url:
         warnings.append(
-            "Database URL may contain a weak password. "
-            "Use strong passwords in production."
+            "Database URL may contain a weak password. Use strong passwords in production."
         )
 
     # Check JWT expiration settings
@@ -61,8 +58,7 @@ def _check_security_configuration() -> None:
     # Check Anthropic API key
     if settings.llm_enabled and not settings.anthropic_api_key:
         warnings.append(
-            "LLM is enabled but ANTHROPIC_API_KEY is not set. "
-            "LLM features will not work."
+            "LLM is enabled but ANTHROPIC_API_KEY is not set. LLM features will not work."
         )
 
     # Log warnings

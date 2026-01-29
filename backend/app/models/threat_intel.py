@@ -168,7 +168,9 @@ class ThreatIndicator(Base, TimestampMixin):
         nullable=False,
     )
     indicator_type: Mapped[IndicatorType] = mapped_column(
-        SQLEnum(IndicatorType, name="indicatortype", values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            IndicatorType, name="indicatortype", values_callable=lambda x: [e.value for e in x]
+        ),
         nullable=False,
     )
     value: Mapped[str] = mapped_column(

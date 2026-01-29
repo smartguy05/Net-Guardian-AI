@@ -103,9 +103,7 @@ class UniFiService(IntegrationService):
             async with await self._get_client() as client:
                 if await self._login(client):
                     # Get controller info
-                    response = await client.get(
-                        f"/api/s/{settings.router_site}/stat/sysinfo"
-                    )
+                    response = await client.get(f"/api/s/{settings.router_site}/stat/sysinfo")
 
                     if response.status_code == 200:
                         data = response.json()
@@ -377,9 +375,7 @@ class UniFiService(IntegrationService):
                     return []
 
                 # Get all clients
-                response = await client.get(
-                    f"/api/s/{settings.router_site}/list/user"
-                )
+                response = await client.get(f"/api/s/{settings.router_site}/list/user")
 
                 await self._logout(client)
 
@@ -391,13 +387,15 @@ class UniFiService(IntegrationService):
                     blocked = []
                     for client_data in clients:
                         if client_data.get("blocked", False):
-                            blocked.append({
-                                "mac_address": client_data.get("mac", "").upper(),
-                                "hostname": client_data.get("hostname"),
-                                "name": client_data.get("name"),
-                                "blocked": True,
-                                "source": "unifi",
-                            })
+                            blocked.append(
+                                {
+                                    "mac_address": client_data.get("mac", "").upper(),
+                                    "hostname": client_data.get("hostname"),
+                                    "name": client_data.get("name"),
+                                    "blocked": True,
+                                    "source": "unifi",
+                                }
+                            )
 
                     return blocked
 

@@ -26,9 +26,20 @@ USERNAME_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{3,32}$")
 
 # Common weak passwords to reject
 COMMON_PASSWORDS = {
-    "password", "123456", "qwerty", "admin", "letmein",
-    "welcome", "monkey", "dragon", "master", "password1",
-    "password123", "123456789", "12345678", "1234567890",
+    "password",
+    "123456",
+    "qwerty",
+    "admin",
+    "letmein",
+    "welcome",
+    "monkey",
+    "dragon",
+    "master",
+    "password1",
+    "password123",
+    "123456789",
+    "12345678",
+    "1234567890",
 }
 
 

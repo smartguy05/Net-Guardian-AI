@@ -480,10 +480,11 @@ def generate_events():
         def test_bulk_processing(generate_events):
             events = generate_events(count=100, event_type=EventType.DNS)
     """
+
     def _generate_events(
         count: int = 10,
         event_type: EventType = EventType.DNS,
-        device_id = None,
+        device_id=None,
         start_time: datetime = None,
     ) -> list:
         if start_time is None:

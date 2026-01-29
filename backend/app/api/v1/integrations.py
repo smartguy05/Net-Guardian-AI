@@ -58,9 +58,7 @@ async def get_integrations_status(
 
     # Router integration (placeholder for future)
     router_configured = bool(
-        settings.router_integration_type
-        and settings.router_url
-        and settings.router_username
+        settings.router_integration_type and settings.router_url and settings.router_username
     )
     integrations.append(
         IntegrationStatus(
@@ -166,7 +164,6 @@ async def test_router_connection(
             message=f"Unknown router integration type: {router_type}",
             error="Supported types: unifi, pfsense, opnsense",
         )
-
 
 
 @router.get("/router/blocked", response_model=list[dict[str, Any]])

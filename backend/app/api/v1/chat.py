@@ -335,9 +335,7 @@ async def summarize_incident(
     if request.device_id:
         alerts_query = alerts_query.where(Alert.device_id == request.device_id)
 
-    alerts_result = await session.execute(
-        alerts_query.order_by(Alert.timestamp.desc()).limit(50)
-    )
+    alerts_result = await session.execute(alerts_query.order_by(Alert.timestamp.desc()).limit(50))
     alerts = alerts_result.scalars().all()
 
     # Gather anomalies
@@ -371,9 +369,7 @@ async def summarize_incident(
     # Get device data if single device
     device_data = None
     if request.device_id:
-        device_result = await session.execute(
-            select(Device).where(Device.id == request.device_id)
-        )
+        device_result = await session.execute(select(Device).where(Device.id == request.device_id))
         device = device_result.scalar_one_or_none()
         if device:
             device_data = {
@@ -396,7 +392,9 @@ async def summarize_incident(
     anomalies_data = [
         {
             "detected_at": an.detected_at.isoformat(),
-            "anomaly_type": an.anomaly_type.value if hasattr(an.anomaly_type, 'value') else str(an.anomaly_type),
+            "anomaly_type": an.anomaly_type.value
+            if hasattr(an.anomaly_type, "value")
+            else str(an.anomaly_type),
             "description": an.description,
             "severity": an.severity,
         }

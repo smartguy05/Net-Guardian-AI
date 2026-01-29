@@ -20,10 +20,12 @@ class TestNetFlowParser:
     @pytest.fixture
     def parser_with_threshold(self):
         """Create parser with minimum thresholds."""
-        return NetFlowParser(config={
-            "min_bytes": 1000,
-            "min_packets": 5,
-        })
+        return NetFlowParser(
+            config={
+                "min_bytes": 1000,
+                "min_packets": 5,
+            }
+        )
 
     def _build_netflow_v5_packet(
         self,
@@ -48,8 +50,15 @@ class TestNetFlowParser:
 
         header = struct.pack(
             "!HHIIIIBBH",
-            version, count, sys_uptime, unix_secs, unix_nsecs,
-            flow_sequence, engine_type, engine_id, sampling,
+            version,
+            count,
+            sys_uptime,
+            unix_secs,
+            unix_nsecs,
+            flow_sequence,
+            engine_type,
+            engine_id,
+            sampling,
         )
 
         # Records
@@ -71,10 +80,26 @@ class TestNetFlowParser:
 
             record = struct.pack(
                 "!IIIHHIIIIHHBBBBHHBBH",
-                src_addr, dst_addr, nexthop, input_if, output_if,
-                packets, octets, first, last,
-                src_port, dst_port, 0, tcp_flags, protocol, tos,
-                src_as, dst_as, src_mask, dst_mask, 0,
+                src_addr,
+                dst_addr,
+                nexthop,
+                input_if,
+                output_if,
+                packets,
+                octets,
+                first,
+                last,
+                src_port,
+                dst_port,
+                0,
+                tcp_flags,
+                protocol,
+                tos,
+                src_as,
+                dst_as,
+                src_mask,
+                dst_mask,
+                0,
             )
             records += record
 
@@ -87,9 +112,11 @@ class TestNetFlowParser:
 
     def test_parse_netflow_v5_binary(self, parser):
         """Test parsing a NetFlow v5 binary packet."""
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10, 5000),  # TCP
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10, 5000),  # TCP
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 1
@@ -107,21 +134,25 @@ class TestNetFlowParser:
 
     def test_parse_multiple_flows(self, parser):
         """Test parsing multiple flows in one packet."""
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10, 5000),
-            ("192.168.1.101", "1.1.1.1", 54322, 53, 17, 5, 500),  # UDP DNS
-            ("192.168.1.102", "10.0.0.1", 54323, 80, 6, 20, 10000),
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10, 5000),
+                ("192.168.1.101", "1.1.1.1", 54322, 53, 17, 5, 500),  # UDP DNS
+                ("192.168.1.102", "10.0.0.1", 54323, 80, 6, 20, 10000),
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 3
 
     def test_parse_with_thresholds(self, parser_with_threshold):
         """Test that flows below thresholds are filtered."""
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10, 5000),  # Above threshold
-            ("192.168.1.101", "1.1.1.1", 54322, 53, 17, 2, 100),   # Below threshold
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10, 5000),  # Above threshold
+                ("192.168.1.101", "1.1.1.1", 54322, 53, 17, 2, 100),  # Below threshold
+            ]
+        )
 
         results = parser_with_threshold.parse(packet)
         # Only the first flow should pass
@@ -176,9 +207,11 @@ class TestNetFlowParser:
 
     def test_suspicious_port_detection(self, parser):
         """Test detection of suspicious ports."""
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "10.0.0.1", 54321, 4444, 6, 10, 1000),  # Suspicious port
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "10.0.0.1", 54321, 4444, 6, 10, 1000),  # Suspicious port
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 1
@@ -186,9 +219,11 @@ class TestNetFlowParser:
 
     def test_large_transfer_detection(self, parser):
         """Test detection of large data transfers."""
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10000, 150000000),  # 150 MB
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 10000, 150000000),  # 150 MB
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 1
@@ -218,7 +253,7 @@ class TestNetFlowParser:
     def test_protocol_mapping(self, parser):
         """Test that protocol numbers are mapped to names."""
         flows = [
-            ("192.168.1.100", "8.8.8.8", 1, 0, 1, 10, 1000),    # ICMP
+            ("192.168.1.100", "8.8.8.8", 1, 0, 1, 10, 1000),  # ICMP
             ("192.168.1.101", "8.8.8.8", 54321, 443, 6, 10, 1000),  # TCP
             ("192.168.1.102", "8.8.8.8", 54322, 53, 17, 10, 1000),  # UDP
         ]
@@ -272,13 +307,13 @@ class TestNetFlowV9Parser:
         if fields is None:
             # Default: src_ip, dst_ip, src_port, dst_port, protocol, bytes, packets
             fields = [
-                (8, 4),   # src_ip
+                (8, 4),  # src_ip
                 (12, 4),  # dst_ip
-                (7, 2),   # src_port
+                (7, 2),  # src_port
                 (11, 2),  # dst_port
-                (4, 1),   # protocol
-                (1, 4),   # bytes
-                (2, 4),   # packets
+                (4, 1),  # protocol
+                (1, 4),  # bytes
+                (2, 4),  # packets
             ]
 
         flowset_id = 0  # Template flowset
@@ -295,7 +330,9 @@ class TestNetFlowV9Parser:
         padding = (4 - (flowset_length % 4)) % 4
         flowset_length += padding
 
-        return struct.pack("!HH", flowset_id, flowset_length) + template_record + (b"\x00" * padding)
+        return (
+            struct.pack("!HH", flowset_id, flowset_length) + template_record + (b"\x00" * padding)
+        )
 
     def _build_data_flowset(
         self,
@@ -313,10 +350,10 @@ class TestNetFlowV9Parser:
             record = struct.pack("!I", self._ip_to_int("192.168.1.100"))  # src_ip
             record += struct.pack("!I", self._ip_to_int("8.8.8.8"))  # dst_ip
             record += struct.pack("!H", 54321)  # src_port
-            record += struct.pack("!H", 443)    # dst_port
-            record += struct.pack("!B", 6)      # protocol (TCP)
-            record += struct.pack("!I", 5000)   # bytes
-            record += struct.pack("!I", 10)     # packets
+            record += struct.pack("!H", 443)  # dst_port
+            record += struct.pack("!B", 6)  # protocol (TCP)
+            record += struct.pack("!I", 5000)  # bytes
+            record += struct.pack("!I", 10)  # packets
             records = [record]
 
         data = b"".join(records)
@@ -477,10 +514,26 @@ class TestNetFlowParserSeverity:
 
             record = struct.pack(
                 "!IIIHHIIIIHHBBBBHHBBH",
-                src_addr, dst_addr, 0, 1, 2,
-                packets, octets, 0, 1000,
-                src_port, dst_port, 0, tcp_flags, protocol, 0,
-                0, 0, 24, 24, 0,
+                src_addr,
+                dst_addr,
+                0,
+                1,
+                2,
+                packets,
+                octets,
+                0,
+                1000,
+                src_port,
+                dst_port,
+                0,
+                tcp_flags,
+                protocol,
+                0,
+                0,
+                0,
+                24,
+                24,
+                0,
             )
             records += record
 
@@ -489,9 +542,11 @@ class TestNetFlowParserSeverity:
     def test_port_scan_detection(self, parser):
         """Test detection of port scan patterns."""
         # Many packets, few bytes suggests port scan
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "10.0.0.1", 54321, 22, 6, 200, 500, 0x04),  # RST flags
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "10.0.0.1", 54321, 22, 6, 200, 500, 0x04),  # RST flags
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 1
@@ -500,9 +555,11 @@ class TestNetFlowParserSeverity:
     def test_syn_flood_detection(self, parser):
         """Test detection of SYN flood patterns."""
         # Many SYN packets without ACK
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "10.0.0.1", 54321, 80, 6, 100, 5000, 0x02),  # SYN only
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "10.0.0.1", 54321, 80, 6, 100, 5000, 0x02),  # SYN only
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 1
@@ -510,9 +567,11 @@ class TestNetFlowParserSeverity:
 
     def test_normal_traffic_is_debug(self, parser):
         """Test that normal traffic gets DEBUG severity."""
-        packet = self._build_netflow_v5_packet([
-            ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 50, 25000, 0x12),  # Normal HTTPS
-        ])
+        packet = self._build_netflow_v5_packet(
+            [
+                ("192.168.1.100", "8.8.8.8", 54321, 443, 6, 50, 25000, 0x12),  # Normal HTTPS
+            ]
+        )
 
         results = parser.parse(packet)
         assert len(results) == 1

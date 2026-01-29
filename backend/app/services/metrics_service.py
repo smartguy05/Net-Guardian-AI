@@ -38,10 +38,12 @@ APP_INFO = Info(
     "NetGuardian AI application information",
     registry=registry if _is_multiprocess() else REGISTRY,
 )
-APP_INFO.info({
-    "version": "0.1.0",
-    "name": "NetGuardian AI",
-})
+APP_INFO.info(
+    {
+        "version": "0.1.0",
+        "name": "NetGuardian AI",
+    }
+)
 
 # HTTP metrics
 HTTP_REQUESTS_TOTAL = Counter(
@@ -249,8 +251,11 @@ def get_metrics_content_type() -> str:
     return CONTENT_TYPE_LATEST
 
 
-def track_request_duration(method: str, endpoint: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def track_request_duration(
+    method: str, endpoint: str
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator to track HTTP request duration."""
+
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -261,9 +266,13 @@ def track_request_duration(method: str, endpoint: str) -> Callable[[Callable[...
                 return result
             finally:
                 duration = time.time() - start_time
-                HTTP_REQUEST_DURATION_SECONDS.labels(method=method, endpoint=endpoint).observe(duration)
+                HTTP_REQUEST_DURATION_SECONDS.labels(method=method, endpoint=endpoint).observe(
+                    duration
+                )
                 HTTP_REQUESTS_IN_PROGRESS.labels(method=method, endpoint=endpoint).dec()
+
         return wrapper
+
     return decorator
 
 
@@ -304,7 +313,9 @@ def record_threat_intel_hit(indicator_type: str, severity: str) -> None:
     THREAT_INTEL_HITS.labels(indicator_type=indicator_type, severity=severity).inc()
 
 
-def record_llm_request(model: str, operation: str, duration: float, input_tokens: int, output_tokens: int) -> None:
+def record_llm_request(
+    model: str, operation: str, duration: float, input_tokens: int, output_tokens: int
+) -> None:
     """Record an LLM API request."""
     LLM_REQUESTS_TOTAL.labels(model=model, operation=operation).inc()
     LLM_REQUEST_DURATION_SECONDS.labels(model=model).observe(duration)
@@ -336,7 +347,9 @@ def update_device_counts(active: int, inactive: int, quarantined: int, unknown: 
     DEVICES_QUARANTINED.set(quarantined)
 
 
-def update_alert_counts(new: int, acknowledged: int, critical: int, high: int, medium: int, low: int) -> None:
+def update_alert_counts(
+    new: int, acknowledged: int, critical: int, high: int, medium: int, low: int
+) -> None:
     """Update active alert counts."""
     ALERTS_ACTIVE.labels(severity="critical").set(critical)
     ALERTS_ACTIVE.labels(severity="high").set(high)
@@ -344,7 +357,9 @@ def update_alert_counts(new: int, acknowledged: int, critical: int, high: int, m
     ALERTS_ACTIVE.labels(severity="low").set(low)
 
 
-def update_threat_intel_counts(enabled_feeds: int, disabled_feeds: int, indicators_by_type: dict[str, int]) -> None:
+def update_threat_intel_counts(
+    enabled_feeds: int, disabled_feeds: int, indicators_by_type: dict[str, int]
+) -> None:
     """Update threat intelligence counts."""
     THREAT_INTEL_FEEDS.labels(status="enabled").set(enabled_feeds)
     THREAT_INTEL_FEEDS.labels(status="disabled").set(disabled_feeds)

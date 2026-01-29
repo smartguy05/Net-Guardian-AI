@@ -59,9 +59,7 @@ class CustomParser(BaseParser):
 
         self.timestamp_field = self.config.get("timestamp_field", "timestamp")
         self.timestamp_format = self.config.get("timestamp_format")
-        self.default_event_type = EventType(
-            self.config.get("event_type", EventType.UNKNOWN.value)
-        )
+        self.default_event_type = EventType(self.config.get("event_type", EventType.UNKNOWN.value))
         self.severity_field = self.config.get("severity_field", "severity")
         self.severity_map: dict[str, EventSeverity] = {
             **self.DEFAULT_SEVERITY_MAP,

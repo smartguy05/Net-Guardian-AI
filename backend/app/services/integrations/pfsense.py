@@ -135,9 +135,7 @@ class PfSenseService(IntegrationService):
                 error=str(e),
             )
 
-    async def _create_block_alias(
-        self, client: httpx.AsyncClient, mac_address: str
-    ) -> bool:
+    async def _create_block_alias(self, client: httpx.AsyncClient, mac_address: str) -> bool:
         """Create or update the NetGuardian block alias."""
         # This is a simplified implementation
         # In production, you'd manage a proper alias group
@@ -251,9 +249,7 @@ class PfSenseService(IntegrationService):
                         )
                 else:
                     # pfSense API for blocking
-                    success = await self._create_block_rule(
-                        client, mac_address, device_name
-                    )
+                    success = await self._create_block_rule(client, mac_address, device_name)
 
                     if success:
                         # Apply firewall changes
@@ -328,9 +324,7 @@ class PfSenseService(IntegrationService):
                 if self._is_opnsense:
                     # OPNsense API - remove from alias
                     # First get the alias entries to find the UUID
-                    response = await client.get(
-                        "/api/firewall/alias/getItem/netguardian_blocked"
-                    )
+                    response = await client.get("/api/firewall/alias/getItem/netguardian_blocked")
 
                     if response.status_code == 200:
                         data = response.json()
@@ -438,9 +432,7 @@ class PfSenseService(IntegrationService):
 
                 # Check for blocking rule/alias entry
                 if self._is_opnsense:
-                    response = await client.get(
-                        "/api/firewall/alias/getItem/netguardian_blocked"
-                    )
+                    response = await client.get("/api/firewall/alias/getItem/netguardian_blocked")
                     if response.status_code == 200:
                         data = response.json()
                         # Check if MAC is in the alias

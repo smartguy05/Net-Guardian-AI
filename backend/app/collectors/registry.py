@@ -44,8 +44,7 @@ class CollectorRegistry:
         if collector_class is None:
             available = [st.value for st in cls._collectors.keys()]
             raise ValueError(
-                f"No collector for source type: {source.source_type.value}. "
-                f"Available: {available}"
+                f"No collector for source type: {source.source_type.value}. Available: {available}"
             )
 
         # Get the parser for this source
@@ -72,7 +71,9 @@ def get_collector(source: LogSource) -> BaseCollector:
     return CollectorRegistry.get(source)
 
 
-def register_collector(source_type: SourceType) -> Callable[[type[BaseCollector]], type[BaseCollector]]:
+def register_collector(
+    source_type: SourceType,
+) -> Callable[[type[BaseCollector]], type[BaseCollector]]:
     """Decorator to register a collector class.
 
     Usage:
@@ -80,7 +81,9 @@ def register_collector(source_type: SourceType) -> Callable[[type[BaseCollector]
         class ApiPullCollector(BaseCollector):
             ...
     """
+
     def decorator(cls: type[BaseCollector]) -> type[BaseCollector]:
         CollectorRegistry.register(source_type, cls)
         return cls
+
     return decorator

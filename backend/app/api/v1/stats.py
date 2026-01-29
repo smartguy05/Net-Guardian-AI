@@ -111,6 +111,7 @@ async def get_overview(
 
     # Source count
     from app.models.log_source import LogSource
+
     source_count_result = await session.execute(
         select(func.count()).select_from(LogSource).where(LogSource.enabled.is_(True))
     )
@@ -176,8 +177,7 @@ async def get_dns_timeline(
     )
 
     return [
-        TimelineBucket(timestamp=row.bucket.isoformat(), count=row.event_count)
-        for row in result
+        TimelineBucket(timestamp=row.bucket.isoformat(), count=row.event_count) for row in result
     ]
 
 

@@ -300,7 +300,7 @@ class OllamaMonitoringService:
         # Cache the threat
         self._recent_threats.append(threat)
         if len(self._recent_threats) > self._max_threats_cache:
-            self._recent_threats = self._recent_threats[-self._max_threats_cache:]
+            self._recent_threats = self._recent_threats[-self._max_threats_cache :]
 
         logger.warning(
             "llm_threat_detected",
@@ -358,6 +358,7 @@ class OllamaMonitoringService:
         if self._llm_service is None:
             try:
                 from app.services.llm_service import get_llm_service
+
                 self._llm_service = get_llm_service()
             except ImportError:
                 return None
@@ -374,7 +375,7 @@ class OllamaMonitoringService:
 ```
 
 ## Detected Patterns
-{', '.join(matched_patterns)}
+{", ".join(matched_patterns)}
 
 ## Analysis Required
 1. Is this a genuine security threat or false positive?
@@ -483,9 +484,7 @@ Respond in JSON:
 
         # Extract content from chat messages
         if messages and not prompt:
-            prompt = " ".join(
-                m.get("content", "") for m in messages if m.get("role") == "user"
-            )
+            prompt = " ".join(m.get("content", "") for m in messages if m.get("role") == "user")
 
         if not prompt:
             return {"processed": True, "threat": None}

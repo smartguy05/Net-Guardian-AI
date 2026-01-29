@@ -116,9 +116,7 @@ async def create_source(
 ) -> LogSourceResponse:
     """Create a new log source."""
     # Check for existing ID
-    existing = await session.execute(
-        select(LogSource).where(LogSource.id == source_data.id)
-    )
+    existing = await session.execute(select(LogSource).where(LogSource.id == source_data.id))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

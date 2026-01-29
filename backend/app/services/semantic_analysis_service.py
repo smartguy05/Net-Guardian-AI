@@ -104,9 +104,7 @@ class SemanticAnalysisService:
         should_close = self._session is None
 
         try:
-            stmt = select(SemanticAnalysisConfig).order_by(
-                SemanticAnalysisConfig.source_id
-            )
+            stmt = select(SemanticAnalysisConfig).order_by(SemanticAnalysisConfig.source_id)
             result = await session.execute(stmt)
             return result.scalars().all()
 
@@ -275,13 +273,9 @@ class SemanticAnalysisService:
 
             # Check if we should run based on interval
             if not force and config.last_run_at:
-                next_run = config.last_run_at + timedelta(
-                    minutes=config.batch_interval_minutes
-                )
+                next_run = config.last_run_at + timedelta(minutes=config.batch_interval_minutes)
                 if datetime.utcnow() < next_run:
-                    raise ValueError(
-                        f"Too soon to run analysis, next run at {next_run}"
-                    )
+                    raise ValueError(f"Too soon to run analysis, next run at {next_run}")
 
             # Create run record
             run = SemanticAnalysisRun(
@@ -334,14 +328,16 @@ class SemanticAnalysisService:
                     event = event_result.scalar_one_or_none()
 
                     if event:
-                        logs_for_analysis.append({
-                            "index": i,
-                            "irregular_id": irregular.id,
-                            "message": event.raw_message,
-                            "source": source_id,
-                            "timestamp": event.timestamp.isoformat(),
-                            "reason": irregular.reason,
-                        })
+                        logs_for_analysis.append(
+                            {
+                                "index": i,
+                                "irregular_id": irregular.id,
+                                "message": event.raw_message,
+                                "source": source_id,
+                                "timestamp": event.timestamp.isoformat(),
+                                "reason": irregular.reason,
+                            }
+                        )
 
                 run.events_scanned = len(logs_for_analysis)
 
@@ -683,16 +679,14 @@ class SemanticAnalysisService:
                 IrregularLog.severity_score >= 0.7
             )
             if source_id:
-                high_severity_stmt = high_severity_stmt.where(
-                    IrregularLog.source_id == source_id
-                )
+                high_severity_stmt = high_severity_stmt.where(IrregularLog.source_id == source_id)
             high_severity_result = await session.execute(high_severity_stmt)
             high_severity_count = high_severity_result.scalar_one()
 
             # Get last run info
-            run_stmt = select(SemanticAnalysisRun).order_by(
-                SemanticAnalysisRun.started_at.desc()
-            ).limit(1)
+            run_stmt = (
+                select(SemanticAnalysisRun).order_by(SemanticAnalysisRun.started_at.desc()).limit(1)
+            )
             if source_id:
                 run_stmt = run_stmt.where(SemanticAnalysisRun.source_id == source_id)
             run_result = await session.execute(run_stmt)

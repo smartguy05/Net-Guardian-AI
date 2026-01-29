@@ -133,15 +133,11 @@ class OllamaLLMProvider(BaseLLMProvider):
 
         except httpx.TimeoutException:
             logger.error("ollama_timeout", url=self._url, model=self._model)
-            return LLMAnalysisResult.from_error(
-                f"Ollama request timed out after {self._timeout}s"
-            )
+            return LLMAnalysisResult.from_error(f"Ollama request timed out after {self._timeout}s")
 
         except httpx.ConnectError:
             logger.error("ollama_connection_error", url=self._url)
-            return LLMAnalysisResult.from_error(
-                f"Failed to connect to Ollama at {self._url}"
-            )
+            return LLMAnalysisResult.from_error(f"Failed to connect to Ollama at {self._url}")
 
         except Exception as e:
             logger.error("ollama_analysis_error", error=str(e))
@@ -157,7 +153,9 @@ class OllamaLLMProvider(BaseLLMProvider):
             True if successful.
         """
         try:
-            async with httpx.AsyncClient(timeout=600.0) as client:  # 10 min timeout for large models
+            async with httpx.AsyncClient(
+                timeout=600.0
+            ) as client:  # 10 min timeout for large models
                 response = await client.post(
                     f"{self._url}/api/pull",
                     json={"name": model, "stream": False},

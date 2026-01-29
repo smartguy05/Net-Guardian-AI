@@ -47,9 +47,7 @@ class JsonParser(BaseParser):
         self.timestamp_field = self.config.get("timestamp_field", "timestamp")
         self.timestamp_format = self.config.get("timestamp_format")
         self.field_mappings = self.config.get("field_mappings", {})
-        self.default_event_type = EventType(
-            self.config.get("event_type", EventType.UNKNOWN.value)
-        )
+        self.default_event_type = EventType(self.config.get("event_type", EventType.UNKNOWN.value))
         self.severity_field = self.config.get("severity_field", "severity")
         self.severity_map = {
             **self.DEFAULT_SEVERITY_MAP,
@@ -59,8 +57,7 @@ class JsonParser(BaseParser):
         # Pre-compile JSONPath expressions
         self._events_expr = jsonpath_parse(self.events_path)
         self._field_exprs = {
-            field: jsonpath_parse(path)
-            for field, path in self.field_mappings.items()
+            field: jsonpath_parse(path) for field, path in self.field_mappings.items()
         }
 
     def _extract_value(self, data: dict[str, Any], path: str) -> Any:
@@ -168,7 +165,9 @@ class JsonParser(BaseParser):
                     timestamp=timestamp,
                     event_type=self.default_event_type,
                     severity=self._parse_severity(event),
-                    raw_message=raw_message if isinstance(raw_message, str) else json.dumps(raw_message),
+                    raw_message=raw_message
+                    if isinstance(raw_message, str)
+                    else json.dumps(raw_message),
                     client_ip=self._get_field(event, "client_ip"),
                     target_ip=self._get_field(event, "target_ip"),
                     domain=self._get_field(event, "domain"),

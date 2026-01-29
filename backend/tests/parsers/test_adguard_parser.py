@@ -1,6 +1,5 @@
 """Tests for the AdGuard Home parser."""
 
-
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.adguard_parser import AdGuardParser
 
@@ -14,21 +13,21 @@ class TestAdGuardParser:
 
     def test_parse_basic_query(self):
         """Test parsing a basic DNS query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {
-                "name": "example.com.",
-                "type": "A",
-            },
-            "answer": [
-                {"value": "93.184.216.34", "type": "A", "ttl": 300}
-            ],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredNotFound",
-            "upstream": "https://dns.google/dns-query",
-            "elapsedMs": 45,
-            "cached": False,
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {
+                    "name": "example.com.",
+                    "type": "A",
+                },
+                "answer": [{"value": "93.184.216.34", "type": "A", "ttl": 300}],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredNotFound",
+                "upstream": "https://dns.google/dns-query",
+                "elapsedMs": 45,
+                "cached": False,
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -45,14 +44,16 @@ class TestAdGuardParser:
 
     def test_parse_blocked_query(self):
         """Test parsing a blocked DNS query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "malware.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "FilteredBlackList",
-            "rules": [{"text": "||malware.com^", "filter_list_id": 1}],
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "malware.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "FilteredBlackList",
+                "rules": [{"text": "||malware.com^", "filter_list_id": 1}],
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -64,13 +65,15 @@ class TestAdGuardParser:
 
     def test_parse_safe_browsing_blocked(self):
         """Test parsing safe browsing blocked query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "phishing.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "FilteredSafeBrowsing",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "phishing.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "FilteredSafeBrowsing",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -80,13 +83,15 @@ class TestAdGuardParser:
 
     def test_parse_parental_blocked(self):
         """Test parsing parental control blocked query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "adult-site.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "FilteredParental",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "adult-site.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "FilteredParental",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -95,14 +100,16 @@ class TestAdGuardParser:
 
     def test_parse_blocked_service(self):
         """Test parsing blocked service query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "tiktok.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "FilteredBlockedService",
-            "serviceName": "tiktok",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "tiktok.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "FilteredBlockedService",
+                "serviceName": "tiktok",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -112,13 +119,15 @@ class TestAdGuardParser:
 
     def test_parse_rewritten_query(self):
         """Test parsing rewritten DNS query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "local-server.", "type": "A"},
-            "answer": [{"value": "192.168.1.50", "type": "A"}],
-            "client": "192.168.1.100",
-            "reason": "Rewrite",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "local-server.", "type": "A"},
+                "answer": [{"value": "192.168.1.50", "type": "A"}],
+                "client": "192.168.1.100",
+                "reason": "Rewrite",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -128,13 +137,15 @@ class TestAdGuardParser:
 
     def test_parse_safe_search_rewrite(self):
         """Test parsing safe search rewrite."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "www.google.com.", "type": "A"},
-            "answer": [{"value": "216.239.38.120", "type": "A"}],
-            "client": "192.168.1.100",
-            "reason": "FilteredSafeSearch",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "www.google.com.", "type": "A"},
+                "answer": [{"value": "216.239.38.120", "type": "A"}],
+                "client": "192.168.1.100",
+                "reason": "FilteredSafeSearch",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -188,17 +199,19 @@ class TestAdGuardParser:
 
     def test_parse_multiple_answers(self):
         """Test parsing query with multiple answer IPs."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "cdn.example.com.", "type": "A"},
-            "answer": [
-                {"value": "93.184.216.34", "type": "A"},
-                {"value": "93.184.216.35", "type": "A"},
-                {"value": "93.184.216.36", "type": "A"},
-            ],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredNotFound",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "cdn.example.com.", "type": "A"},
+                "answer": [
+                    {"value": "93.184.216.34", "type": "A"},
+                    {"value": "93.184.216.35", "type": "A"},
+                    {"value": "93.184.216.36", "type": "A"},
+                ],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredNotFound",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -211,13 +224,15 @@ class TestAdGuardParser:
         query_types = ["A", "AAAA", "MX", "TXT", "CNAME", "NS"]
 
         for qtype in query_types:
-            data = [{
-                "time": "2024-01-15T12:00:00Z",
-                "question": {"name": "example.com.", "type": qtype},
-                "answer": [],
-                "client": "192.168.1.100",
-                "reason": "NotFilteredNotFound",
-            }]
+            data = [
+                {
+                    "time": "2024-01-15T12:00:00Z",
+                    "question": {"name": "example.com.", "type": qtype},
+                    "answer": [],
+                    "client": "192.168.1.100",
+                    "reason": "NotFilteredNotFound",
+                }
+            ]
 
             results = self.parser.parse(data)
 
@@ -226,15 +241,17 @@ class TestAdGuardParser:
 
     def test_parse_cached_response(self):
         """Test parsing cached DNS response."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "example.com.", "type": "A"},
-            "answer": [{"value": "93.184.216.34", "type": "A"}],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredNotFound",
-            "cached": True,
-            "elapsedMs": 0,
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "example.com.", "type": "A"},
+                "answer": [{"value": "93.184.216.34", "type": "A"}],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredNotFound",
+                "cached": True,
+                "elapsedMs": 0,
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -243,17 +260,19 @@ class TestAdGuardParser:
 
     def test_parse_with_client_info(self):
         """Test parsing with client info."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "example.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredNotFound",
-            "client_info": {
-                "name": "my-laptop",
-                "ids": ["192.168.1.100"],
-            },
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "example.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredNotFound",
+                "client_info": {
+                    "name": "my-laptop",
+                    "ids": ["192.168.1.100"],
+                },
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -296,13 +315,15 @@ class TestAdGuardParser:
 
     def test_raw_message_format(self):
         """Test raw message format."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "example.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredNotFound",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "example.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredNotFound",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -311,13 +332,15 @@ class TestAdGuardParser:
 
     def test_domain_trailing_dot_removed(self):
         """Test that trailing dot is removed from domain."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "example.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredNotFound",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "example.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredNotFound",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -325,13 +348,15 @@ class TestAdGuardParser:
 
     def test_parse_whitelisted_query(self):
         """Test parsing whitelisted query."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "allowed.com.", "type": "A"},
-            "answer": [{"value": "1.2.3.4", "type": "A"}],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredWhiteList",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "allowed.com.", "type": "A"},
+                "answer": [{"value": "1.2.3.4", "type": "A"}],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredWhiteList",
+            }
+        ]
 
         results = self.parser.parse(data)
 
@@ -340,13 +365,15 @@ class TestAdGuardParser:
 
     def test_parse_error_response(self):
         """Test parsing error response."""
-        data = [{
-            "time": "2024-01-15T12:00:00Z",
-            "question": {"name": "example.com.", "type": "A"},
-            "answer": [],
-            "client": "192.168.1.100",
-            "reason": "NotFilteredError",
-        }]
+        data = [
+            {
+                "time": "2024-01-15T12:00:00Z",
+                "question": {"name": "example.com.", "type": "A"},
+                "answer": [],
+                "client": "192.168.1.100",
+                "reason": "NotFilteredError",
+            }
+        ]
 
         results = self.parser.parse(data)
 

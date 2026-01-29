@@ -78,6 +78,7 @@ class PasswordChangeRequest(BaseModel):
 
 class TwoFactorSetupResponse(BaseModel):
     """Response when initiating 2FA setup."""
+
     secret: str
     qr_code: str
     backup_codes: list[str]
@@ -85,17 +86,20 @@ class TwoFactorSetupResponse(BaseModel):
 
 class TwoFactorVerifyRequest(BaseModel):
     """Request to verify 2FA code during login."""
+
     pending_token: str
     code: str
 
 
 class TwoFactorEnableRequest(BaseModel):
     """Request to enable 2FA after setup."""
+
     code: str
 
 
 class TwoFactorDisableRequest(BaseModel):
     """Request to disable 2FA."""
+
     password: str
     code: str | None = None
 
@@ -166,9 +170,7 @@ async def login(
     login_rate_limiter.check(request)
 
     # Find user by username
-    result = await session.execute(
-        select(User).where(User.username == form_data.username.lower())
-    )
+    result = await session.execute(select(User).where(User.username == form_data.username.lower()))
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(form_data.password, user.password_hash):
@@ -388,14 +390,10 @@ async def verify_2fa(
     else:
         # Try backup code
         if user.backup_codes:
-            is_valid, code_index = totp_service.verify_backup_code(
-                code, user.backup_codes
-            )
+            is_valid, code_index = totp_service.verify_backup_code(code, user.backup_codes)
             if is_valid and code_index is not None:
                 # Remove used backup code
-                user.backup_codes = [
-                    c for i, c in enumerate(user.backup_codes) if i != code_index
-                ]
+                user.backup_codes = [c for i, c in enumerate(user.backup_codes) if i != code_index]
             else:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -590,6 +588,7 @@ async def get_2fa_status(
 
 class OIDCConfigResponse(BaseModel):
     """Response for OIDC configuration."""
+
     enabled: bool
     issuer: str | None = None
     client_id: str | None = None
@@ -597,12 +596,14 @@ class OIDCConfigResponse(BaseModel):
 
 class OIDCAuthorizeResponse(BaseModel):
     """Response for OIDC authorization initiation."""
+
     authorization_url: str
     state: str
 
 
 class OIDCCallbackRequest(BaseModel):
     """Request for OIDC callback."""
+
     code: str
     state: str
     code_verifier: str
@@ -659,7 +660,9 @@ async def oidc_authorize() -> OIDCAuthorizeResponse:
         if cache:
             await cache.set(cache_key, code_verifier, ttl=300)
         else:
-            logger.warning("oidc_cache_unavailable", msg="Cache service not available for OIDC state storage")
+            logger.warning(
+                "oidc_cache_unavailable", msg="Cache service not available for OIDC state storage"
+            )
 
         logger.info("oidc_authorize_initiated", state=state[:8])
 
@@ -746,9 +749,7 @@ async def oidc_callback(
         role = oidc_service.map_groups_to_role(groups)
 
         # Find existing user by external_id (returning SSO user)
-        result = await session.execute(
-            select(User).where(User.external_id == sub)
-        )
+        result = await session.execute(select(User).where(User.external_id == sub))
         user = result.scalar_one_or_none()
 
         if user:
@@ -769,9 +770,7 @@ async def oidc_callback(
             # Try to find existing local user by email to link accounts
             email = user_info.get("email")
             if email:
-                result = await session.execute(
-                    select(User).where(User.email == email)
-                )
+                result = await session.execute(select(User).where(User.email == email))
                 user = result.scalar_one_or_none()
 
             if user:

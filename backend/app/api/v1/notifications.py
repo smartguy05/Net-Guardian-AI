@@ -141,9 +141,7 @@ async def get_preferences(
 ) -> NotificationPreferencesResponse:
     """Get the current user's notification preferences."""
     result = await session.execute(
-        select(NotificationPreferences).where(
-            NotificationPreferences.user_id == current_user.id
-        )
+        select(NotificationPreferences).where(NotificationPreferences.user_id == current_user.id)
     )
     prefs = result.scalar_one_or_none()
 
@@ -168,9 +166,7 @@ async def update_preferences(
 ) -> NotificationPreferencesResponse:
     """Update the current user's notification preferences."""
     result = await session.execute(
-        select(NotificationPreferences).where(
-            NotificationPreferences.user_id == current_user.id
-        )
+        select(NotificationPreferences).where(NotificationPreferences.user_id == current_user.id)
     )
     prefs = result.scalar_one_or_none()
 

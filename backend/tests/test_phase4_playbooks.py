@@ -83,9 +83,7 @@ class TestPlaybookEngine:
         """Test trigger conditions pass for matching severity."""
         event_data = {"severity": "high"}
 
-        result = await playbook_engine._check_trigger_conditions(
-            sample_playbook, event_data, None
-        )
+        result = await playbook_engine._check_trigger_conditions(sample_playbook, event_data, None)
 
         assert result is True
 
@@ -96,9 +94,7 @@ class TestPlaybookEngine:
         """Test trigger conditions fail for low severity."""
         event_data = {"severity": "low"}
 
-        result = await playbook_engine._check_trigger_conditions(
-            sample_playbook, event_data, None
-        )
+        result = await playbook_engine._check_trigger_conditions(sample_playbook, event_data, None)
 
         assert result is False
 
@@ -160,9 +156,7 @@ class TestPlaybookEngine:
             "params": {},
         }
 
-        result = await playbook_engine._execute_action(
-            action, {}, None, None
-        )
+        result = await playbook_engine._execute_action(action, {}, None, None)
 
         assert result["success"] is False
         assert "unknown action type" in result["error"].lower()

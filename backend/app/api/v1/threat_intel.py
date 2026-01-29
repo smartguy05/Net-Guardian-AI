@@ -285,7 +285,9 @@ async def update_feed(
         auth_type=updated_feed.auth_type,
         auth_config=updated_feed.auth_config,
         field_mapping=updated_feed.field_mapping,
-        last_fetch_at=updated_feed.last_fetch_at.isoformat() if updated_feed.last_fetch_at else None,
+        last_fetch_at=updated_feed.last_fetch_at.isoformat()
+        if updated_feed.last_fetch_at
+        else None,
         last_fetch_status=updated_feed.last_fetch_status,
         last_fetch_message=updated_feed.last_fetch_message,
         indicator_count=updated_feed.indicator_count,
@@ -364,7 +366,9 @@ async def enable_feed(
         auth_type=updated_feed.auth_type,
         auth_config=updated_feed.auth_config,
         field_mapping=updated_feed.field_mapping,
-        last_fetch_at=updated_feed.last_fetch_at.isoformat() if updated_feed.last_fetch_at else None,
+        last_fetch_at=updated_feed.last_fetch_at.isoformat()
+        if updated_feed.last_fetch_at
+        else None,
         last_fetch_status=updated_feed.last_fetch_status,
         last_fetch_message=updated_feed.last_fetch_message,
         indicator_count=updated_feed.indicator_count,
@@ -402,7 +406,9 @@ async def disable_feed(
         auth_type=updated_feed.auth_type,
         auth_config=updated_feed.auth_config,
         field_mapping=updated_feed.field_mapping,
-        last_fetch_at=updated_feed.last_fetch_at.isoformat() if updated_feed.last_fetch_at else None,
+        last_fetch_at=updated_feed.last_fetch_at.isoformat()
+        if updated_feed.last_fetch_at
+        else None,
         last_fetch_status=updated_feed.last_fetch_status,
         last_fetch_message=updated_feed.last_fetch_message,
         indicator_count=updated_feed.indicator_count,

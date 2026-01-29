@@ -93,7 +93,7 @@ def calculate_risk_score(prompt: str) -> tuple[int, list[str]]:
         matched_patterns.append("suspicious_length")
 
     # Multiple special characters (encoding attacks)
-    special_chars = len(re.findall(r'[\\<>\[\]{}|]', prompt))
+    special_chars = len(re.findall(r"[\\<>\[\]{}|]", prompt))
     if special_chars > 20:
         score += 15
         matched_patterns.append("special_chars_abuse")
@@ -221,7 +221,7 @@ class OllamaParser(BaseParser):
                 "event_subtype": "generate",
                 "total_duration": data.get("total_duration"),
                 "eval_count": data.get("eval_count"),
-            }
+            },
         )
 
     def _parse_chat_event(self, data: dict[str, Any]) -> ParseResult:
@@ -278,7 +278,7 @@ class OllamaParser(BaseParser):
                 "matched_patterns": matched_patterns,
                 "is_threat": is_threat,
                 "event_subtype": "chat",
-            }
+            },
         )
 
     def _parse_model_status(self, data: dict[str, Any]) -> ParseResult:
@@ -298,7 +298,7 @@ class OllamaParser(BaseParser):
                 "model_count": len(models),
                 "models": [m.get("name", "unknown") for m in models[:10]],  # Limit to 10
                 "event_subtype": "model_status",
-            }
+            },
         )
 
     def _parse_generic_event(self, data: dict[str, Any]) -> ParseResult:
@@ -324,5 +324,5 @@ class OllamaParser(BaseParser):
                 "llm_type": "ollama",
                 "event_subtype": "generic",
                 "raw_keys": list(data.keys())[:20],
-            }
+            },
         )

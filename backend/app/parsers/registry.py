@@ -43,9 +43,7 @@ class ParserRegistry:
         parser_class = cls._parsers.get(name)
         if parser_class is None:
             available = list(cls._parsers.keys())
-            raise ValueError(
-                f"Unknown parser: {name}. Available parsers: {available}"
-            )
+            raise ValueError(f"Unknown parser: {name}. Available parsers: {available}")
         return parser_class(config)
 
     @classmethod
@@ -75,7 +73,9 @@ def register_parser(name: str) -> Callable[[type[BaseParser]], type[BaseParser]]
         class MyParser(BaseParser):
             ...
     """
+
     def decorator(cls: type[BaseParser]) -> type[BaseParser]:
         ParserRegistry.register(name, cls)
         return cls
+
     return decorator

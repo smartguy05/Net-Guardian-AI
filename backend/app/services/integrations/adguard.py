@@ -35,9 +35,7 @@ class AdGuardHomeService(IntegrationService):
     def is_configured(self) -> bool:
         """Check if AdGuard Home is properly configured."""
         return bool(
-            settings.adguard_url
-            and settings.adguard_username
-            and settings.adguard_password
+            settings.adguard_url and settings.adguard_username and settings.adguard_password
         )
 
     @property
@@ -420,11 +418,13 @@ class AdGuardHomeService(IntegrationService):
             for client in clients:
                 tags = client.get("tags", [])
                 if "quarantined" in tags or "netguardian" in tags:
-                    blocked.append({
-                        "name": client.get("name"),
-                        "ids": client.get("ids", []),
-                        "tags": tags,
-                    })
+                    blocked.append(
+                        {
+                            "name": client.get("name"),
+                            "ids": client.get("ids", []),
+                            "tags": tags,
+                        }
+                    )
 
             return blocked
 

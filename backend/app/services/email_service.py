@@ -80,7 +80,11 @@ class EmailService:
             # Create message
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = f"{self.sender_name} <{self.sender_email}>" if self.sender_name else self.sender_email
+            msg["From"] = (
+                f"{self.sender_name} <{self.sender_email}>"
+                if self.sender_name
+                else self.sender_email
+            )
             msg["To"] = to_email
 
             # Add plain text part
@@ -174,8 +178,8 @@ class EmailService:
                     </div>
                     <h2 style="margin-top: 0;">{alert_title}</h2>
                     <p>{alert_description}</p>
-                    {f'<div class="detail"><span class="label">Device:</span> {device_name}</div>' if device_name else ''}
-                    {f'<div class="detail"><span class="label">Alert ID:</span> {alert_id}</div>' if alert_id else ''}
+                    {f'<div class="detail"><span class="label">Device:</span> {device_name}</div>' if device_name else ""}
+                    {f'<div class="detail"><span class="label">Alert ID:</span> {alert_id}</div>' if alert_id else ""}
                     <div class="detail"><span class="label">Time:</span> {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</div>
                 </div>
                 <div class="footer">
@@ -193,8 +197,8 @@ NetGuardian AI Alert - {severity.upper()}
 
 {alert_description}
 
-{'Device: ' + device_name if device_name else ''}
-{'Alert ID: ' + alert_id if alert_id else ''}
+{"Device: " + device_name if device_name else ""}
+{"Alert ID: " + alert_id if alert_id else ""}
 Time: {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}
 
 This is an automated message from NetGuardian AI.
@@ -240,7 +244,7 @@ This is an automated message from NetGuardian AI.
                 <div class="content">
                     <h2 style="margin-top: 0;">{anomaly_type}</h2>
                     <p>{description}</p>
-                    {f'<p><strong>Device:</strong> {device_name}</p>' if device_name else ''}
+                    {f"<p><strong>Device:</strong> {device_name}</p>" if device_name else ""}
                     {details_html}
                     <p><strong>Time:</strong> {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
                 </div>
@@ -288,8 +292,8 @@ This is an automated message from NetGuardian AI.
                 </div>
                 <div class="content">
                     <p>The device <strong>{device_name}</strong> has been {action_text}.</p>
-                    {f'<p><strong>Reason:</strong> {reason}</p>' if reason else ''}
-                    {f'<p><strong>Performed by:</strong> {performed_by}</p>' if performed_by else ''}
+                    {f"<p><strong>Reason:</strong> {reason}</p>" if reason else ""}
+                    {f"<p><strong>Performed by:</strong> {performed_by}</p>" if performed_by else ""}
                     <p><strong>Time:</strong> {datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
                 </div>
                 <div class="footer">

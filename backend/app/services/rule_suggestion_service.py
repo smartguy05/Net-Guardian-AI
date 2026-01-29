@@ -92,9 +92,7 @@ class RuleSuggestionService:
         should_close = self._session is None
 
         try:
-            stmt = select(SuggestedRuleHistory).where(
-                SuggestedRuleHistory.rule_hash == rule_hash
-            )
+            stmt = select(SuggestedRuleHistory).where(SuggestedRuleHistory.rule_hash == rule_hash)
             result = await session.execute(stmt)
             return result.scalar_one_or_none() is not None
 
@@ -392,11 +390,7 @@ class RuleSuggestionService:
                 final_config.update(config_overrides)
 
             # Update the rule
-            new_status = (
-                SuggestedRuleStatus.IMPLEMENTED
-                if enable
-                else SuggestedRuleStatus.APPROVED
-            )
+            new_status = SuggestedRuleStatus.IMPLEMENTED if enable else SuggestedRuleStatus.APPROVED
 
             stmt = (
                 update(SuggestedRule)
@@ -591,11 +585,13 @@ class RuleSuggestionService:
 
             conditions = []
             for field in fields:
-                conditions.append({
-                    "field": field,
-                    "operator": "regex",
-                    "value": pattern,
-                })
+                conditions.append(
+                    {
+                        "field": field,
+                        "operator": "regex",
+                        "value": pattern,
+                    }
+                )
 
             return {
                 "logic": "or" if len(conditions) > 1 else "and",

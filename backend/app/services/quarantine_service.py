@@ -126,9 +126,7 @@ class QuarantineService:
 
         try:
             # Get the device
-            result = await session.execute(
-                select(Device).where(Device.id == device_id)
-            )
+            result = await session.execute(select(Device).where(Device.id == device_id))
             device = result.scalar_one_or_none()
 
             if not device:
@@ -189,9 +187,7 @@ class QuarantineService:
                 integration_results.append(router_result.to_dict())
 
                 if not router_result.success:
-                    errors.append(
-                        f"{router_result.integration_type.value}: {router_result.error}"
-                    )
+                    errors.append(f"{router_result.integration_type.value}: {router_result.error}")
 
                 # Log integration action
                 await self._audit.log_integration_action(
@@ -235,9 +231,8 @@ class QuarantineService:
                 device_id=UUID(str(device.id)),
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
-                message="Device quarantined successfully" + (
-                    f" with {len(errors)} integration warning(s)" if errors else ""
-                ),
+                message="Device quarantined successfully"
+                + (f" with {len(errors)} integration warning(s)" if errors else ""),
                 integration_results=integration_results,
                 errors=errors,
             )
@@ -291,9 +286,7 @@ class QuarantineService:
 
         try:
             # Get the device
-            result = await session.execute(
-                select(Device).where(Device.id == device_id)
-            )
+            result = await session.execute(select(Device).where(Device.id == device_id))
             device = result.scalar_one_or_none()
 
             if not device:
@@ -352,9 +345,7 @@ class QuarantineService:
                 integration_results.append(router_result.to_dict())
 
                 if not router_result.success:
-                    errors.append(
-                        f"{router_result.integration_type.value}: {router_result.error}"
-                    )
+                    errors.append(f"{router_result.integration_type.value}: {router_result.error}")
 
                 # Log integration action
                 await self._audit.log_integration_action(
@@ -396,9 +387,8 @@ class QuarantineService:
                 device_id=UUID(str(device.id)),
                 device_name=device.hostname or device.mac_address,
                 mac_address=device.mac_address,
-                message="Device released from quarantine" + (
-                    f" with {len(errors)} integration warning(s)" if errors else ""
-                ),
+                message="Device released from quarantine"
+                + (f" with {len(errors)} integration warning(s)" if errors else ""),
                 integration_results=integration_results,
                 errors=errors,
             )
@@ -445,20 +435,20 @@ class QuarantineService:
                 router_blocked = False
                 router_type = None
                 if self._router and self._router.is_enabled:
-                    router_blocked = await self._router.is_device_blocked(
-                        device.mac_address
-                    )
+                    router_blocked = await self._router.is_device_blocked(device.mac_address)
                     router_type = self._router.integration_type.value
 
-                quarantined.append({
-                    "device_id": str(device.id),
-                    "hostname": device.hostname,
-                    "mac_address": device.mac_address,
-                    "ip_addresses": device.ip_addresses,
-                    "adguard_blocked": adguard_blocked,
-                    "router_blocked": router_blocked,
-                    "router_type": router_type,
-                })
+                quarantined.append(
+                    {
+                        "device_id": str(device.id),
+                        "hostname": device.hostname,
+                        "mac_address": device.mac_address,
+                        "ip_addresses": device.ip_addresses,
+                        "adguard_blocked": adguard_blocked,
+                        "router_blocked": router_blocked,
+                        "router_type": router_type,
+                    }
+                )
 
             return quarantined
 

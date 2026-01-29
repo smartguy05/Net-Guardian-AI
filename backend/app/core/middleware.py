@@ -77,7 +77,9 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware for request/response logging."""
 
-    def __init__(self, app: ASGIApp, log_request_body: bool = False, log_response_body: bool = False):
+    def __init__(
+        self, app: ASGIApp, log_request_body: bool = False, log_response_body: bool = False
+    ):
         super().__init__(app)
         self.log_request_body = log_request_body
         self.log_response_body = log_response_body

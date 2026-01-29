@@ -96,9 +96,7 @@ class TestLLMAnalysisResult:
 
     def test_creates_result_with_all_fields(self):
         """Should create result with all fields populated."""
-        concern = LogConcern(
-            log_index=0, severity=0.7, concern="Issue", recommendation="Fix it"
-        )
+        concern = LogConcern(log_index=0, severity=0.7, concern="Issue", recommendation="Fix it")
         benign = BenignExplanation(log_index=1, explanation="Normal behavior")
         rule = SuggestedRuleData(
             log_index=0,
@@ -234,6 +232,7 @@ class TestBaseLLMProviderPromptBuilding:
 
     def test_build_analysis_prompt_basic(self):
         """Should build basic analysis prompt."""
+
         # Create a concrete implementation for testing
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
@@ -265,6 +264,7 @@ class TestBaseLLMProviderPromptBuilding:
 
     def test_build_analysis_prompt_with_context(self):
         """Should include context in prompt."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -287,6 +287,7 @@ class TestBaseLLMProviderPromptBuilding:
 
     def test_build_analysis_prompt_multiple_logs(self):
         """Should handle multiple log entries."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -317,6 +318,7 @@ class TestBaseLLMProviderJsonParsing:
 
     def test_parse_json_response_direct(self):
         """Should parse direct JSON."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -338,6 +340,7 @@ class TestBaseLLMProviderJsonParsing:
 
     def test_parse_json_response_from_code_block(self):
         """Should extract JSON from markdown code block."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -364,6 +367,7 @@ Hope this helps!"""
 
     def test_parse_json_response_from_unlabeled_block(self):
         """Should extract JSON from unlabeled code block."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -389,6 +393,7 @@ Hope this helps!"""
 
     def test_parse_json_response_embedded_in_text(self):
         """Should extract JSON embedded in text."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -409,6 +414,7 @@ Hope this helps!"""
 
     def test_parse_json_response_invalid(self):
         """Should return error for invalid JSON."""
+
         class TestProvider(BaseLLMProvider):
             async def analyze_logs(self, logs, context=None):
                 pass
@@ -476,8 +482,10 @@ class TestLLMProviderFactory:
     @pytest.mark.asyncio
     async def test_get_available_provider_returns_none_when_none_available(self):
         """Should return None when no provider is available."""
-        with patch("app.services.llm_providers.claude_provider.settings") as mock_claude, \
-             patch("app.services.llm_providers.ollama_provider.settings") as mock_ollama:
+        with (
+            patch("app.services.llm_providers.claude_provider.settings") as mock_claude,
+            patch("app.services.llm_providers.ollama_provider.settings") as mock_ollama,
+        ):
             mock_claude.anthropic_api_key = ""
             mock_claude.llm_model_default = "claude-3-sonnet"
             mock_claude.llm_cache_enabled = True

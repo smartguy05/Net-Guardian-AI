@@ -220,7 +220,9 @@ class TestLokiParser:
             "streams": [
                 {
                     "stream": {},
-                    "values": [["1705320000000000000", 'time=2024-01-15 level=warning msg="High latency"']],
+                    "values": [
+                        ["1705320000000000000", 'time=2024-01-15 level=warning msg="High latency"']
+                    ],
                 }
             ],
         }
@@ -277,7 +279,9 @@ class TestLokiParser:
             "streams": [
                 {
                     "stream": {"job": "nginx"},
-                    "values": [["1705320000000000000", "192.168.1.50 -> 10.0.0.1 connection established"]],
+                    "values": [
+                        ["1705320000000000000", "192.168.1.50 -> 10.0.0.1 connection established"]
+                    ],
                 }
             ],
         }
@@ -321,10 +325,12 @@ class TestLokiParser:
 
     def test_ip_from_label_takes_precedence(self):
         """Test IP from label overrides extraction."""
-        parser = LokiParser({
-            "client_ip_label": "source_ip",
-            "target_ip_label": "dest_ip",
-        })
+        parser = LokiParser(
+            {
+                "client_ip_label": "source_ip",
+                "target_ip_label": "dest_ip",
+            }
+        )
         data = {
             "streams": [
                 {
@@ -376,12 +382,14 @@ class TestLokiParser:
 
     def test_custom_event_type_mapping(self):
         """Test custom event type mapping."""
-        parser = LokiParser({
-            "event_type_mapping": {
-                "my-custom-service": "http",
-                "my-dns-service": EventType.DNS,
+        parser = LokiParser(
+            {
+                "event_type_mapping": {
+                    "my-custom-service": "http",
+                    "my-dns-service": EventType.DNS,
+                }
             }
-        })
+        )
         data = {
             "streams": [
                 {

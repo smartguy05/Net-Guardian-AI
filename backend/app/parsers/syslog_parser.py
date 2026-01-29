@@ -15,24 +15,42 @@ logger = structlog.get_logger()
 
 # Syslog severity levels (RFC 5424)
 SYSLOG_SEVERITY = {
-    0: EventSeverity.CRITICAL,   # Emergency
-    1: EventSeverity.CRITICAL,   # Alert
-    2: EventSeverity.CRITICAL,   # Critical
-    3: EventSeverity.ERROR,      # Error
-    4: EventSeverity.WARNING,    # Warning
-    5: EventSeverity.INFO,       # Notice
-    6: EventSeverity.INFO,       # Informational
-    7: EventSeverity.DEBUG,      # Debug
+    0: EventSeverity.CRITICAL,  # Emergency
+    1: EventSeverity.CRITICAL,  # Alert
+    2: EventSeverity.CRITICAL,  # Critical
+    3: EventSeverity.ERROR,  # Error
+    4: EventSeverity.WARNING,  # Warning
+    5: EventSeverity.INFO,  # Notice
+    6: EventSeverity.INFO,  # Informational
+    7: EventSeverity.DEBUG,  # Debug
 }
 
 # Syslog facility names
 SYSLOG_FACILITIES = {
-    0: "kern", 1: "user", 2: "mail", 3: "daemon",
-    4: "auth", 5: "syslog", 6: "lpr", 7: "news",
-    8: "uucp", 9: "cron", 10: "authpriv", 11: "ftp",
-    12: "ntp", 13: "security", 14: "console", 15: "solaris-cron",
-    16: "local0", 17: "local1", 18: "local2", 19: "local3",
-    20: "local4", 21: "local5", 22: "local6", 23: "local7",
+    0: "kern",
+    1: "user",
+    2: "mail",
+    3: "daemon",
+    4: "auth",
+    5: "syslog",
+    6: "lpr",
+    7: "news",
+    8: "uucp",
+    9: "cron",
+    10: "authpriv",
+    11: "ftp",
+    12: "ntp",
+    13: "security",
+    14: "console",
+    15: "solaris-cron",
+    16: "local0",
+    17: "local1",
+    18: "local2",
+    19: "local3",
+    20: "local4",
+    21: "local5",
+    22: "local6",
+    23: "local7",
 }
 
 # RFC 3164 pattern: <PRI>TIMESTAMP HOSTNAME TAG: MESSAGE
@@ -81,7 +99,7 @@ class SyslogParser(BaseParser):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.default_facility = self.config.get("default_facility", 1)  # user
-        self.default_severity = self.config.get("default_severity", 6)   # info
+        self.default_severity = self.config.get("default_severity", 6)  # info
         self.year = self.config.get("year", datetime.now().year)
 
     def _parse_pri(self, pri: int) -> tuple[int, int]:
@@ -169,7 +187,7 @@ class SyslogParser(BaseParser):
 
         # Parse structured data if present
         if structured_data and structured_data != "-":
-            sd_pattern = re.compile(r'\[(\S+?)(?:\s+([^\]]+))?\]')
+            sd_pattern = re.compile(r"\[(\S+?)(?:\s+([^\]]+))?\]")
             for sd_match in sd_pattern.finditer(structured_data):
                 sd_id = sd_match.group(1)
                 sd_params = sd_match.group(2)

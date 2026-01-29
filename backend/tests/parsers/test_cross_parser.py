@@ -8,7 +8,6 @@ Tests that verify all parsers handle:
 - Malformed input
 """
 
-
 import pytest
 
 from app.parsers.adguard_parser import AdGuardParser
@@ -43,9 +42,7 @@ class TestUnicodeHandling:
 
     @pytest.fixture
     def custom_parser(self):
-        return CustomParser(config={
-            "patterns": [r"(?P<message>.+)"]
-        })
+        return CustomParser(config={"patterns": [r"(?P<message>.+)"]})
 
     @pytest.fixture
     def netflow_parser(self):
@@ -128,7 +125,7 @@ class TestUnicodeHandling:
 
     def test_syslog_rfc5424_unicode(self, syslog_parser):
         """Test RFC5424 syslog with unicode."""
-        log = '<165>1 2024-01-15T10:30:00Z server app - - - Événement: échec de connexion'
+        log = "<165>1 2024-01-15T10:30:00Z server app - - - Événement: échec de connexion"
         results = syslog_parser.parse(log)
         assert len(results) == 1
         assert "échec" in results[0].raw_message
@@ -144,7 +141,7 @@ class TestUnicodeHandling:
             "data": {
                 "name": "приложение.exe",
                 "user": "Пользователь",
-            }
+            },
         }
         results = endpoint_parser.parse(data)
         assert len(results) == 1
@@ -160,7 +157,7 @@ class TestUnicodeHandling:
             "data": {
                 "path": "/home/用户/документы/файл.txt",
                 "action": "access",
-            }
+            },
         }
         results = endpoint_parser.parse(data)
         assert len(results) == 1
@@ -214,12 +211,10 @@ class TestUnicodeHandling:
                 "result": [
                     {
                         "stream": {"job": "приложение", "instance": "сервер"},
-                        "values": [
-                            ["1705312200000000000", "Log message with unicode: 日本語"]
-                        ]
+                        "values": [["1705312200000000000", "Log message with unicode: 日本語"]],
                     }
-                ]
-            }
+                ],
+            },
         }
         results = loki_parser.parse(data)
         assert len(results) == 1
@@ -243,9 +238,7 @@ class TestBoundaryConditions:
 
     @pytest.fixture
     def custom_parser(self):
-        return CustomParser(config={
-            "patterns": [r"(?P<message>.+)"]
-        })
+        return CustomParser(config={"patterns": [r"(?P<message>.+)"]})
 
     @pytest.fixture
     def netflow_parser(self):
@@ -284,7 +277,7 @@ class TestBoundaryConditions:
             "data": {
                 "name": "process_" + "x" * 1000 + ".exe",
                 "user": "test",
-            }
+            },
         }
         results = endpoint_parser.parse(data)
         assert len(results) == 1
@@ -515,7 +508,7 @@ class TestMalformedInput:
                 "remote_ip": "not-an-ip",
                 "local_port": 12345,
                 "remote_port": 443,
-            }
+            },
         }
         results = endpoint_parser.parse(data)
         # Should handle gracefully
@@ -528,17 +521,7 @@ class TestMalformedInput:
         data = {
             "timestamp": "2024-01-15T10:30:00Z",
             "message": "Test",
-            "nested": {
-                "level1": {
-                    "level2": {
-                        "level3": {
-                            "level4": {
-                                "value": "deep"
-                            }
-                        }
-                    }
-                }
-            }
+            "nested": {"level1": {"level2": {"level3": {"level4": {"value": "deep"}}}}},
         }
         results = json_parser.parse(data)
         assert len(results) == 1
@@ -548,8 +531,7 @@ class TestMalformedInput:
     def test_json_parser_large_array(self, json_parser):
         """Test JSON parser with large array of entries."""
         data = [
-            {"timestamp": "2024-01-15T10:30:00Z", "message": f"Message {i}"}
-            for i in range(1000)
+            {"timestamp": "2024-01-15T10:30:00Z", "message": f"Message {i}"} for i in range(1000)
         ]
         results = json_parser.parse(data)
         assert len(results) == 1000
@@ -606,7 +588,7 @@ class TestIPv6Addresses:
                 "remote_ip": "2001:db8::8888",
                 "local_port": 54321,
                 "remote_port": 443,
-            }
+            },
         }
         results = endpoint_parser.parse(data)
         assert len(results) == 1
@@ -651,10 +633,12 @@ class TestConcurrentParsing:
         result1 = json_parser.parse({"timestamp": "2024-01-15T10:00:00Z", "message": "Single"})
 
         # Array
-        result2 = json_parser.parse([
-            {"timestamp": "2024-01-15T10:01:00Z", "message": "Array 1"},
-            {"timestamp": "2024-01-15T10:02:00Z", "message": "Array 2"},
-        ])
+        result2 = json_parser.parse(
+            [
+                {"timestamp": "2024-01-15T10:01:00Z", "message": "Array 1"},
+                {"timestamp": "2024-01-15T10:02:00Z", "message": "Array 2"},
+            ]
+        )
 
         # Line-delimited
         result3 = json_parser.parse('{"timestamp": "2024-01-15T10:03:00Z", "message": "Line"}')

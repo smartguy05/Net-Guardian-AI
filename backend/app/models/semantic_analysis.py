@@ -351,9 +351,7 @@ class SemanticAnalysisRun(Base, TimestampMixin):
         nullable=True,
     )
 
-    __table_args__ = (
-        Index("ix_semantic_analysis_runs_source_started", "source_id", "started_at"),
-    )
+    __table_args__ = (Index("ix_semantic_analysis_runs_source_started", "source_id", "started_at"),)
 
     def __repr__(self) -> str:
         return f"<SemanticAnalysisRun {self.id} ({self.status.value})>"

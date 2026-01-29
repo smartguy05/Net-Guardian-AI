@@ -98,8 +98,7 @@ async def create_user(
     # Check for existing username/email
     existing = await session.execute(
         select(User).where(
-            (User.username == user_data.username.lower())
-            | (User.email == user_data.email.lower())
+            (User.username == user_data.username.lower()) | (User.email == user_data.email.lower())
         )
     )
     if existing.scalar_one_or_none():

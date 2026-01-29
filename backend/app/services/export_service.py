@@ -59,10 +59,7 @@ class ExportService:
 
         # Write data rows
         for row in data:
-            writer.writerow([
-                ExportService._format_value(row.get(col))
-                for col in columns
-            ])
+            writer.writerow([ExportService._format_value(row.get(col)) for col in columns])
 
         return output.getvalue()
 
@@ -152,14 +149,11 @@ class ExportService:
                 headers = {col: col for col in columns}
 
             # Build table data
-            table_data = [
-                [headers.get(col, col) for col in columns]
-            ]
+            table_data = [[headers.get(col, col) for col in columns]]
             for row in data:
-                table_data.append([
-                    ExportService._format_value(row.get(col), max_length=50)
-                    for col in columns
-                ])
+                table_data.append(
+                    [ExportService._format_value(row.get(col), max_length=50) for col in columns]
+                )
 
             # Calculate column widths
             available_width = page_size[0] - 1 * inch
@@ -167,33 +161,38 @@ class ExportService:
 
             # Create table
             table = Table(table_data, colWidths=[col_width] * len(columns))
-            table.setStyle(TableStyle([
-                # Header style
-                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
-                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-                ("FONTSIZE", (0, 0), (-1, 0), 9),
-                ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
-                ("TOPPADDING", (0, 0), (-1, 0), 8),
-
-                # Data style
-                ("BACKGROUND", (0, 1), (-1, -1), colors.white),
-                ("TEXTCOLOR", (0, 1), (-1, -1), colors.black),
-                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-                ("FONTSIZE", (0, 1), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
-                ("TOPPADDING", (0, 1), (-1, -1), 6),
-
-                # Grid
-                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
-
-                # Alternating row colors
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9fafb")]),
-
-                # Alignment
-                ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ]))
+            table.setStyle(
+                TableStyle(
+                    [
+                        # Header style
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e40af")),
+                        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                        ("FONTSIZE", (0, 0), (-1, 0), 9),
+                        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+                        ("TOPPADDING", (0, 0), (-1, 0), 8),
+                        # Data style
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+                        ("TEXTCOLOR", (0, 1), (-1, -1), colors.black),
+                        ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                        ("FONTSIZE", (0, 1), (-1, -1), 8),
+                        ("BOTTOMPADDING", (0, 1), (-1, -1), 6),
+                        ("TOPPADDING", (0, 1), (-1, -1), 6),
+                        # Grid
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e5e7eb")),
+                        # Alternating row colors
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.HexColor("#f9fafb")],
+                        ),
+                        # Alignment
+                        ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ]
+                )
+            )
 
             elements.append(table)
 
@@ -205,9 +204,7 @@ class ExportService:
                 fontSize=8,
                 textColor=colors.gray,
             )
-            elements.append(
-                Paragraph(f"Total: {len(data)} records", count_style)
-            )
+            elements.append(Paragraph(f"Total: {len(data)} records", count_style))
 
         # Build PDF
         doc.build(elements)
@@ -263,7 +260,15 @@ ALERTS_HEADERS = {
     "rule_name": "Rule",
 }
 
-DEVICES_COLUMNS = ["hostname", "mac_address", "ip_addresses", "device_type", "status", "first_seen", "last_seen"]
+DEVICES_COLUMNS = [
+    "hostname",
+    "mac_address",
+    "ip_addresses",
+    "device_type",
+    "status",
+    "first_seen",
+    "last_seen",
+]
 DEVICES_HEADERS = {
     "hostname": "Hostname",
     "mac_address": "MAC Address",
@@ -274,7 +279,15 @@ DEVICES_HEADERS = {
     "last_seen": "Last Seen",
 }
 
-AUDIT_COLUMNS = ["timestamp", "action", "username", "target_type", "target_name", "description", "success"]
+AUDIT_COLUMNS = [
+    "timestamp",
+    "action",
+    "username",
+    "target_type",
+    "target_name",
+    "description",
+    "success",
+]
 AUDIT_HEADERS = {
     "timestamp": "Timestamp",
     "action": "Action",
@@ -285,7 +298,14 @@ AUDIT_HEADERS = {
     "success": "Success",
 }
 
-ANOMALIES_COLUMNS = ["detected_at", "anomaly_type", "device_hostname", "severity", "description", "status"]
+ANOMALIES_COLUMNS = [
+    "detected_at",
+    "anomaly_type",
+    "device_hostname",
+    "severity",
+    "description",
+    "status",
+]
 ANOMALIES_HEADERS = {
     "detected_at": "Detected",
     "anomaly_type": "Type",

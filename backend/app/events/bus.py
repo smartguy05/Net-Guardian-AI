@@ -91,7 +91,10 @@ class EventBus:
         """
         client = await self._ensure_connected()
 
-        message: dict[bytes | bytearray | memoryview[int] | str | int | float, bytes | bytearray | memoryview[int] | str | int | float] = {
+        message: dict[
+            bytes | bytearray | memoryview[int] | str | int | float,
+            bytes | bytearray | memoryview[int] | str | int | float,
+        ] = {
             "id": str(uuid4()),
             "type": event_type,
             "timestamp": datetime.now(UTC).isoformat(),
@@ -122,6 +125,7 @@ class EventBus:
         # Broadcast to WebSocket clients
         try:
             from app.api.v1.websocket import broadcast_alert_created
+
             await broadcast_alert_created(alert_data)
         except Exception as e:
             logger.warning("websocket_broadcast_failed", error=str(e))
@@ -143,6 +147,7 @@ class EventBus:
         if update_type in ("device_quarantined", "device_released", "device_status_changed"):
             try:
                 from app.api.v1.websocket import broadcast_device_status_changed
+
                 await broadcast_device_status_changed(
                     device_id,
                     data.get("status", update_type),

@@ -5,7 +5,6 @@ creating new connections for each request, improving performance and
 reducing resource usage.
 """
 
-
 import httpx
 import structlog
 

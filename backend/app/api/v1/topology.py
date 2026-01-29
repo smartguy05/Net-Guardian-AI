@@ -249,13 +249,15 @@ async def get_device_connections(
     connections = []
 
     for row in result:
-        connections.append({
-            "domain": row.domain,
-            "target_ip": row.target_ip,
-            "event_type": row.event_type,
-            "action": row.action,
-            "count": row.count,
-            "last_seen": row.last_seen.isoformat() if row.last_seen else None,
-        })
+        connections.append(
+            {
+                "domain": row.domain,
+                "target_ip": row.target_ip,
+                "event_type": row.event_type,
+                "action": row.action,
+                "count": row.count,
+                "last_seen": row.last_seen.isoformat() if row.last_seen else None,
+            }
+        )
 
     return {"device_id": device_id, "connections": connections, "time_window_hours": hours}

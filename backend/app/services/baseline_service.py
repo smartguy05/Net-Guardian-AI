@@ -413,9 +413,7 @@ class BaselineCalculator:
 
         # Check if baseline is stale (not updated in window period)
         if baseline.last_calculated:
-            stale_threshold = datetime.now(UTC) - timedelta(
-                days=baseline.baseline_window_days * 2
-            )
+            stale_threshold = datetime.now(UTC) - timedelta(days=baseline.baseline_window_days * 2)
             if baseline.last_calculated < stale_threshold:
                 return BaselineStatus.STALE
 
@@ -438,17 +436,11 @@ class BaselineCalculator:
             Dict mapping baseline type to DeviceBaseline.
         """
         dns = await self.calculate_dns_baseline(device_id, window_days, min_samples)
-        traffic = await self.calculate_traffic_baseline(
-            device_id, window_days, min_samples
-        )
-        connection = await self.calculate_connection_baseline(
-            device_id, window_days, min_samples
-        )
+        traffic = await self.calculate_traffic_baseline(device_id, window_days, min_samples)
+        connection = await self.calculate_connection_baseline(device_id, window_days, min_samples)
 
         # Update device baseline_ready flag
-        result = await self._session.execute(
-            select(Device).where(Device.id == device_id)
-        )
+        result = await self._session.execute(select(Device).where(Device.id == device_id))
         device = result.scalar_one_or_none()
         if device:
             device.baseline_ready = all(

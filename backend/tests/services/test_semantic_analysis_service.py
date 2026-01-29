@@ -277,9 +277,7 @@ class TestGetSession:
     @pytest.mark.asyncio
     async def test_creates_new_session_when_none(self):
         """Should create new session when none provided."""
-        with patch(
-            "app.services.semantic_analysis_service.AsyncSessionLocal"
-        ) as MockSession:
+        with patch("app.services.semantic_analysis_service.AsyncSessionLocal") as MockSession:
             mock_new_session = MagicMock()
             MockSession.return_value = mock_new_session
 
@@ -426,9 +424,7 @@ class TestEdgeCases:
             with patch.object(
                 service._pattern_service, "record_pattern", return_value=mock_pattern
             ):
-                with patch.object(
-                    service._pattern_service, "is_pattern_rare", return_value=True
-                ):
+                with patch.object(service._pattern_service, "is_pattern_rare", return_value=True):
                     mock_event = MagicMock()
                     mock_event.id = uuid4()
                     mock_event.source_id = "test-source"

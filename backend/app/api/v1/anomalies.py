@@ -273,9 +273,7 @@ async def get_anomaly_stats(
     # Count by status
     status_counts = {}
     for as_ in AnomalyStatus:
-        result = await session.execute(
-            select(func.count()).where(AnomalyDetection.status == as_)
-        )
+        result = await session.execute(select(func.count()).where(AnomalyDetection.status == as_))
         status_counts[as_.value] = result.scalar() or 0
 
     # Count by type
@@ -289,9 +287,7 @@ async def get_anomaly_stats(
     # Count by severity
     severity_counts = {}
     for sev in AlertSeverity:
-        result = await session.execute(
-            select(func.count()).where(AnomalyDetection.severity == sev)
-        )
+        result = await session.execute(select(func.count()).where(AnomalyDetection.severity == sev))
         severity_counts[sev.value] = result.scalar() or 0
 
     # Total anomalies

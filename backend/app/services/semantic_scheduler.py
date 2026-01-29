@@ -94,9 +94,7 @@ class SemanticAnalysisScheduler:
             return True
 
         now = datetime.now(UTC)
-        next_run_time = config.last_run_at + timedelta(
-            minutes=config.batch_interval_minutes
-        )
+        next_run_time = config.last_run_at + timedelta(minutes=config.batch_interval_minutes)
         return now >= next_run_time
 
     async def _run_analysis_for_source(

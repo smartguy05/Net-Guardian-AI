@@ -1,6 +1,5 @@
 """Tests for Authentik event log parser."""
 
-
 import pytest
 
 from app.models.raw_event import EventSeverity, EventType
@@ -61,7 +60,7 @@ class TestAuthentikParser:
                 "message": "invalid password",
                 "http_request": {
                     "client_ip": "10.0.0.1",
-                }
+                },
             },
         }
 
@@ -249,11 +248,21 @@ class TestAuthentikParser:
     def test_skip_non_dict_entries(self, parser):
         """Test that non-dict entries are skipped."""
         events = [
-            {"action": "login", "created": "2026-01-27T10:00:00Z", "user": {"username": "user1"}, "context": {}},
+            {
+                "action": "login",
+                "created": "2026-01-27T10:00:00Z",
+                "user": {"username": "user1"},
+                "context": {},
+            },
             "not a dict",
             None,
             123,
-            {"action": "logout", "created": "2026-01-27T10:01:00Z", "user": {"username": "user2"}, "context": {}},
+            {
+                "action": "logout",
+                "created": "2026-01-27T10:01:00Z",
+                "user": {"username": "user2"},
+                "context": {},
+            },
         ]
 
         results = parser.parse(events)

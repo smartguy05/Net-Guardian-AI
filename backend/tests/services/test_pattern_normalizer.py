@@ -1,6 +1,5 @@
 """Tests for the pattern normalizer service."""
 
-
 from app.services.pattern_normalizer import PatternNormalizer
 
 

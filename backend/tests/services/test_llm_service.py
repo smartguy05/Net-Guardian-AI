@@ -395,6 +395,7 @@ class TestGlobalServiceInstance:
         """Should return the same instance on repeated calls."""
         # Reset the global instance
         import app.services.llm_service as llm_module
+
         llm_module._llm_service = None
 
         with patch("app.services.llm_service.settings") as mock_settings:

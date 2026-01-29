@@ -31,10 +31,12 @@ class TestJsonParser:
 
     def test_parse_json_string(self):
         """Test parsing a JSON string."""
-        data = json.dumps({
-            "timestamp": "2024-01-15T12:00:00Z",
-            "message": "Test event",
-        })
+        data = json.dumps(
+            {
+                "timestamp": "2024-01-15T12:00:00Z",
+                "message": "Test event",
+            }
+        )
 
         results = self.parser.parse(data)
 
@@ -65,7 +67,7 @@ class TestJsonParser:
                     {"timestamp": "2024-01-15T12:00:00Z", "message": "Event 1"},
                     {"timestamp": "2024-01-15T12:00:01Z", "message": "Event 2"},
                 ]
-            }
+            },
         }
 
         results = parser.parse(data)
@@ -74,12 +76,14 @@ class TestJsonParser:
 
     def test_parse_with_field_mappings(self):
         """Test parsing with custom field mappings."""
-        parser = JsonParser({
-            "field_mappings": {
-                "client_ip": "$.source.ip",
-                "domain": "$.request.host",
+        parser = JsonParser(
+            {
+                "field_mappings": {
+                    "client_ip": "$.source.ip",
+                    "domain": "$.request.host",
+                }
             }
-        })
+        )
         data = {
             "timestamp": "2024-01-15T12:00:00Z",
             "source": {"ip": "192.168.1.100"},
@@ -118,13 +122,15 @@ class TestJsonParser:
 
     def test_parse_custom_severity_map(self):
         """Test custom severity mapping."""
-        parser = JsonParser({
-            "severity_map": {
-                "low": EventSeverity.DEBUG,
-                "medium": EventSeverity.WARNING,
-                "high": EventSeverity.CRITICAL,
+        parser = JsonParser(
+            {
+                "severity_map": {
+                    "low": EventSeverity.DEBUG,
+                    "medium": EventSeverity.WARNING,
+                    "high": EventSeverity.CRITICAL,
+                }
             }
-        })
+        )
 
         data = {"timestamp": "2024-01-15T12:00:00Z", "severity": "high", "message": "Test"}
         results = parser.parse(data)
@@ -147,9 +153,7 @@ class TestJsonParser:
 
     def test_parse_custom_timestamp_format(self):
         """Test parsing custom timestamp format."""
-        parser = JsonParser({
-            "timestamp_format": "%d/%m/%Y %H:%M:%S"
-        })
+        parser = JsonParser({"timestamp_format": "%d/%m/%Y %H:%M:%S"})
         data = {
             "timestamp": "15/01/2024 12:00:00",
             "message": "Test",

@@ -104,7 +104,7 @@ class SFlowParser(BaseParser):
         offset = 0
 
         # Version
-        version = struct.unpack("!I", data[offset:offset + 4])[0]
+        version = struct.unpack("!I", data[offset : offset + 4])[0]
         offset += 4
 
         if version != 5:
@@ -112,25 +112,25 @@ class SFlowParser(BaseParser):
             return []
 
         # Agent address
-        addr_type = struct.unpack("!I", data[offset:offset + 4])[0]
+        addr_type = struct.unpack("!I", data[offset : offset + 4])[0]
         offset += 4
 
         if addr_type == 1:  # IPv4
-            agent_ip = self._bytes_to_ipv4(data[offset:offset + 4])
+            agent_ip = self._bytes_to_ipv4(data[offset : offset + 4])
             offset += 4
         elif addr_type == 2:  # IPv6
-            agent_ip = self._bytes_to_ipv6(data[offset:offset + 16])
+            agent_ip = self._bytes_to_ipv6(data[offset : offset + 16])
             offset += 16
         else:
             agent_ip = "unknown"
             offset += 4
 
         # Sub-agent ID, sequence, uptime
-        sub_agent_id, sequence, uptime = struct.unpack("!III", data[offset:offset + 12])
+        sub_agent_id, sequence, uptime = struct.unpack("!III", data[offset : offset + 12])
         offset += 12
 
         # Number of samples
-        num_samples = struct.unpack("!I", data[offset:offset + 4])[0]
+        num_samples = struct.unpack("!I", data[offset : offset + 4])[0]
         offset += 4
 
         timestamp = datetime.now(UTC)
@@ -142,15 +142,15 @@ class SFlowParser(BaseParser):
                 break
 
             # Sample header
-            sample_type = struct.unpack("!I", data[offset:offset + 4])[0]
+            sample_type = struct.unpack("!I", data[offset : offset + 4])[0]
             offset += 4
-            sample_length = struct.unpack("!I", data[offset:offset + 4])[0]
+            sample_length = struct.unpack("!I", data[offset : offset + 4])[0]
             offset += 4
 
             if offset + sample_length > len(data):
                 break
 
-            sample_data = data[offset:offset + sample_length]
+            sample_data = data[offset : offset + sample_length]
 
             # Enterprise (high 12 bits) and format (low 20 bits)
             enterprise = (sample_type >> 20) & 0xFFF
@@ -203,14 +203,14 @@ class SFlowParser(BaseParser):
             if offset + 8 > len(data):
                 break
 
-            record_type = struct.unpack("!I", data[offset:offset + 4])[0]
-            record_length = struct.unpack("!I", data[offset + 4:offset + 8])[0]
+            record_type = struct.unpack("!I", data[offset : offset + 4])[0]
+            record_length = struct.unpack("!I", data[offset + 4 : offset + 8])[0]
             offset += 8
 
             if offset + record_length > len(data):
                 break
 
-            record_data = data[offset:offset + record_length]
+            record_data = data[offset : offset + record_length]
 
             # Raw packet header (type 1)
             if record_type == 1 and not packet_info:
@@ -317,7 +317,7 @@ class SFlowParser(BaseParser):
         if len(data) < 16 + header_length:
             return None
 
-        header = data[16:16 + header_length]
+        header = data[16 : 16 + header_length]
         result = {"frame_length": frame_length}
 
         if protocol == 1:  # Ethernet
@@ -350,9 +350,9 @@ class SFlowParser(BaseParser):
 
         # Handle VLAN tags
         while ethertype == ETHERTYPE_VLAN and offset + 4 <= len(data):
-            vlan_id = struct.unpack("!H", data[offset:offset + 2])[0] & 0x0FFF
+            vlan_id = struct.unpack("!H", data[offset : offset + 2])[0] & 0x0FFF
             result["vlan_id"] = vlan_id
-            ethertype = struct.unpack("!H", data[offset + 2:offset + 4])[0]
+            ethertype = struct.unpack("!H", data[offset + 2 : offset + 4])[0]
             offset += 4
 
         # Parse IP layer
@@ -470,10 +470,12 @@ class SFlowParser(BaseParser):
             raw_message = f"sFlow sample: {src_ip}:{src_port} -> {dst_ip}:{dst_port} ({protocol})"
 
             # Determine severity based on characteristics
-            severity = self._get_sample_severity({
-                "dst_port": dst_port,
-                "protocol": protocol,
-            })
+            severity = self._get_sample_severity(
+                {
+                    "dst_port": dst_port,
+                    "protocol": protocol,
+                }
+            )
 
             return ParseResult(
                 timestamp=timestamp,

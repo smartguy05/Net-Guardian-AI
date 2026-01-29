@@ -109,7 +109,9 @@ class TestCategorizeError:
         """HTTP 500 should be categorized as server and retryable."""
         response = MagicMock()
         response.status_code = 500
-        error = httpx.HTTPStatusError("Internal Server Error", request=MagicMock(), response=response)
+        error = httpx.HTTPStatusError(
+            "Internal Server Error", request=MagicMock(), response=response
+        )
         category, retryable = categorize_error(error)
 
         assert category == ErrorCategory.SERVER
@@ -676,9 +678,7 @@ class TestErrorTracker:
 
     def test_clear(self, error_tracker):
         """Should clear all tracked errors."""
-        error_tracker._errors = [
-            CollectorError(ErrorCategory.NETWORK, "Error", "test-source")
-        ]
+        error_tracker._errors = [CollectorError(ErrorCategory.NETWORK, "Error", "test-source")]
 
         error_tracker.clear()
 

@@ -85,22 +85,27 @@ class PatternService:
 
         try:
             # Use upsert (INSERT ON CONFLICT) for efficiency
-            stmt = pg_insert(LogPattern).values(
-                source_id=source_id,
-                normalized_pattern=normalized,
-                pattern_hash=pattern_hash,
-                first_seen=now,
-                last_seen=now,
-                occurrence_count=1,
-                is_ignored=False,
-            ).on_conflict_do_update(
-                index_elements=["source_id", "pattern_hash"],
-                set_={
-                    "last_seen": now,
-                    "occurrence_count": LogPattern.occurrence_count + 1,
-                    "updated_at": func.now(),
-                },
-            ).returning(LogPattern)
+            stmt = (
+                pg_insert(LogPattern)
+                .values(
+                    source_id=source_id,
+                    normalized_pattern=normalized,
+                    pattern_hash=pattern_hash,
+                    first_seen=now,
+                    last_seen=now,
+                    occurrence_count=1,
+                    is_ignored=False,
+                )
+                .on_conflict_do_update(
+                    index_elements=["source_id", "pattern_hash"],
+                    set_={
+                        "last_seen": now,
+                        "occurrence_count": LogPattern.occurrence_count + 1,
+                        "updated_at": func.now(),
+                    },
+                )
+                .returning(LogPattern)
+            )
 
             result = await session.execute(stmt)
             pattern = result.scalar_one()
@@ -185,7 +190,9 @@ class PatternService:
             stmt = select(
                 func.count(LogPattern.id).label("total"),
                 func.count(LogPattern.id).filter(LogPattern.is_ignored.is_(True)).label("ignored"),
-                func.count(LogPattern.id).filter(LogPattern.occurrence_count < rarity_threshold).label("rare"),
+                func.count(LogPattern.id)
+                .filter(LogPattern.occurrence_count < rarity_threshold)
+                .label("rare"),
                 func.coalesce(func.sum(LogPattern.occurrence_count), 0).label("total_occurrences"),
                 func.coalesce(func.avg(LogPattern.occurrence_count), 0).label("avg_occurrences"),
             ).where(LogPattern.source_id == source_id)

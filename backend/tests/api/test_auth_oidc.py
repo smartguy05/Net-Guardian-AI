@@ -33,7 +33,9 @@ class TestOIDCConfigEndpoint:
             mock_get_service.return_value = mock_service
 
             with patch("app.api.v1.auth.settings") as mock_settings:
-                mock_settings.authentik_issuer_url = "https://auth.example.com/application/o/netguardian/"
+                mock_settings.authentik_issuer_url = (
+                    "https://auth.example.com/application/o/netguardian/"
+                )
                 mock_settings.authentik_client_id = "test-client-id"
 
                 response = test_client.get("/api/v1/auth/oidc/config")
@@ -137,16 +139,20 @@ class TestOIDCCallbackEndpoint:
         with patch("app.api.v1.auth.get_oidc_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.is_configured = True
-            mock_service.exchange_code = AsyncMock(return_value={
-                "id_token": "jwt-token",
-                "access_token": "access-token",
-            })
-            mock_service.validate_id_token = AsyncMock(return_value={
-                "sub": "user-123",
-                "email": "newuser@example.com",
-                "preferred_username": "newuser",
-                "groups": [],
-            })
+            mock_service.exchange_code = AsyncMock(
+                return_value={
+                    "id_token": "jwt-token",
+                    "access_token": "access-token",
+                }
+            )
+            mock_service.validate_id_token = AsyncMock(
+                return_value={
+                    "sub": "user-123",
+                    "email": "newuser@example.com",
+                    "preferred_username": "newuser",
+                    "groups": [],
+                }
+            )
             mock_service.extract_user_info.return_value = {
                 "sub": "user-123",
                 "email": "newuser@example.com",
@@ -184,12 +190,16 @@ class TestOIDCCallbackEndpoint:
         with patch("app.api.v1.auth.get_oidc_service") as mock_get_service:
             mock_service = MagicMock()
             mock_service.is_configured = True
-            mock_service.exchange_code = AsyncMock(return_value={
-                "id_token": "jwt-token",
-            })
-            mock_service.validate_id_token = AsyncMock(return_value={
-                "sub": "unknown-user",
-            })
+            mock_service.exchange_code = AsyncMock(
+                return_value={
+                    "id_token": "jwt-token",
+                }
+            )
+            mock_service.validate_id_token = AsyncMock(
+                return_value={
+                    "sub": "unknown-user",
+                }
+            )
             mock_service.extract_user_info.return_value = {
                 "sub": "unknown-user",
                 "email": "unknown@example.com",

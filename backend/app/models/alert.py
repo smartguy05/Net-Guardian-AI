@@ -82,7 +82,9 @@ class Alert(Base, TimestampMixin):
         index=True,
     )
     severity: Mapped[AlertSeverity] = mapped_column(
-        SQLEnum(AlertSeverity, name="alertseverity", values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            AlertSeverity, name="alertseverity", values_callable=lambda x: [e.value for e in x]
+        ),
         nullable=False,
         index=True,
     )

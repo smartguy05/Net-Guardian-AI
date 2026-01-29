@@ -33,10 +33,7 @@ class AnalyzePromptRequest(BaseModel):
     prompt: str = Field(..., description="The prompt to analyze")
     model: str = Field(default="unknown", description="The model name")
     client_ip: str | None = Field(default=None, description="Client IP if known")
-    use_llm_analysis: bool = Field(
-        default=True,
-        description="Use Claude for deeper analysis"
-    )
+    use_llm_analysis: bool = Field(default=True, description="Use Claude for deeper analysis")
 
 
 class AnalyzePromptResponse(BaseModel):
@@ -56,8 +53,7 @@ class ProcessRequestInput(BaseModel):
 
     prompt: str | None = Field(default=None, description="Prompt for /api/generate")
     messages: list[dict[str, str]] | None = Field(
-        default=None,
-        description="Messages for /api/chat"
+        default=None, description="Messages for /api/chat"
     )
     model: str = Field(default="unknown", description="Model name")
     client_ip: str | None = Field(default=None, description="Client IP")

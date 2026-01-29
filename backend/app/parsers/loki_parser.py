@@ -234,10 +234,7 @@ class LokiParser(BaseParser):
             return None, None
 
         # Filter out common non-client IPs
-        filtered_ips = [
-            ip for ip in ips
-            if not ip.startswith("127.") and ip != "0.0.0.0"
-        ]
+        filtered_ips = [ip for ip in ips if not ip.startswith("127.") and ip != "0.0.0.0"]
 
         if len(filtered_ips) >= 2:
             return filtered_ips[0], filtered_ips[1]

@@ -739,7 +739,20 @@ class TestRuleConditionValidation:
         """Should accept all valid operators."""
         from app.api.v1.rules import RuleCondition
 
-        valid_ops = ["eq", "ne", "gt", "lt", "gte", "lte", "contains", "regex", "in", "not_in", "starts_with", "ends_with"]
+        valid_ops = [
+            "eq",
+            "ne",
+            "gt",
+            "lt",
+            "gte",
+            "lte",
+            "contains",
+            "regex",
+            "in",
+            "not_in",
+            "starts_with",
+            "ends_with",
+        ]
 
         for op in valid_ops:
             condition = RuleCondition(field="test", operator=op, value="val")
@@ -785,7 +798,14 @@ class TestRuleActionValidation:
         """Should accept all valid action types."""
         from app.api.v1.rules import RuleAction
 
-        valid_types = ["create_alert", "quarantine_device", "tag_device", "send_notification", "execute_webhook", "log_event"]
+        valid_types = [
+            "create_alert",
+            "quarantine_device",
+            "tag_device",
+            "send_notification",
+            "execute_webhook",
+            "log_event",
+        ]
 
         for action_type in valid_types:
             action = RuleAction(type=action_type)

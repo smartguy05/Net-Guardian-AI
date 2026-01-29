@@ -57,7 +57,9 @@ class LLMAnalysisResult:
         )
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any], raw_response: str | None = None) -> "LLMAnalysisResult":
+    def from_dict(
+        cls, data: dict[str, Any], raw_response: str | None = None
+    ) -> "LLMAnalysisResult":
         """Create a result from a parsed dictionary."""
         concerns = [
             LogConcern(

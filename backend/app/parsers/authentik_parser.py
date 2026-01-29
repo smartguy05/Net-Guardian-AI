@@ -37,7 +37,6 @@ class AuthentikParser(BaseParser):
         "flow_execution": EventSeverity.INFO,
         "policy_execution": EventSeverity.INFO,
         "stage_execution": EventSeverity.INFO,
-
         # Warning-level events
         "login_failed": EventSeverity.WARNING,
         "policy_exception": EventSeverity.WARNING,
@@ -47,7 +46,6 @@ class AuthentikParser(BaseParser):
         "reputation_calculation": EventSeverity.WARNING,
         "configuration_error": EventSeverity.WARNING,
         "email_sent": EventSeverity.INFO,
-
         # Error-level events
         "suspicious_request": EventSeverity.ERROR,
         "update_available": EventSeverity.WARNING,

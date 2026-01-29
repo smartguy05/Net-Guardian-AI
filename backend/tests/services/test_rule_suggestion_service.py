@@ -207,9 +207,7 @@ class TestMapRuleConfigToConditions:
             "fields": ["message"],
         }
 
-        result = service._map_rule_config_to_conditions(
-            SuggestedRuleType.PATTERN_MATCH, config
-        )
+        result = service._map_rule_config_to_conditions(SuggestedRuleType.PATTERN_MATCH, config)
 
         assert result["logic"] == "and"
         assert len(result["conditions"]) == 1
@@ -225,9 +223,7 @@ class TestMapRuleConfigToConditions:
             "fields": ["message", "raw_message"],
         }
 
-        result = service._map_rule_config_to_conditions(
-            SuggestedRuleType.PATTERN_MATCH, config
-        )
+        result = service._map_rule_config_to_conditions(SuggestedRuleType.PATTERN_MATCH, config)
 
         assert result["logic"] == "or"
         assert len(result["conditions"]) == 2
@@ -241,9 +237,7 @@ class TestMapRuleConfigToConditions:
             "time_window": 300,
         }
 
-        result = service._map_rule_config_to_conditions(
-            SuggestedRuleType.THRESHOLD, config
-        )
+        result = service._map_rule_config_to_conditions(SuggestedRuleType.THRESHOLD, config)
 
         assert result["logic"] == "and"
         assert result["conditions"][0]["operator"] == "gte"
@@ -258,9 +252,7 @@ class TestMapRuleConfigToConditions:
             "time_window": 600,
         }
 
-        result = service._map_rule_config_to_conditions(
-            SuggestedRuleType.SEQUENCE, config
-        )
+        result = service._map_rule_config_to_conditions(SuggestedRuleType.SEQUENCE, config)
 
         assert result["logic"] == "sequence"
         assert result["time_window_minutes"] == 600
@@ -270,9 +262,7 @@ class TestMapRuleConfigToConditions:
         service = RuleSuggestionService()
         config = {"pattern": ".*test.*"}  # No fields specified
 
-        result = service._map_rule_config_to_conditions(
-            SuggestedRuleType.PATTERN_MATCH, config
-        )
+        result = service._map_rule_config_to_conditions(SuggestedRuleType.PATTERN_MATCH, config)
 
         assert result["conditions"][0]["field"] == "raw_message"
 
@@ -281,9 +271,7 @@ class TestMapRuleConfigToConditions:
         service = RuleSuggestionService()
         config = {}  # Empty config
 
-        result = service._map_rule_config_to_conditions(
-            SuggestedRuleType.THRESHOLD, config
-        )
+        result = service._map_rule_config_to_conditions(SuggestedRuleType.THRESHOLD, config)
 
         assert result["conditions"][0]["field"] == "count"
         assert result["conditions"][0]["value"] == 10
@@ -417,9 +405,7 @@ class TestGetSession:
     @pytest.mark.asyncio
     async def test_creates_new_session_when_none(self):
         """Should create new session when none provided."""
-        with patch(
-            "app.services.rule_suggestion_service.AsyncSessionLocal"
-        ) as MockSession:
+        with patch("app.services.rule_suggestion_service.AsyncSessionLocal") as MockSession:
             mock_new_session = MagicMock()
             MockSession.return_value = mock_new_session
 

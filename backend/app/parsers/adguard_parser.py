@@ -32,8 +32,12 @@ class AdGuardParser(BaseParser):
         reason = entry.get("reason", "")
 
         # Blocked queries are warnings
-        if reason in ("FilteredBlackList", "FilteredSafeBrowsing",
-                      "FilteredParental", "FilteredBlockedService"):
+        if reason in (
+            "FilteredBlackList",
+            "FilteredSafeBrowsing",
+            "FilteredParental",
+            "FilteredBlockedService",
+        ):
             return EventSeverity.WARNING
 
         # Safe search rewrites are informational

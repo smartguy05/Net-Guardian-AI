@@ -20,16 +20,19 @@ logger = structlog.get_logger()
 
 class OIDCError(Exception):
     """Base exception for OIDC errors."""
+
     pass
 
 
 class OIDCConfigError(OIDCError):
     """OIDC configuration error."""
+
     pass
 
 
 class OIDCTokenError(OIDCError):
     """Token validation or exchange error."""
+
     pass
 
 
@@ -54,7 +57,7 @@ class OIDCService:
 
     def _get_issuer_base_url(self) -> str:
         """Get the base issuer URL (without trailing slash)."""
-        return settings.authentik_issuer_url.rstrip('/')
+        return settings.authentik_issuer_url.rstrip("/")
 
     async def get_oidc_config(self) -> dict[str, Any]:
         """Fetch OIDC discovery document from issuer.
@@ -137,7 +140,8 @@ class OIDCService:
         code_challenge_bytes = hashlib.sha256(code_verifier.encode()).digest()
         # Base64url encode without padding
         import base64
-        code_challenge = base64.urlsafe_b64encode(code_challenge_bytes).decode().rstrip('=')
+
+        code_challenge = base64.urlsafe_b64encode(code_challenge_bytes).decode().rstrip("=")
 
         return code_verifier, code_challenge
 
@@ -208,7 +212,9 @@ class OIDCService:
 
                 if response.status_code != 200:
                     error_data = response.json() if response.text else {}
-                    error_msg = error_data.get("error_description", error_data.get("error", "Unknown error"))
+                    error_msg = error_data.get(
+                        "error_description", error_data.get("error", "Unknown error")
+                    )
                     logger.error(
                         "oidc_token_exchange_failed",
                         status=response.status_code,

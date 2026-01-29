@@ -17,38 +17,38 @@ logger = structlog.get_logger()
 # $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"
 # Example: 192.168.1.1 - - [28/Jan/2026:12:34:56 +0000] "GET /index.html HTTP/1.1" 200 1234 "https://example.com" "Mozilla/5.0"
 NGINX_COMBINED_PATTERN = re.compile(
-    r'^(?P<remote_addr>\S+)\s+'           # Client IP
-    r'-\s+'                                # Always a dash
-    r'(?P<remote_user>\S+)\s+'            # Remote user (or -)
-    r'\[(?P<time_local>[^\]]+)\]\s+'      # Timestamp in brackets
-    r'"(?P<request>[^"]*)"\s+'            # Request line
-    r'(?P<status>\d+)\s+'                 # Status code
-    r'(?P<body_bytes_sent>\d+)\s+'        # Response size
-    r'"(?P<http_referer>[^"]*)"\s+'       # Referer
-    r'"(?P<http_user_agent>[^"]*)"'       # User agent
+    r"^(?P<remote_addr>\S+)\s+"  # Client IP
+    r"-\s+"  # Always a dash
+    r"(?P<remote_user>\S+)\s+"  # Remote user (or -)
+    r"\[(?P<time_local>[^\]]+)\]\s+"  # Timestamp in brackets
+    r'"(?P<request>[^"]*)"\s+'  # Request line
+    r"(?P<status>\d+)\s+"  # Status code
+    r"(?P<body_bytes_sent>\d+)\s+"  # Response size
+    r'"(?P<http_referer>[^"]*)"\s+'  # Referer
+    r'"(?P<http_user_agent>[^"]*)"'  # User agent
 )
 
 # Nginx error log pattern:
 # YYYY/MM/DD HH:MM:SS [level] PID#TID: *CID message
 # Example: 2026/01/28 12:34:56 [error] 1234#5678: *999 message here
 NGINX_ERROR_PATTERN = re.compile(
-    r'^(?P<timestamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+'
-    r'\[(?P<level>\w+)\]\s+'
-    r'(?P<pid>\d+)#(?P<tid>\d+):\s+'
-    r'(?:\*(?P<cid>\d+)\s+)?'
-    r'(?P<message>.*)$'
+    r"^(?P<timestamp>\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+"
+    r"\[(?P<level>\w+)\]\s+"
+    r"(?P<pid>\d+)#(?P<tid>\d+):\s+"
+    r"(?:\*(?P<cid>\d+)\s+)?"
+    r"(?P<message>.*)$"
 )
 
 # Nginx error levels to severity mapping
 NGINX_ERROR_LEVELS = {
-    'debug': EventSeverity.DEBUG,
-    'info': EventSeverity.INFO,
-    'notice': EventSeverity.INFO,
-    'warn': EventSeverity.WARNING,
-    'error': EventSeverity.ERROR,
-    'crit': EventSeverity.CRITICAL,
-    'alert': EventSeverity.CRITICAL,
-    'emerg': EventSeverity.CRITICAL,
+    "debug": EventSeverity.DEBUG,
+    "info": EventSeverity.INFO,
+    "notice": EventSeverity.INFO,
+    "warn": EventSeverity.WARNING,
+    "error": EventSeverity.ERROR,
+    "crit": EventSeverity.CRITICAL,
+    "alert": EventSeverity.CRITICAL,
+    "emerg": EventSeverity.CRITICAL,
 }
 
 
@@ -101,11 +101,11 @@ class NginxParser(BaseParser):
 
     def _parse_request(self, request: str) -> dict[str, str]:
         """Parse HTTP request line into method, path, protocol."""
-        parts = request.split(' ', 2)
+        parts = request.split(" ", 2)
         result = {
-            'method': parts[0] if len(parts) > 0 else '',
-            'path': parts[1] if len(parts) > 1 else '',
-            'protocol': parts[2] if len(parts) > 2 else '',
+            "method": parts[0] if len(parts) > 0 else "",
+            "path": parts[1] if len(parts) > 1 else "",
+            "protocol": parts[2] if len(parts) > 2 else "",
         }
         return result
 
@@ -115,49 +115,49 @@ class NginxParser(BaseParser):
         if not match:
             return None
 
-        remote_addr = match.group('remote_addr')
-        remote_user = match.group('remote_user')
-        timestamp = self._parse_access_timestamp(match.group('time_local'))
-        request = match.group('request')
-        status = int(match.group('status'))
-        body_bytes_sent = int(match.group('body_bytes_sent'))
-        referer = match.group('http_referer')
-        user_agent = match.group('http_user_agent')
+        remote_addr = match.group("remote_addr")
+        remote_user = match.group("remote_user")
+        timestamp = self._parse_access_timestamp(match.group("time_local"))
+        request = match.group("request")
+        status = int(match.group("status"))
+        body_bytes_sent = int(match.group("body_bytes_sent"))
+        referer = match.group("http_referer")
+        user_agent = match.group("http_user_agent")
 
         request_parts = self._parse_request(request)
 
         # Determine action based on status
         if status < 400:
-            action = 'allowed'
+            action = "allowed"
         elif status == 403:
-            action = 'forbidden'
+            action = "forbidden"
         elif status == 404:
-            action = 'not_found'
+            action = "not_found"
         elif status < 500:
-            action = 'client_error'
+            action = "client_error"
         else:
-            action = 'server_error'
+            action = "server_error"
 
         return ParseResult(
             timestamp=timestamp,
             event_type=EventType.HTTP,
             severity=_status_to_severity(status),
             raw_message=line,
-            client_ip=remote_addr if remote_addr != '-' else None,
+            client_ip=remote_addr if remote_addr != "-" else None,
             port=80,  # Default, could be parsed from Host header if available
-            protocol='HTTP',
+            protocol="HTTP",
             action=action,
             response_status=str(status),
             parsed_fields={
-                'remote_user': remote_user if remote_user != '-' else None,
-                'method': request_parts['method'],
-                'path': request_parts['path'],
-                'http_version': request_parts['protocol'],
-                'status_code': status,
-                'body_bytes_sent': body_bytes_sent,
-                'referer': referer if referer != '-' else None,
-                'user_agent': user_agent,
-                'request': request,
+                "remote_user": remote_user if remote_user != "-" else None,
+                "method": request_parts["method"],
+                "path": request_parts["path"],
+                "http_version": request_parts["protocol"],
+                "status_code": status,
+                "body_bytes_sent": body_bytes_sent,
+                "referer": referer if referer != "-" else None,
+                "user_agent": user_agent,
+                "request": request,
             },
         )
 
@@ -171,19 +171,19 @@ class NginxParser(BaseParser):
                 event_type=EventType.SYSTEM,
                 severity=EventSeverity.ERROR,
                 raw_message=line,
-                parsed_fields={'message': line},
+                parsed_fields={"message": line},
             )
 
-        timestamp = self._parse_error_timestamp(match.group('timestamp'))
-        level = match.group('level').lower()
-        pid = match.group('pid')
-        tid = match.group('tid')
-        cid = match.group('cid')
-        message = match.group('message')
+        timestamp = self._parse_error_timestamp(match.group("timestamp"))
+        level = match.group("level").lower()
+        pid = match.group("pid")
+        tid = match.group("tid")
+        cid = match.group("cid")
+        message = match.group("message")
 
         # Try to extract client IP from error message
         client_ip = None
-        ip_match = re.search(r'client:\s*(\d+\.\d+\.\d+\.\d+)', message)
+        ip_match = re.search(r"client:\s*(\d+\.\d+\.\d+\.\d+)", message)
         if ip_match:
             client_ip = ip_match.group(1)
 
@@ -194,11 +194,11 @@ class NginxParser(BaseParser):
             raw_message=line,
             client_ip=client_ip,
             parsed_fields={
-                'level': level,
-                'pid': pid,
-                'tid': tid,
-                'connection_id': cid,
-                'message': message,
+                "level": level,
+                "pid": pid,
+                "tid": tid,
+                "connection_id": cid,
+                "message": message,
             },
         )
 

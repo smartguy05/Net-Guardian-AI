@@ -168,9 +168,13 @@ class LLMService:
                     {
                         "type": "text",
                         "text": SYSTEM_PROMPT_SECURITY_ANALYST,
-                        "cache_control": {"type": "ephemeral"} if settings.llm_cache_enabled else None,
+                        "cache_control": {"type": "ephemeral"}
+                        if settings.llm_cache_enabled
+                        else None,
                     }
-                ] if settings.llm_cache_enabled else SYSTEM_PROMPT_SECURITY_ANALYST,
+                ]
+                if settings.llm_cache_enabled
+                else SYSTEM_PROMPT_SECURITY_ANALYST,
                 messages=messages,
             )
 
@@ -181,14 +185,14 @@ class LLMService:
             analysis_result = self._parse_analysis_response(analysis_text)
 
             # Log cache performance
-            if hasattr(response, 'usage'):
+            if hasattr(response, "usage"):
                 logger.debug(
                     "llm_request_complete",
                     model=self._get_model(model_type),
                     input_tokens=response.usage.input_tokens,
                     output_tokens=response.usage.output_tokens,
-                    cache_read_tokens=getattr(response.usage, 'cache_read_input_tokens', 0),
-                    cache_creation_tokens=getattr(response.usage, 'cache_creation_input_tokens', 0),
+                    cache_read_tokens=getattr(response.usage, "cache_read_input_tokens", 0),
+                    cache_creation_tokens=getattr(response.usage, "cache_creation_input_tokens", 0),
                 )
 
             return analysis_result
@@ -230,12 +234,16 @@ class LLMService:
         # Device context
         if device_data:
             prompt_parts.append("## Device Information")
-            prompt_parts.append(f"**Device:** {device_data.get('hostname') or device_data.get('mac_address', 'Unknown')}")
+            prompt_parts.append(
+                f"**Device:** {device_data.get('hostname') or device_data.get('mac_address', 'Unknown')}"
+            )
             prompt_parts.append(f"**Type:** {device_data.get('device_type', 'Unknown')}")
             prompt_parts.append(f"**Manufacturer:** {device_data.get('manufacturer', 'Unknown')}")
             prompt_parts.append(f"**Status:** {device_data.get('status', 'Unknown')}")
-            prompt_parts.append(f"**IP Addresses:** {', '.join(device_data.get('ip_addresses', []))}")
-            if device_data.get('profile_tags'):
+            prompt_parts.append(
+                f"**IP Addresses:** {', '.join(device_data.get('ip_addresses', []))}"
+            )
+            if device_data.get("profile_tags"):
                 prompt_parts.append(f"**Tags:** {', '.join(device_data['profile_tags'])}")
             prompt_parts.append("")
 
@@ -246,7 +254,7 @@ class LLMService:
                 prompt_parts.append(f"\n### {baseline_type.title()} Baseline")
                 if isinstance(metrics, dict):
                     for key, value in metrics.items():
-                        if key not in ['unique_domains', 'unique_destinations']:  # Skip large lists
+                        if key not in ["unique_domains", "unique_destinations"]:  # Skip large lists
                             prompt_parts.append(f"- {key}: {value}")
             prompt_parts.append("")
 
@@ -254,11 +262,13 @@ class LLMService:
         if recent_events:
             prompt_parts.append("## Recent Activity (Last 24 hours)")
             for event in recent_events[:10]:  # Limit to 10 events
-                event_time = event.get('timestamp', 'Unknown')
-                event_type = event.get('event_type', 'Unknown')
-                domain = event.get('domain', '')
-                action = event.get('action', '')
-                prompt_parts.append(f"- [{event_time}] {event_type}: {domain or event.get('target_ip', 'N/A')} ({action})")
+                event_time = event.get("timestamp", "Unknown")
+                event_type = event.get("event_type", "Unknown")
+                domain = event.get("domain", "")
+                action = event.get("action", "")
+                prompt_parts.append(
+                    f"- [{event_time}] {event_type}: {domain or event.get('target_ip', 'N/A')} ({action})"
+                )
             prompt_parts.append("")
 
         # Analysis request
@@ -349,9 +359,13 @@ Format your response as JSON:
                     {
                         "type": "text",
                         "text": SYSTEM_PROMPT_CHAT_ASSISTANT,
-                        "cache_control": {"type": "ephemeral"} if settings.llm_cache_enabled else None,
+                        "cache_control": {"type": "ephemeral"}
+                        if settings.llm_cache_enabled
+                        else None,
                     }
-                ] if settings.llm_cache_enabled else SYSTEM_PROMPT_CHAT_ASSISTANT,
+                ]
+                if settings.llm_cache_enabled
+                else SYSTEM_PROMPT_CHAT_ASSISTANT,
                 messages=messages,
             )
 
@@ -376,7 +390,9 @@ Format your response as JSON:
             prompt_parts.append(f"- Total events (24h): {stats.get('total_events_24h', 'Unknown')}")
             prompt_parts.append(f"- Active alerts: {stats.get('active_alerts', 'Unknown')}")
             prompt_parts.append(f"- DNS queries (24h): {stats.get('dns_queries_24h', 'Unknown')}")
-            prompt_parts.append(f"- Blocked queries (24h): {stats.get('blocked_queries_24h', 'Unknown')}")
+            prompt_parts.append(
+                f"- Blocked queries (24h): {stats.get('blocked_queries_24h', 'Unknown')}"
+            )
             prompt_parts.append("")
 
         # Device summary
@@ -393,19 +409,25 @@ Format your response as JSON:
         if "alerts" in context:
             prompt_parts.append("### Recent Alerts")
             for alert in context["alerts"][:10]:
-                prompt_parts.append(f"- [{alert.get('severity', 'unknown')}] {alert.get('title', 'Unknown')}")
+                prompt_parts.append(
+                    f"- [{alert.get('severity', 'unknown')}] {alert.get('title', 'Unknown')}"
+                )
             prompt_parts.append("")
 
         # Recent anomalies
         if "anomalies" in context:
             prompt_parts.append("### Recent Anomalies")
             for anomaly in context["anomalies"][:10]:
-                prompt_parts.append(f"- [{anomaly.get('severity', 'unknown')}] {anomaly.get('description', 'Unknown')}")
+                prompt_parts.append(
+                    f"- [{anomaly.get('severity', 'unknown')}] {anomaly.get('description', 'Unknown')}"
+                )
             prompt_parts.append("")
 
         # User query
         prompt_parts.append(f"## User Question\n{query}")
-        prompt_parts.append("\nPlease provide a helpful, informative response based on the network context above.")
+        prompt_parts.append(
+            "\nPlease provide a helpful, informative response based on the network context above."
+        )
 
         return "\n".join(prompt_parts)
 
@@ -445,9 +467,13 @@ Format your response as JSON:
                     {
                         "type": "text",
                         "text": SYSTEM_PROMPT_SECURITY_ANALYST,
-                        "cache_control": {"type": "ephemeral"} if settings.llm_cache_enabled else None,
+                        "cache_control": {"type": "ephemeral"}
+                        if settings.llm_cache_enabled
+                        else None,
                     }
-                ] if settings.llm_cache_enabled else SYSTEM_PROMPT_SECURITY_ANALYST,
+                ]
+                if settings.llm_cache_enabled
+                else SYSTEM_PROMPT_SECURITY_ANALYST,
                 messages=messages,
             )
 
@@ -472,24 +498,32 @@ Format your response as JSON:
 
         if device_data:
             prompt_parts.append("### Affected Device")
-            prompt_parts.append(f"- Name: {device_data.get('hostname') or device_data.get('mac_address')}")
+            prompt_parts.append(
+                f"- Name: {device_data.get('hostname') or device_data.get('mac_address')}"
+            )
             prompt_parts.append(f"- Type: {device_data.get('device_type', 'Unknown')}")
             prompt_parts.append("")
 
         prompt_parts.append("### Alerts")
         for alert in alerts[:20]:
-            prompt_parts.append(f"- [{alert.get('timestamp')}] {alert.get('severity')}: {alert.get('title')}")
+            prompt_parts.append(
+                f"- [{alert.get('timestamp')}] {alert.get('severity')}: {alert.get('title')}"
+            )
             prompt_parts.append(f"  Description: {alert.get('description', 'N/A')}")
         prompt_parts.append("")
 
         prompt_parts.append("### Anomalies")
         for anomaly in anomalies[:20]:
-            prompt_parts.append(f"- [{anomaly.get('detected_at')}] {anomaly.get('anomaly_type')}: {anomaly.get('description')}")
+            prompt_parts.append(
+                f"- [{anomaly.get('detected_at')}] {anomaly.get('anomaly_type')}: {anomaly.get('description')}"
+            )
         prompt_parts.append("")
 
         prompt_parts.append("### Related Events")
         for event in events[:30]:
-            prompt_parts.append(f"- [{event.get('timestamp')}] {event.get('event_type')}: {event.get('domain') or event.get('target_ip', 'N/A')}")
+            prompt_parts.append(
+                f"- [{event.get('timestamp')}] {event.get('event_type')}: {event.get('domain') or event.get('target_ip', 'N/A')}"
+            )
         prompt_parts.append("")
 
         prompt_parts.append("""## Summary Request
@@ -560,10 +594,12 @@ Please provide an incident summary:
 
         for msg in messages:
             if msg["role"] == "user" and not context_added:
-                formatted_messages.append({
-                    "role": "user",
-                    "content": f"{context_message}\n\n## User Message\n{msg['content']}"
-                })
+                formatted_messages.append(
+                    {
+                        "role": "user",
+                        "content": f"{context_message}\n\n## User Message\n{msg['content']}",
+                    }
+                )
                 context_added = True
             else:
                 formatted_messages.append({"role": msg["role"], "content": msg["content"]})  # type: ignore[typeddict-item]

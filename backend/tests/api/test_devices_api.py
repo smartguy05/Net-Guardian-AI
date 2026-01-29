@@ -44,7 +44,9 @@ class TestListDevices:
         return devices
 
     @pytest.mark.asyncio
-    async def test_list_devices_basic(self, mock_devices, mock_db_session, mock_current_user_viewer):
+    async def test_list_devices_basic(
+        self, mock_devices, mock_db_session, mock_current_user_viewer
+    ):
         """Should return paginated list of devices."""
         # Setup mock
         mock_scalars = MagicMock()
@@ -74,7 +76,9 @@ class TestListDevices:
         assert response.page_size == 50
 
     @pytest.mark.asyncio
-    async def test_list_devices_with_status_filter(self, mock_devices, mock_db_session, mock_current_user_viewer):
+    async def test_list_devices_with_status_filter(
+        self, mock_devices, mock_db_session, mock_current_user_viewer
+    ):
         """Should filter devices by status."""
         quarantined_devices = [d for d in mock_devices if d.status == DeviceStatus.QUARANTINED]
 
@@ -103,7 +107,9 @@ class TestListDevices:
         assert response.total == len(quarantined_devices)
 
     @pytest.mark.asyncio
-    async def test_list_devices_with_type_filter(self, mock_devices, mock_db_session, mock_current_user_viewer):
+    async def test_list_devices_with_type_filter(
+        self, mock_devices, mock_db_session, mock_current_user_viewer
+    ):
         """Should filter devices by type."""
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = mock_devices
@@ -130,7 +136,9 @@ class TestListDevices:
         assert response.total == 5
 
     @pytest.mark.asyncio
-    async def test_list_devices_with_search(self, mock_devices, mock_db_session, mock_current_user_viewer):
+    async def test_list_devices_with_search(
+        self, mock_devices, mock_db_session, mock_current_user_viewer
+    ):
         """Should search devices by hostname/mac/manufacturer."""
         # Filter to just first device
         mock_scalars = MagicMock()
@@ -158,7 +166,9 @@ class TestListDevices:
         assert response.total == 1
 
     @pytest.mark.asyncio
-    async def test_list_devices_pagination(self, mock_devices, mock_db_session, mock_current_user_viewer):
+    async def test_list_devices_pagination(
+        self, mock_devices, mock_db_session, mock_current_user_viewer
+    ):
         """Should return correct page of results."""
         # Page 2 with page_size 2
         mock_scalars = MagicMock()
@@ -267,7 +277,9 @@ class TestUpdateDevice:
         return device
 
     @pytest.mark.asyncio
-    async def test_update_device_hostname(self, mock_device, mock_db_session, mock_current_user_operator):
+    async def test_update_device_hostname(
+        self, mock_device, mock_db_session, mock_current_user_operator
+    ):
         """Should update device hostname."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_device
@@ -288,7 +300,9 @@ class TestUpdateDevice:
         mock_db_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_device_type(self, mock_device, mock_db_session, mock_current_user_operator):
+    async def test_update_device_type(
+        self, mock_device, mock_db_session, mock_current_user_operator
+    ):
         """Should update device type."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_device
@@ -308,7 +322,9 @@ class TestUpdateDevice:
         assert mock_device.device_type == DeviceType.IOT
 
     @pytest.mark.asyncio
-    async def test_update_device_tags(self, mock_device, mock_db_session, mock_current_user_operator):
+    async def test_update_device_tags(
+        self, mock_device, mock_db_session, mock_current_user_operator
+    ):
         """Should update device tags."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_device
@@ -366,7 +382,9 @@ class TestQuarantineDevice:
         return result
 
     @pytest.mark.asyncio
-    async def test_quarantine_device_success(self, mock_quarantine_result, mock_current_user_operator):
+    async def test_quarantine_device_success(
+        self, mock_quarantine_result, mock_current_user_operator
+    ):
         """Should quarantine device successfully."""
         from fastapi import Request
 
@@ -563,7 +581,9 @@ class TestTagManagement:
         mock_db_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_remove_device_tag(self, mock_device, mock_db_session, mock_current_user_operator):
+    async def test_remove_device_tag(
+        self, mock_device, mock_db_session, mock_current_user_operator
+    ):
         """Should remove a tag from device."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_device
@@ -686,7 +706,9 @@ class TestBulkTagOperations:
             assert "new-tag2" in device.profile_tags
 
     @pytest.mark.asyncio
-    async def test_bulk_remove_tags(self, mock_devices, mock_db_session, mock_current_user_operator):
+    async def test_bulk_remove_tags(
+        self, mock_devices, mock_db_session, mock_current_user_operator
+    ):
         """Should remove tags from multiple devices."""
         mock_scalars = MagicMock()
         mock_scalars.all.return_value = mock_devices

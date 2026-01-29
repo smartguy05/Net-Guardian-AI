@@ -241,12 +241,14 @@ class ThreatIntelService:
                     ipaddress.ip_address(line)
                     ind_type = IndicatorType.IP
 
-                indicators.append({
-                    "indicator_type": ind_type,
-                    "value": line,
-                    "severity": default_severity,
-                    "confidence": default_confidence,
-                })
+                indicators.append(
+                    {
+                        "indicator_type": ind_type,
+                        "value": line,
+                        "severity": default_severity,
+                        "confidence": default_confidence,
+                    }
+                )
             except ValueError:
                 continue
 
@@ -273,12 +275,14 @@ class ThreatIntelService:
             else:
                 ind_type = IndicatorType.DOMAIN
 
-            indicators.append({
-                "indicator_type": ind_type,
-                "value": line,
-                "severity": default_severity,
-                "confidence": default_confidence,
-            })
+            indicators.append(
+                {
+                    "indicator_type": ind_type,
+                    "value": line,
+                    "severity": default_severity,
+                    "confidence": default_confidence,
+                }
+            )
 
         return indicators
 
@@ -349,13 +353,15 @@ class ThreatIntelService:
                     except IndexError:
                         pass
 
-                indicators.append({
-                    "indicator_type": ind_type_enum,
-                    "value": value,
-                    "severity": severity,
-                    "confidence": confidence,
-                    "description": description,
-                })
+                indicators.append(
+                    {
+                        "indicator_type": ind_type_enum,
+                        "value": value,
+                        "severity": severity,
+                        "confidence": confidence,
+                        "description": description,
+                    }
+                )
 
             except (IndexError, ValueError) as e:
                 logger.warning(f"Failed to parse CSV row {i}: {e}")
@@ -424,13 +430,15 @@ class ThreatIntelService:
             if isinstance(ind_type, str):
                 ind_type = type_mapping.get(ind_type.lower(), IndicatorType.DOMAIN)
 
-            indicators.append({
-                "indicator_type": ind_type,
-                "value": str(value).strip(),
-                "severity": item.get(severity_field, default_severity),
-                "confidence": item.get(confidence_field, default_confidence),
-                "description": item.get(description_field),
-            })
+            indicators.append(
+                {
+                    "indicator_type": ind_type,
+                    "value": str(value).strip(),
+                    "severity": item.get(severity_field, default_severity),
+                    "confidence": item.get(confidence_field, default_confidence),
+                    "description": item.get(description_field),
+                }
+            )
 
         return indicators
 
@@ -579,9 +587,7 @@ class ThreatIntelService:
     async def get_stats(self) -> dict[str, Any]:
         """Get threat intelligence statistics."""
         # Feed counts
-        feeds_result = await self.session.execute(
-            select(func.count()).select_from(ThreatIntelFeed)
-        )
+        feeds_result = await self.session.execute(select(func.count()).select_from(ThreatIntelFeed))
         total_feeds = feeds_result.scalar() or 0
 
         enabled_feeds_result = await self.session.execute(
@@ -612,9 +618,7 @@ class ThreatIntelService:
             severity_counts[severity] = count_result.scalar() or 0
 
         # Recent hits (total hit count)
-        recent_hits_result = await self.session.execute(
-            select(func.sum(ThreatIndicator.hit_count))
-        )
+        recent_hits_result = await self.session.execute(select(func.sum(ThreatIndicator.hit_count)))
         recent_hits = recent_hits_result.scalar() or 0
 
         return {

@@ -91,7 +91,9 @@ class RawEvent(Base):
         index=True,
     )
     severity: Mapped[EventSeverity] = mapped_column(
-        SQLEnum(EventSeverity, name="eventseverity", values_callable=lambda x: [e.value for e in x]),
+        SQLEnum(
+            EventSeverity, name="eventseverity", values_callable=lambda x: [e.value for e in x]
+        ),
         default=EventSeverity.INFO,
         nullable=False,
     )

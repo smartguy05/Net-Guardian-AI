@@ -85,9 +85,7 @@ class PlaybookEngine:
 
             matching = []
             for playbook in playbooks:
-                if await self._check_trigger_conditions(
-                    playbook, event_data, device_id
-                ):
+                if await self._check_trigger_conditions(playbook, event_data, device_id):
                     # Check rate limits
                     if await self._check_rate_limits(session, playbook):
                         matching.append(playbook)
@@ -119,9 +117,7 @@ class PlaybookEngine:
         if "device_types" in conditions and device_id:
             session = await self._get_session()
             try:
-                result = await session.execute(
-                    select(Device).where(Device.id == device_id)
-                )
+                result = await session.execute(select(Device).where(Device.id == device_id))
                 device = result.scalar_one_or_none()
                 if device and device.device_type.value not in conditions["device_types"]:
                     return False
@@ -138,9 +134,7 @@ class PlaybookEngine:
         if "required_tags" in conditions and device_id:
             session = await self._get_session()
             try:
-                result = await session.execute(
-                    select(Device).where(Device.id == device_id)
-                )
+                result = await session.execute(select(Device).where(Device.id == device_id))
                 device = result.scalar_one_or_none()
                 if device:
                     device_tags = set(device.profile_tags or [])
@@ -154,9 +148,7 @@ class PlaybookEngine:
         if "excluded_tags" in conditions and device_id:
             session = await self._get_session()
             try:
-                result = await session.execute(
-                    select(Device).where(Device.id == device_id)
-                )
+                result = await session.execute(select(Device).where(Device.id == device_id))
                 device = result.scalar_one_or_none()
                 if device:
                     device_tags = set(device.profile_tags or [])
@@ -168,9 +160,7 @@ class PlaybookEngine:
 
         return True
 
-    async def _check_rate_limits(
-        self, session: AsyncSession, playbook: Playbook
-    ) -> bool:
+    async def _check_rate_limits(self, session: AsyncSession, playbook: Playbook) -> bool:
         """Check if the playbook is within rate limits."""
         now = datetime.now(UTC)
 
@@ -264,17 +254,17 @@ class PlaybookEngine:
                     result = await self._execute_action(
                         action, trigger_event, device_id, triggered_by
                     )
-                    action_results.append({
-                        "action_index": i,
-                        "action_type": action.get("type"),
-                        "success": result.get("success", False),
-                        "result": result,
-                    })
+                    action_results.append(
+                        {
+                            "action_index": i,
+                            "action_type": action.get("type"),
+                            "success": result.get("success", False),
+                            "result": result,
+                        }
+                    )
 
                     # Stop on failure if configured
-                    if not result.get("success", False) and action.get(
-                        "stop_on_failure", False
-                    ):
+                    if not result.get("success", False) and action.get("stop_on_failure", False):
                         execution.error_message = f"Action {i} failed: {result.get('error')}"
                         break
 
@@ -285,12 +275,14 @@ class PlaybookEngine:
                         action_index=i,
                         error=str(e),
                     )
-                    action_results.append({
-                        "action_index": i,
-                        "action_type": action.get("type"),
-                        "success": False,
-                        "error": str(e),
-                    })
+                    action_results.append(
+                        {
+                            "action_index": i,
+                            "action_type": action.get("type"),
+                            "success": False,
+                            "error": str(e),
+                        }
+                    )
 
                     if action.get("stop_on_failure", False):
                         execution.error_message = f"Action {i} failed: {str(e)}"
@@ -342,35 +334,25 @@ class PlaybookEngine:
         params = action.get("params", {})
 
         if action_type == PlaybookActionType.QUARANTINE_DEVICE.value:
-            return await self._action_quarantine_device(
-                device_id, params, user, trigger_event
-            )
+            return await self._action_quarantine_device(device_id, params, user, trigger_event)
 
         elif action_type == PlaybookActionType.RELEASE_DEVICE.value:
-            return await self._action_release_device(
-                device_id, params, user, trigger_event
-            )
+            return await self._action_release_device(device_id, params, user, trigger_event)
 
         elif action_type == PlaybookActionType.CREATE_ALERT.value:
-            return await self._action_create_alert(
-                device_id, params, trigger_event
-            )
+            return await self._action_create_alert(device_id, params, trigger_event)
 
         elif action_type == PlaybookActionType.TAG_DEVICE.value:
             return await self._action_tag_device(device_id, params)
 
         elif action_type == PlaybookActionType.SEND_NOTIFICATION.value:
-            return await self._action_send_notification(
-                params, trigger_event, device_id
-            )
+            return await self._action_send_notification(params, trigger_event, device_id)
 
         elif action_type == PlaybookActionType.LOG_EVENT.value:
             return await self._action_log_event(params, trigger_event, device_id)
 
         elif action_type == PlaybookActionType.EXECUTE_WEBHOOK.value:
-            return await self._action_execute_webhook(
-                params, trigger_event, device_id
-            )
+            return await self._action_execute_webhook(params, trigger_event, device_id)
 
         else:
             return {
@@ -402,7 +384,8 @@ class PlaybookEngine:
             effective_user = user
 
         reason = params.get(
-            "reason", f"Automatic quarantine: {trigger_event.get('description', 'playbook triggered')}"
+            "reason",
+            f"Automatic quarantine: {trigger_event.get('description', 'playbook triggered')}",
         )
 
         result = await self._quarantine.quarantine_device(
@@ -432,6 +415,7 @@ class PlaybookEngine:
 
         effective_user: Any
         if not user:
+
             class SystemUser:
                 id = None
                 username = "playbook_engine"
@@ -468,7 +452,9 @@ class PlaybookEngine:
         session = await self._get_session()
         try:
             severity = AlertSeverity(params.get("severity", "medium"))
-            title = params.get("title", f"Playbook Alert: {trigger_event.get('description', 'Event detected')}")
+            title = params.get(
+                "title", f"Playbook Alert: {trigger_event.get('description', 'Event detected')}"
+            )
             description = params.get("description", str(trigger_event))
 
             alert = Alert(
@@ -504,9 +490,7 @@ class PlaybookEngine:
 
         session = await self._get_session()
         try:
-            result = await session.execute(
-                select(Device).where(Device.id == device_id)
-            )
+            result = await session.execute(select(Device).where(Device.id == device_id))
             device = result.scalar_one_or_none()
 
             if not device:
@@ -568,9 +552,7 @@ class PlaybookEngine:
         if device_id:
             session = await self._get_session()
             try:
-                result = await session.execute(
-                    select(Device).where(Device.id == device_id)
-                )
+                result = await session.execute(select(Device).where(Device.id == device_id))
                 device = result.scalar_one_or_none()
                 if device:
                     device_name = device.hostname or str(device.mac_address)
@@ -674,9 +656,7 @@ class PlaybookEngine:
                 if method == "GET":
                     response = await client.get(url, headers=headers, params=payload)
                 else:
-                    response = await client.request(
-                        method, url, headers=headers, json=payload
-                    )
+                    response = await client.request(method, url, headers=headers, json=payload)
 
                 return {
                     "success": response.status_code < 400,
@@ -691,9 +671,7 @@ class PlaybookEngine:
         """Get a playbook by ID."""
         session = await self._get_session()
         try:
-            result = await session.execute(
-                select(Playbook).where(Playbook.id == playbook_id)
-            )
+            result = await session.execute(select(Playbook).where(Playbook.id == playbook_id))
             return result.scalar_one_or_none()
         finally:
             await self._close_session(session)
@@ -769,9 +747,7 @@ class PlaybookEngine:
         """Update a playbook."""
         session = await self._get_session()
         try:
-            result = await session.execute(
-                select(Playbook).where(Playbook.id == playbook_id)
-            )
+            result = await session.execute(select(Playbook).where(Playbook.id == playbook_id))
             playbook = result.scalar_one_or_none()
 
             if not playbook:
@@ -793,9 +769,7 @@ class PlaybookEngine:
         """Delete a playbook."""
         session = await self._get_session()
         try:
-            result = await session.execute(
-                select(Playbook).where(Playbook.id == playbook_id)
-            )
+            result = await session.execute(select(Playbook).where(Playbook.id == playbook_id))
             playbook = result.scalar_one_or_none()
 
             if not playbook:

@@ -24,14 +24,31 @@ router = APIRouter()
 class RuleCondition(BaseModel):
     """Single condition within a rule."""
 
-    field: str = Field(..., description="Field to check (e.g., 'event_type', 'severity', 'source_ip')")
-    operator: str = Field(..., description="Comparison operator (eq, ne, gt, lt, gte, lte, contains, regex, in)")
+    field: str = Field(
+        ..., description="Field to check (e.g., 'event_type', 'severity', 'source_ip')"
+    )
+    operator: str = Field(
+        ..., description="Comparison operator (eq, ne, gt, lt, gte, lte, contains, regex, in)"
+    )
     value: Any = Field(..., description="Value to compare against")
 
     @field_validator("operator")
     @classmethod
     def validate_operator(cls, v: str) -> str:
-        valid_ops = {"eq", "ne", "gt", "lt", "gte", "lte", "contains", "regex", "in", "not_in", "starts_with", "ends_with"}
+        valid_ops = {
+            "eq",
+            "ne",
+            "gt",
+            "lt",
+            "gte",
+            "lte",
+            "contains",
+            "regex",
+            "in",
+            "not_in",
+            "starts_with",
+            "ends_with",
+        }
         if v not in valid_ops:
             raise ValueError(f"Invalid operator. Must be one of: {', '.join(valid_ops)}")
         return v
@@ -54,13 +71,25 @@ class RuleConditionGroup(BaseModel):
 class RuleAction(BaseModel):
     """Action to take when rule triggers."""
 
-    type: str = Field(..., description="Action type (create_alert, quarantine_device, tag_device, send_notification, execute_webhook)")
-    config: dict[str, Any] = Field(default_factory=dict, description="Action-specific configuration")
+    type: str = Field(
+        ...,
+        description="Action type (create_alert, quarantine_device, tag_device, send_notification, execute_webhook)",
+    )
+    config: dict[str, Any] = Field(
+        default_factory=dict, description="Action-specific configuration"
+    )
 
     @field_validator("type")
     @classmethod
     def validate_type(cls, v: str) -> str:
-        valid_types = {"create_alert", "quarantine_device", "tag_device", "send_notification", "execute_webhook", "log_event"}
+        valid_types = {
+            "create_alert",
+            "quarantine_device",
+            "tag_device",
+            "send_notification",
+            "execute_webhook",
+            "log_event",
+        }
         if v not in valid_types:
             raise ValueError(f"Invalid action type. Must be one of: {', '.join(valid_types)}")
         return v
@@ -75,14 +104,20 @@ class CreateRuleRequest(BaseModel):
     severity: AlertSeverity = Field(..., description="Alert severity when triggered")
     enabled: bool = Field(True, description="Whether rule is active")
     conditions: RuleConditionGroup = Field(..., description="Rule conditions")
-    response_actions: list[RuleAction] = Field(default_factory=list, description="Actions when triggered")
-    cooldown_minutes: int = Field(60, ge=0, le=10080, description="Cooldown between alerts (0-10080 mins)")
+    response_actions: list[RuleAction] = Field(
+        default_factory=list, description="Actions when triggered"
+    )
+    cooldown_minutes: int = Field(
+        60, ge=0, le=10080, description="Cooldown between alerts (0-10080 mins)"
+    )
 
     @field_validator("id")
     @classmethod
     def validate_id(cls, v: str) -> str:
         if not re.match(r"^[a-z0-9][a-z0-9_-]*$", v):
-            raise ValueError("ID must start with lowercase letter/number and contain only lowercase letters, numbers, underscores, and hyphens")
+            raise ValueError(
+                "ID must start with lowercase letter/number and contain only lowercase letters, numbers, underscores, and hyphens"
+            )
         return v
 
 
@@ -230,7 +265,9 @@ def _evaluate_condition(condition: RuleCondition, event: dict[str, Any]) -> dict
     }
 
 
-def _evaluate_conditions(group: RuleConditionGroup, event: dict[str, Any]) -> tuple[bool, list[dict[str, Any]]]:
+def _evaluate_conditions(
+    group: RuleConditionGroup, event: dict[str, Any]
+) -> tuple[bool, list[dict[str, Any]]]:
     """Evaluate a condition group against an event."""
     results = [_evaluate_condition(c, event) for c in group.conditions]
 
@@ -373,9 +410,7 @@ async def get_rule(
     _current_user: Annotated[User, Depends(get_current_user)],
 ) -> RuleResponse:
     """Get a specific detection rule."""
-    result = await session.execute(
-        select(DetectionRule).where(DetectionRule.id == rule_id)
-    )
+    result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_id))
     rule = result.scalar_one_or_none()
 
     if not rule:
@@ -395,9 +430,7 @@ async def create_rule(
 ) -> RuleResponse:
     """Create a new detection rule (admin only)."""
     # Check for duplicate ID
-    existing = await session.execute(
-        select(DetectionRule).where(DetectionRule.id == request.id)
-    )
+    existing = await session.execute(select(DetectionRule).where(DetectionRule.id == request.id))
     if existing.scalar_one_or_none():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -430,9 +463,7 @@ async def update_rule(
     _current_user: Annotated[User, Depends(require_admin)],
 ) -> RuleResponse:
     """Update a detection rule (admin only)."""
-    result = await session.execute(
-        select(DetectionRule).where(DetectionRule.id == rule_id)
-    )
+    result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_id))
     rule = result.scalar_one_or_none()
 
     if not rule:
@@ -469,9 +500,7 @@ async def delete_rule(
     _current_user: Annotated[User, Depends(require_admin)],
 ) -> None:
     """Delete a detection rule (admin only)."""
-    result = await session.execute(
-        select(DetectionRule).where(DetectionRule.id == rule_id)
-    )
+    result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_id))
     rule = result.scalar_one_or_none()
 
     if not rule:
@@ -491,9 +520,7 @@ async def enable_rule(
     _current_user: Annotated[User, Depends(require_admin)],
 ) -> RuleResponse:
     """Enable a detection rule (admin only)."""
-    result = await session.execute(
-        select(DetectionRule).where(DetectionRule.id == rule_id)
-    )
+    result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_id))
     rule = result.scalar_one_or_none()
 
     if not rule:
@@ -516,9 +543,7 @@ async def disable_rule(
     _current_user: Annotated[User, Depends(require_admin)],
 ) -> RuleResponse:
     """Disable a detection rule (admin only)."""
-    result = await session.execute(
-        select(DetectionRule).where(DetectionRule.id == rule_id)
-    )
+    result = await session.execute(select(DetectionRule).where(DetectionRule.id == rule_id))
     rule = result.scalar_one_or_none()
 
     if not rule:

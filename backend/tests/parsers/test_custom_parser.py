@@ -598,7 +598,7 @@ class TestComplexPatterns:
         """Should parse nginx access log format."""
         config = {
             "pattern": (
-                r'^(?P<client_ip>\S+) - \S+ \[(?P<timestamp>[^\]]+)\] '
+                r"^(?P<client_ip>\S+) - \S+ \[(?P<timestamp>[^\]]+)\] "
                 r'"(?P<method>\w+) (?P<path>\S+) \S+" (?P<response_status>\d+) (?P<bytes>\d+)'
             ),
             "timestamp_format": "%d/%b/%Y:%H:%M:%S %z",
@@ -606,7 +606,9 @@ class TestComplexPatterns:
         }
         parser = CustomParser(config)
 
-        log_line = '192.168.1.100 - - [15/Jun/2024:14:30:00 +0000] "GET /api/users HTTP/1.1" 200 1234'
+        log_line = (
+            '192.168.1.100 - - [15/Jun/2024:14:30:00 +0000] "GET /api/users HTTP/1.1" 200 1234'
+        )
         results = parser.parse(log_line)
 
         assert results[0].client_ip == "192.168.1.100"
@@ -618,8 +620,8 @@ class TestComplexPatterns:
         """Should parse syslog format."""
         config = {
             "pattern": (
-                r'^(?P<timestamp>\w{3}\s+\d+\s+\d+:\d+:\d+) '
-                r'(?P<hostname>\S+) (?P<program>\S+): (?P<message>.*)$'
+                r"^(?P<timestamp>\w{3}\s+\d+\s+\d+:\d+:\d+) "
+                r"(?P<hostname>\S+) (?P<program>\S+): (?P<message>.*)$"
             ),
             "event_type": "system",
         }
@@ -636,9 +638,9 @@ class TestComplexPatterns:
         """Should parse firewall log format."""
         config = {
             "pattern": (
-                r'^(?P<timestamp>\S+) (?P<action>ALLOW|BLOCK) '
-                r'(?P<protocol>TCP|UDP) (?P<client_ip>\S+):(?P<src_port>\d+) -> '
-                r'(?P<target_ip>\S+):(?P<port>\d+)'
+                r"^(?P<timestamp>\S+) (?P<action>ALLOW|BLOCK) "
+                r"(?P<protocol>TCP|UDP) (?P<client_ip>\S+):(?P<src_port>\d+) -> "
+                r"(?P<target_ip>\S+):(?P<port>\d+)"
             ),
             "event_type": "firewall",
         }

@@ -227,9 +227,7 @@ async def analyze_alert(
 
     if alert.device_id:
         # Fetch device
-        device_result = await session.execute(
-            select(Device).where(Device.id == alert.device_id)
-        )
+        device_result = await session.execute(select(Device).where(Device.id == alert.device_id))
         device = device_result.scalar_one_or_none()
 
         if device:
@@ -324,9 +322,7 @@ async def _get_alerts_for_export(
     device_ids = [a.device_id for a in alerts if a.device_id]
     device_map = {}
     if device_ids:
-        devices_result = await session.execute(
-            select(Device).where(Device.id.in_(device_ids))
-        )
+        devices_result = await session.execute(select(Device).where(Device.id.in_(device_ids)))
         for d in devices_result.scalars().all():
             device_map[d.id] = d.hostname
 

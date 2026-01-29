@@ -139,9 +139,7 @@ class TOTPService:
         return totp.verify(code, valid_window=1)
 
     @staticmethod
-    def verify_backup_code(
-        code: str, stored_codes: list[str]
-    ) -> tuple[bool, int | None]:
+    def verify_backup_code(code: str, stored_codes: list[str]) -> tuple[bool, int | None]:
         """Verify a backup code.
 
         Args:

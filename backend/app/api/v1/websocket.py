@@ -199,56 +199,64 @@ async def websocket_endpoint(
 
 async def broadcast_alert_created(alert_data: dict[str, Any]) -> None:
     """Broadcast a new alert to all connected clients."""
-    await manager.broadcast({
-        "type": "alert_created",
-        "data": alert_data,
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "alert_created",
+            "data": alert_data,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
 
 
 async def broadcast_alert_updated(alert_id: str, update_data: dict[str, Any]) -> None:
     """Broadcast an alert update to all connected clients."""
-    await manager.broadcast({
-        "type": "alert_updated",
-        "data": {"alert_id": alert_id, **update_data},
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "alert_updated",
+            "data": {"alert_id": alert_id, **update_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
 
 
 async def broadcast_device_status_changed(
     device_id: str, new_status: str, details: dict[str, Any] | None = None
 ) -> None:
     """Broadcast a device status change to all connected clients."""
-    await manager.broadcast({
-        "type": "device_status_changed",
-        "data": {
-            "device_id": device_id,
-            "new_status": new_status,
-            **(details or {}),
-        },
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "device_status_changed",
+            "data": {
+                "device_id": device_id,
+                "new_status": new_status,
+                **(details or {}),
+            },
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
 
 
 async def broadcast_anomaly_detected(anomaly_data: dict[str, Any]) -> None:
     """Broadcast a new anomaly detection to all connected clients."""
-    await manager.broadcast({
-        "type": "anomaly_detected",
-        "data": anomaly_data,
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "anomaly_detected",
+            "data": anomaly_data,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
 
 
-async def broadcast_system_notification(
-    title: str, message: str, severity: str = "info"
-) -> None:
+async def broadcast_system_notification(title: str, message: str, severity: str = "info") -> None:
     """Broadcast a system notification to all connected clients."""
-    await manager.broadcast({
-        "type": "system_notification",
-        "data": {
-            "title": title,
-            "message": message,
-            "severity": severity,
-        },
-        "timestamp": datetime.now(UTC).isoformat(),
-    })
+    await manager.broadcast(
+        {
+            "type": "system_notification",
+            "data": {
+                "title": title,
+                "message": message,
+                "severity": severity,
+            },
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )

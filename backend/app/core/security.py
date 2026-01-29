@@ -105,9 +105,7 @@ def create_access_token(
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(
-            minutes=settings.jwt_access_token_expire_minutes
-        )
+        expire = datetime.now(UTC) + timedelta(minutes=settings.jwt_access_token_expire_minutes)
 
     to_encode = {
         "sub": subject,
@@ -120,9 +118,7 @@ def create_access_token(
     if additional_claims:
         to_encode.update(additional_claims)
 
-    return cast(
-        str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
-    )
+    return cast(str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm))
 
 
 def create_refresh_token(
@@ -141,9 +137,7 @@ def create_refresh_token(
     if expires_delta:
         expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(UTC) + timedelta(
-            days=settings.jwt_refresh_token_expire_days
-        )
+        expire = datetime.now(UTC) + timedelta(days=settings.jwt_refresh_token_expire_days)
 
     to_encode = {
         "sub": subject,
@@ -153,9 +147,7 @@ def create_refresh_token(
         "jti": secrets.token_urlsafe(16),  # Unique token ID for revocation
     }
 
-    return cast(
-        str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
-    )
+    return cast(str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm))
 
 
 def create_2fa_pending_token(
@@ -186,9 +178,7 @@ def create_2fa_pending_token(
         "iat": datetime.now(UTC),
     }
 
-    return cast(
-        str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
-    )
+    return cast(str, jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm))
 
 
 def decode_token(token: str) -> dict[str, Any]:

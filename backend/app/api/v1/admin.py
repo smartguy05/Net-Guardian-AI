@@ -125,9 +125,7 @@ async def update_retention_policy(
     Admin only.
     """
     if update.retention_days is not None and update.retention_days < 0:
-        raise HTTPException(
-            status_code=400, detail="retention_days must be 0 or greater"
-        )
+        raise HTTPException(status_code=400, detail="retention_days must be 0 or greater")
 
     service = RetentionService(session)
     policy = await service.update_policy(

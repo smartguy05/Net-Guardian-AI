@@ -182,9 +182,7 @@ class ApiPullCollector(BaseCollector):
                         url, headers=headers, params=params, auth=auth
                     )
                 else:
-                    response = await self._client.get(
-                        url, headers=headers, params=params
-                    )
+                    response = await self._client.get(url, headers=headers, params=params)
             elif method == "POST":
                 if auth is not None:
                     response = await self._client.post(
@@ -231,8 +229,9 @@ class ApiPullCollector(BaseCollector):
 
             # Update circuit breaker metric
             COLLECTOR_CIRCUIT_STATE.labels(source_id=self.source_id).set(
-                0 if self._circuit_breaker.is_closed else
-                (1 if self._circuit_breaker.state == CircuitBreaker.State.HALF_OPEN else 2)
+                0
+                if self._circuit_breaker.is_closed
+                else (1 if self._circuit_breaker.state == CircuitBreaker.State.HALF_OPEN else 2)
             )
 
             # Parse the response
@@ -280,8 +279,9 @@ class ApiPullCollector(BaseCollector):
 
             # Update circuit breaker metric
             COLLECTOR_CIRCUIT_STATE.labels(source_id=self.source_id).set(
-                0 if self._circuit_breaker.is_closed else
-                (1 if self._circuit_breaker.state == CircuitBreaker.State.HALF_OPEN else 2)
+                0
+                if self._circuit_breaker.is_closed
+                else (1 if self._circuit_breaker.state == CircuitBreaker.State.HALF_OPEN else 2)
             )
 
             logger.error(

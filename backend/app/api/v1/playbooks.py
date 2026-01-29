@@ -227,7 +227,9 @@ async def update_playbook(
             {
                 "type": a.type.value if hasattr(a.type, "value") else a["type"],
                 "params": a.params if hasattr(a, "params") else a.get("params", {}),
-                "stop_on_failure": a.stop_on_failure if hasattr(a, "stop_on_failure") else a.get("stop_on_failure", False),
+                "stop_on_failure": a.stop_on_failure
+                if hasattr(a, "stop_on_failure")
+                else a.get("stop_on_failure", False),
             }
             for a in updates["actions"]
         ]
@@ -306,9 +308,7 @@ async def activate_playbook(
 ) -> PlaybookResponse:
     """Activate a playbook (Admin only)."""
     engine = get_playbook_engine()
-    playbook = await engine.update_playbook(
-        playbook_id, status=PlaybookStatus.ACTIVE
-    )
+    playbook = await engine.update_playbook(playbook_id, status=PlaybookStatus.ACTIVE)
 
     if not playbook:
         raise HTTPException(
@@ -326,9 +326,7 @@ async def deactivate_playbook(
 ) -> PlaybookResponse:
     """Deactivate a playbook (Admin only)."""
     engine = get_playbook_engine()
-    playbook = await engine.update_playbook(
-        playbook_id, status=PlaybookStatus.DISABLED
-    )
+    playbook = await engine.update_playbook(playbook_id, status=PlaybookStatus.DISABLED)
 
     if not playbook:
         raise HTTPException(
@@ -353,9 +351,7 @@ async def list_playbook_executions(
 
     from app.models.playbook import PlaybookExecution
 
-    query = select(PlaybookExecution).where(
-        PlaybookExecution.playbook_id == playbook_id
-    )
+    query = select(PlaybookExecution).where(PlaybookExecution.playbook_id == playbook_id)
 
     if status_filter:
         query = query.where(PlaybookExecution.status == status_filter)

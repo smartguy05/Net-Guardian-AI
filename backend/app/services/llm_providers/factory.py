@@ -1,6 +1,5 @@
 """Factory for creating LLM providers."""
 
-
 from typing import Any
 
 from app.models.semantic_analysis import LLMProvider

@@ -138,9 +138,7 @@ async def get_baseline(
     _current_user: Annotated[User, Depends(get_current_user)],
 ) -> BaselineResponse:
     """Get baseline details."""
-    result = await session.execute(
-        select(DeviceBaseline).where(DeviceBaseline.id == baseline_id)
-    )
+    result = await session.execute(select(DeviceBaseline).where(DeviceBaseline.id == baseline_id))
     baseline = result.scalar_one_or_none()
 
     if not baseline:
@@ -160,9 +158,7 @@ async def update_baseline(
     _admin: Annotated[User, Depends(require_admin)],
 ) -> BaselineResponse:
     """Update baseline configuration (admin only)."""
-    result = await session.execute(
-        select(DeviceBaseline).where(DeviceBaseline.id == baseline_id)
-    )
+    result = await session.execute(select(DeviceBaseline).where(DeviceBaseline.id == baseline_id))
     baseline = result.scalar_one_or_none()
 
     if not baseline:
@@ -196,9 +192,7 @@ async def recalculate_device_baselines(
 
         return BaselineRecalculateResponse(
             device_id=str(device_id),
-            baselines={
-                k: _baseline_to_response(v) for k, v in baselines.items()
-            },
+            baselines={k: _baseline_to_response(v) for k, v in baselines.items()},
             message="Baselines recalculated successfully",
         )
     except Exception as e:
@@ -234,9 +228,7 @@ async def get_baseline_stats(
     # Count by status
     status_counts = {}
     for bs in BaselineStatus:
-        result = await session.execute(
-            select(func.count()).where(DeviceBaseline.status == bs)
-        )
+        result = await session.execute(select(func.count()).where(DeviceBaseline.status == bs))
         status_counts[bs.value] = result.scalar() or 0
 
     # Count by type

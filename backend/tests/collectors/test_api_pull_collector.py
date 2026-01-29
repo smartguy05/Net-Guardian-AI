@@ -68,10 +68,12 @@ class TestApiPullCollectorUrlBuilding:
 
     def test_build_url_with_endpoint(self):
         """Test URL building with endpoint."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "endpoint": "/v1/events",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "endpoint": "/v1/events",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         url = collector._build_url()
@@ -80,10 +82,12 @@ class TestApiPullCollectorUrlBuilding:
 
     def test_build_url_without_endpoint(self):
         """Test URL building without endpoint."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com/events",
-            "endpoint": "",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com/events",
+                "endpoint": "",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         url = collector._build_url()
@@ -92,10 +96,12 @@ class TestApiPullCollectorUrlBuilding:
 
     def test_build_url_strips_trailing_slash(self):
         """Test that trailing slashes are handled."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com/",
-            "endpoint": "/events",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com/",
+                "endpoint": "/events",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         url = collector._build_url()
@@ -108,10 +114,12 @@ class TestApiPullCollectorHeaders:
 
     def test_build_headers_no_auth(self):
         """Test header building with no auth."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "auth_type": "none",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "auth_type": "none",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         headers = collector._build_headers()
@@ -120,11 +128,13 @@ class TestApiPullCollectorHeaders:
 
     def test_build_headers_bearer_auth(self):
         """Test header building with bearer auth."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "auth_type": "bearer",
-            "api_key": "my-secret-token",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "auth_type": "bearer",
+                "api_key": "my-secret-token",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         headers = collector._build_headers()
@@ -133,12 +143,14 @@ class TestApiPullCollectorHeaders:
 
     def test_build_headers_api_key(self):
         """Test header building with API key auth."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "auth_type": "api_key",
-            "api_key": "my-api-key",
-            "api_key_header": "X-Custom-Key",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "auth_type": "api_key",
+                "api_key": "my-api-key",
+                "api_key_header": "X-Custom-Key",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         headers = collector._build_headers()
@@ -147,14 +159,16 @@ class TestApiPullCollectorHeaders:
 
     def test_build_headers_custom_headers(self):
         """Test header building with custom headers."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "auth_type": "none",
-            "headers": {
-                "X-Custom-Header": "value",
-                "Accept": "application/json",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "auth_type": "none",
+                "headers": {
+                    "X-Custom-Header": "value",
+                    "Accept": "application/json",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         headers = collector._build_headers()
@@ -168,12 +182,14 @@ class TestApiPullCollectorBasicAuth:
 
     def test_build_auth_basic(self):
         """Test basic auth tuple building."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "auth_type": "basic",
-            "username": "user",
-            "password": "pass",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "auth_type": "basic",
+                "username": "user",
+                "password": "pass",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         auth = collector._build_auth()
@@ -182,10 +198,12 @@ class TestApiPullCollectorBasicAuth:
 
     def test_build_auth_no_basic(self):
         """Test that non-basic auth returns None."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "auth_type": "bearer",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "auth_type": "bearer",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         auth = collector._build_auth()
@@ -198,10 +216,12 @@ class TestApiPullCollectorParams:
 
     def test_build_params_basic(self):
         """Test basic query params."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "query_params": {"limit": 100, "format": "json"},
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "query_params": {"limit": 100, "format": "json"},
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         params = collector._build_params()
@@ -211,13 +231,15 @@ class TestApiPullCollectorParams:
 
     def test_build_params_with_cursor_pagination(self):
         """Test params with cursor pagination."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "cursor",
-                "cursor_param": "cursor",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "cursor",
+                    "cursor_param": "cursor",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
         collector._last_cursor = "abc123"
 
@@ -227,13 +249,15 @@ class TestApiPullCollectorParams:
 
     def test_build_params_without_cursor(self):
         """Test params with cursor pagination but no cursor yet."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "cursor",
-                "cursor_param": "cursor",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "cursor",
+                    "cursor_param": "cursor",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         params = collector._build_params()
@@ -246,53 +270,63 @@ class TestApiPullCollectorPagination:
 
     def test_extract_cursor_simple(self):
         """Test simple cursor extraction."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "cursor",
-                "cursor_field": "next_cursor",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "cursor",
+                    "cursor_field": "next_cursor",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
-        cursor = collector._extract_pagination_cursor({
-            "data": [],
-            "next_cursor": "xyz789",
-        })
+        cursor = collector._extract_pagination_cursor(
+            {
+                "data": [],
+                "next_cursor": "xyz789",
+            }
+        )
 
         assert cursor == "xyz789"
 
     def test_extract_cursor_nested(self):
         """Test nested cursor extraction."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "cursor",
-                "cursor_field": "meta.pagination.next",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "cursor",
+                    "cursor_field": "meta.pagination.next",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
-        cursor = collector._extract_pagination_cursor({
-            "data": [],
-            "meta": {
-                "pagination": {
-                    "next": "nested-cursor",
+        cursor = collector._extract_pagination_cursor(
+            {
+                "data": [],
+                "meta": {
+                    "pagination": {
+                        "next": "nested-cursor",
+                    },
                 },
-            },
-        })
+            }
+        )
 
         assert cursor == "nested-cursor"
 
     def test_extract_cursor_missing(self):
         """Test cursor extraction when cursor is missing."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "cursor",
-                "cursor_field": "next_cursor",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "cursor",
+                    "cursor_field": "next_cursor",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         cursor = collector._extract_pagination_cursor({"data": []})
@@ -306,19 +340,21 @@ class TestApiPullCollectorRequests:
     @pytest.mark.asyncio
     async def test_make_request_get(self):
         """Test making GET request."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "endpoint": "/events",
-            "method": "GET",
-            "auth_type": "none",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "endpoint": "/events",
+                "method": "GET",
+                "auth_type": "none",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         mock_response = MagicMock()
         mock_response.json.return_value = {"data": []}
         mock_response.raise_for_status = MagicMock()
 
-        with patch.object(httpx.AsyncClient, 'get', new_callable=AsyncMock) as mock_get:
+        with patch.object(httpx.AsyncClient, "get", new_callable=AsyncMock) as mock_get:
             mock_get.return_value = mock_response
 
             result = await collector._make_request()
@@ -333,7 +369,7 @@ class TestApiPullCollectorRequests:
         source = create_mock_source()
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = {"data": []}
 
             success, message = await collector.test_connection()
@@ -352,7 +388,7 @@ class TestApiPullCollectorRequests:
         mock_response = MagicMock()
         mock_response.status_code = 401
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = httpx.HTTPStatusError(
                 "Unauthorized",
                 request=MagicMock(),
@@ -372,7 +408,7 @@ class TestApiPullCollectorRequests:
         source = create_mock_source()
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = Exception("Network error")
 
             success, message = await collector.test_connection()
@@ -397,7 +433,7 @@ class TestApiPullCollectorPolling:
             {"timestamp": "2024-01-15T12:00:01Z", "message": "Event 2"},
         ]
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_data
 
             results = await collector._poll_once()
@@ -412,7 +448,7 @@ class TestApiPullCollectorPolling:
         source = create_mock_source()
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = Exception("API error")
 
             results = await collector._poll_once()
@@ -424,13 +460,15 @@ class TestApiPullCollectorPolling:
     @pytest.mark.asyncio
     async def test_start_stop(self):
         """Test starting and stopping collector."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "poll_interval_seconds": 1,
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "poll_interval_seconds": 1,
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_poll_once', new_callable=AsyncMock) as mock_poll:
+        with patch.object(collector, "_poll_once", new_callable=AsyncMock) as mock_poll:
             mock_poll.return_value = []
 
             await collector.start()
@@ -453,7 +491,7 @@ class TestApiPullCollectorPolling:
             {"timestamp": "2024-01-15T13:00:00Z", "message": "Event 2"},
         ]
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_data
 
             await collector._poll_once()
@@ -477,7 +515,7 @@ class TestApiPullCollectorHttpErrors:
         mock_response = MagicMock()
         mock_response.status_code = 401
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = httpx.HTTPStatusError(
                 "Unauthorized",
                 request=MagicMock(),
@@ -500,7 +538,7 @@ class TestApiPullCollectorHttpErrors:
         mock_response = MagicMock()
         mock_response.status_code = 429
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = httpx.HTTPStatusError(
                 "Too Many Requests",
                 request=MagicMock(),
@@ -522,7 +560,7 @@ class TestApiPullCollectorHttpErrors:
         mock_response = MagicMock()
         mock_response.status_code = 500
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = httpx.HTTPStatusError(
                 "Internal Server Error",
                 request=MagicMock(),
@@ -542,15 +580,17 @@ class TestApiPullCollectorCircuitBreaker:
     @pytest.mark.asyncio
     async def test_circuit_breaker_opens_on_failures(self):
         """Test that circuit breaker opens after repeated failures."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "circuit_failure_threshold": 3,
-            "circuit_recovery_timeout": 30.0,
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "circuit_failure_threshold": 3,
+                "circuit_recovery_timeout": 30.0,
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         # Simulate multiple failures to open circuit
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = Exception("Connection error")
 
             # Trigger failures
@@ -569,7 +609,9 @@ class TestApiPullCollectorCircuitBreaker:
         collector = ApiPullCollector(source, JsonParser())
 
         # Create mock retry handler that raises circuit open error
-        with patch.object(collector._retry_handler, 'execute', new_callable=AsyncMock) as mock_execute:
+        with patch.object(
+            collector._retry_handler, "execute", new_callable=AsyncMock
+        ) as mock_execute:
             mock_execute.side_effect = CollectorCircuitOpenError("Circuit open")
 
             results = await collector._poll_once()
@@ -589,7 +631,7 @@ class TestApiPullCollectorCircuitBreaker:
 
         mock_data = [{"timestamp": "2024-01-15T12:00:00Z", "message": "Event"}]
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.return_value = mock_data
 
             await collector._poll_once()
@@ -605,20 +647,22 @@ class TestApiPullCollectorPostMethod:
     @pytest.mark.asyncio
     async def test_make_request_post(self):
         """Test making POST request."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "endpoint": "/events",
-            "method": "POST",
-            "auth_type": "none",
-            "body": {"query": "fetch events"},
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "endpoint": "/events",
+                "method": "POST",
+                "auth_type": "none",
+                "body": {"query": "fetch events"},
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         mock_response = MagicMock()
         mock_response.json.return_value = {"data": []}
         mock_response.raise_for_status = MagicMock()
 
-        with patch.object(httpx.AsyncClient, 'post', new_callable=AsyncMock) as mock_post:
+        with patch.object(httpx.AsyncClient, "post", new_callable=AsyncMock) as mock_post:
             mock_post.return_value = mock_response
 
             result = await collector._make_request()
@@ -631,11 +675,13 @@ class TestApiPullCollectorPostMethod:
     @pytest.mark.asyncio
     async def test_make_request_unsupported_method(self):
         """Test that unsupported HTTP method raises error."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "method": "DELETE",
-            "auth_type": "none",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "method": "DELETE",
+                "auth_type": "none",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         with pytest.raises(ValueError, match="Unsupported HTTP method"):
@@ -732,9 +778,11 @@ class TestApiPullCollectorTimeout:
 
     def test_default_timeout(self):
         """Test default timeout is used when not configured."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         # Default is 30 seconds per the docstring
@@ -742,10 +790,12 @@ class TestApiPullCollectorTimeout:
 
     def test_custom_timeout(self):
         """Test custom timeout is respected."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "timeout_seconds": 60,
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "timeout_seconds": 60,
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         assert collector.config.get("timeout_seconds") == 60
@@ -756,7 +806,7 @@ class TestApiPullCollectorTimeout:
         source = create_mock_source()
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = httpx.TimeoutException("Request timed out")
 
             results = await collector._poll_once()
@@ -776,10 +826,12 @@ class TestApiPullCollectorErrorTracking:
         source = create_mock_source()
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = Exception("Test error")
 
-            with patch.object(collector._error_tracker, 'record_error', new_callable=AsyncMock) as mock_record:
+            with patch.object(
+                collector._error_tracker, "record_error", new_callable=AsyncMock
+            ) as mock_record:
                 await collector._poll_once()
 
                 mock_record.assert_called_once()
@@ -794,7 +846,7 @@ class TestApiPullCollectorErrorTracking:
 
         initial_failures = collector._consecutive_failures
 
-        with patch.object(collector, '_make_request', new_callable=AsyncMock) as mock_request:
+        with patch.object(collector, "_make_request", new_callable=AsyncMock) as mock_request:
             mock_request.side_effect = Exception("Test error")
 
             await collector._poll_once()
@@ -809,13 +861,15 @@ class TestApiPullCollectorTimestampPagination:
 
     def test_build_params_with_timestamp_pagination(self):
         """Test params with timestamp pagination."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "timestamp",
-                "timestamp_param": "since",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "timestamp",
+                    "timestamp_param": "since",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
         collector._last_timestamp = datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
 
@@ -826,13 +880,15 @@ class TestApiPullCollectorTimestampPagination:
 
     def test_build_params_without_timestamp(self):
         """Test params with timestamp pagination but no timestamp yet."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "timestamp",
-                "timestamp_param": "since",
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "timestamp",
+                    "timestamp_param": "since",
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         params = collector._build_params()
@@ -841,15 +897,17 @@ class TestApiPullCollectorTimestampPagination:
 
     def test_build_params_with_offset_pagination(self):
         """Test params with offset pagination."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "pagination": {
-                "type": "offset",
-                "offset_param": "offset",
-                "limit_param": "limit",
-                "limit": 50,
-            },
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "pagination": {
+                    "type": "offset",
+                    "offset_param": "offset",
+                    "limit_param": "limit",
+                    "limit": 50,
+                },
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
         params = collector._build_params()
@@ -863,13 +921,15 @@ class TestApiPullCollectorStartAlreadyRunning:
     @pytest.mark.asyncio
     async def test_start_already_running_is_noop(self):
         """Test that starting an already running collector is a no-op."""
-        source = create_mock_source(config={
-            "url": "https://api.example.com",
-            "poll_interval_seconds": 60,
-        })
+        source = create_mock_source(
+            config={
+                "url": "https://api.example.com",
+                "poll_interval_seconds": 60,
+            }
+        )
         collector = ApiPullCollector(source, JsonParser())
 
-        with patch.object(collector, '_poll_once', new_callable=AsyncMock) as mock_poll:
+        with patch.object(collector, "_poll_once", new_callable=AsyncMock) as mock_poll:
             mock_poll.return_value = []
 
             await collector.start()

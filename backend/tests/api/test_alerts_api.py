@@ -26,7 +26,12 @@ class TestListAlerts:
     def mock_alerts(self):
         """Create mock alerts for testing."""
         alerts = []
-        severities = [AlertSeverity.LOW, AlertSeverity.MEDIUM, AlertSeverity.HIGH, AlertSeverity.CRITICAL]
+        severities = [
+            AlertSeverity.LOW,
+            AlertSeverity.MEDIUM,
+            AlertSeverity.HIGH,
+            AlertSeverity.CRITICAL,
+        ]
 
         for i in range(10):
             alert = MagicMock()
@@ -65,7 +70,7 @@ class TestListAlerts:
         from app.api.v1 import alerts as alerts_module
 
         # Check if list_alerts exists
-        if hasattr(alerts_module, 'list_alerts'):
+        if hasattr(alerts_module, "list_alerts"):
             response = await alerts_module.list_alerts(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
@@ -76,7 +81,9 @@ class TestListAlerts:
             assert len(response.items) == 5
 
     @pytest.mark.asyncio
-    async def test_list_alerts_filter_by_status(self, mock_alerts, mock_db_session, mock_current_user_viewer):
+    async def test_list_alerts_filter_by_status(
+        self, mock_alerts, mock_db_session, mock_current_user_viewer
+    ):
         """Should filter alerts by status."""
         new_alerts = [a for a in mock_alerts if a.status == AlertStatus.NEW]
 
@@ -93,7 +100,7 @@ class TestListAlerts:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'list_alerts'):
+        if hasattr(alerts_module, "list_alerts"):
             response = await alerts_module.list_alerts(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
@@ -104,7 +111,9 @@ class TestListAlerts:
             assert response.total == len(new_alerts)
 
     @pytest.mark.asyncio
-    async def test_list_alerts_filter_by_severity(self, mock_alerts, mock_db_session, mock_current_user_viewer):
+    async def test_list_alerts_filter_by_severity(
+        self, mock_alerts, mock_db_session, mock_current_user_viewer
+    ):
         """Should filter alerts by severity."""
         critical_alerts = [a for a in mock_alerts if a.severity == AlertSeverity.CRITICAL]
 
@@ -121,7 +130,7 @@ class TestListAlerts:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'list_alerts'):
+        if hasattr(alerts_module, "list_alerts"):
             response = await alerts_module.list_alerts(
                 session=mock_db_session,
                 _current_user=mock_current_user_viewer,
@@ -164,7 +173,7 @@ class TestGetAlert:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'get_alert'):
+        if hasattr(alerts_module, "get_alert"):
             response = await alerts_module.get_alert(
                 alert_id=mock_alert.id,
                 session=mock_db_session,
@@ -181,7 +190,7 @@ class TestGetAlert:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'get_alert'):
+        if hasattr(alerts_module, "get_alert"):
             with pytest.raises(HTTPException) as exc_info:
                 await alerts_module.get_alert(
                     alert_id=uuid4(),
@@ -205,7 +214,9 @@ class TestAcknowledgeAlert:
         return alert
 
     @pytest.mark.asyncio
-    async def test_acknowledge_alert_success(self, mock_alert, mock_db_session, mock_current_user_operator):
+    async def test_acknowledge_alert_success(
+        self, mock_alert, mock_db_session, mock_current_user_operator
+    ):
         """Should acknowledge alert successfully."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_alert
@@ -213,7 +224,7 @@ class TestAcknowledgeAlert:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'acknowledge_alert'):
+        if hasattr(alerts_module, "acknowledge_alert"):
             response = await alerts_module.acknowledge_alert(
                 alert_id=mock_alert.id,
                 session=mock_db_session,
@@ -225,7 +236,9 @@ class TestAcknowledgeAlert:
             mock_db_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_acknowledge_already_acknowledged(self, mock_alert, mock_db_session, mock_current_user_operator):
+    async def test_acknowledge_already_acknowledged(
+        self, mock_alert, mock_db_session, mock_current_user_operator
+    ):
         """Should handle already acknowledged alert."""
         mock_alert.status = AlertStatus.ACKNOWLEDGED
         mock_result = MagicMock()
@@ -235,7 +248,7 @@ class TestAcknowledgeAlert:
         from app.api.v1 import alerts as alerts_module
 
         # Behavior depends on implementation - may return success or error
-        if hasattr(alerts_module, 'acknowledge_alert'):
+        if hasattr(alerts_module, "acknowledge_alert"):
             # Just verify it doesn't crash
             try:
                 await alerts_module.acknowledge_alert(
@@ -261,7 +274,9 @@ class TestResolveAlert:
         return alert
 
     @pytest.mark.asyncio
-    async def test_resolve_alert_success(self, mock_alert, mock_db_session, mock_current_user_operator):
+    async def test_resolve_alert_success(
+        self, mock_alert, mock_db_session, mock_current_user_operator
+    ):
         """Should resolve alert successfully."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_alert
@@ -269,7 +284,7 @@ class TestResolveAlert:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'resolve_alert'):
+        if hasattr(alerts_module, "resolve_alert"):
             response = await alerts_module.resolve_alert(
                 alert_id=mock_alert.id,
                 session=mock_db_session,
@@ -293,7 +308,9 @@ class TestMarkFalsePositive:
         return alert
 
     @pytest.mark.asyncio
-    async def test_mark_false_positive(self, mock_alert, mock_db_session, mock_current_user_operator):
+    async def test_mark_false_positive(
+        self, mock_alert, mock_db_session, mock_current_user_operator
+    ):
         """Should mark alert as false positive."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_alert
@@ -301,7 +318,7 @@ class TestMarkFalsePositive:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'mark_false_positive'):
+        if hasattr(alerts_module, "mark_false_positive"):
             await alerts_module.mark_false_positive(
                 alert_id=mock_alert.id,
                 session=mock_db_session,
@@ -338,7 +355,9 @@ class TestTriggerLLMAnalysis:
         return alert
 
     @pytest.mark.asyncio
-    async def test_trigger_llm_analysis(self, mock_alert, mock_db_session, mock_current_user_operator):
+    async def test_trigger_llm_analysis(
+        self, mock_alert, mock_db_session, mock_current_user_operator
+    ):
         """Should trigger LLM analysis for alert."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_alert
@@ -352,7 +371,7 @@ class TestTriggerLLMAnalysis:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'analyze_alert'):
+        if hasattr(alerts_module, "analyze_alert"):
             with patch("app.api.v1.alerts.get_llm_service") as mock_llm:
                 mock_service = AsyncMock()
                 mock_service.analyze_alert.return_value = mock_analysis
@@ -377,7 +396,7 @@ class TestAlertStatistics:
         """Should return alert statistics."""
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'get_alert_stats'):
+        if hasattr(alerts_module, "get_alert_stats"):
             # Mock the database queries for stats
             mock_db_session.execute.return_value.scalar.return_value = 100
 
@@ -414,7 +433,9 @@ class TestAlertAuthorization:
         return alert
 
     @pytest.mark.asyncio
-    async def test_viewer_cannot_acknowledge(self, mock_alert, mock_db_session, mock_current_user_viewer):
+    async def test_viewer_cannot_acknowledge(
+        self, mock_alert, mock_db_session, mock_current_user_viewer
+    ):
         """Viewer should not be able to acknowledge alerts."""
         # This test verifies that the endpoint requires operator role
         # The actual authorization check is done by the require_operator dependency
@@ -426,7 +447,9 @@ class TestAlertAuthorization:
         assert exc_info.value.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_viewer_can_view_alerts(self, mock_alert, mock_db_session, mock_current_user_viewer):
+    async def test_viewer_can_view_alerts(
+        self, mock_alert, mock_db_session, mock_current_user_viewer
+    ):
         """Viewer should be able to view alerts."""
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_alert
@@ -434,7 +457,7 @@ class TestAlertAuthorization:
 
         from app.api.v1 import alerts as alerts_module
 
-        if hasattr(alerts_module, 'get_alert'):
+        if hasattr(alerts_module, "get_alert"):
             # Should not raise authorization error
             response = await alerts_module.get_alert(
                 alert_id=mock_alert.id,

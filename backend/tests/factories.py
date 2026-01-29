@@ -99,8 +99,14 @@ class EventFactory:
 
     _counter = 0
     _domains = [
-        "google.com", "facebook.com", "twitter.com", "example.com",
-        "microsoft.com", "amazon.com", "apple.com", "github.com",
+        "google.com",
+        "facebook.com",
+        "twitter.com",
+        "example.com",
+        "microsoft.com",
+        "amazon.com",
+        "apple.com",
+        "github.com",
     ]
 
     @classmethod
@@ -505,7 +511,8 @@ class RuleFactory:
             "description": description or f"Test rule description {cls._counter}",
             "severity": severity,
             "enabled": enabled,
-            "conditions": conditions or {
+            "conditions": conditions
+            or {
                 "type": "field_match",
                 "field": "domain",
                 "operator": "contains",
