@@ -155,6 +155,14 @@ Remaining tasks organized by priority.
 
 ## Recent Additions (January 2026)
 
+### AdGuard Device Name Sync - COMPLETE
+- [x] Backend: get_all_clients() and get_device_name_mapping() in AdGuard service
+- [x] Backend: DeviceSyncService for matching AdGuard clients to devices
+- [x] API: POST /api/v1/devices/sync endpoint for triggering sync
+- [x] Frontend: "Sync Names" button on DevicesPage with success/error feedback
+- [x] Tests: 14 new tests for sync service, AdGuard methods, and API
+- [x] Documentation: user-guide.md, helpContent.ts, DocsPage.tsx, README.md
+
 ### Log Source Edit Feature - COMPLETE
 - [x] EditSourceModal component with source-type-specific config forms
 - [x] Edit button added to SourceCard in SourcesPage

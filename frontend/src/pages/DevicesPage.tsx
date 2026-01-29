@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Monitor, Shield, ShieldOff, Search, RefreshCw, ExternalLink, Tag, Square, CheckSquare } from 'lucide-react';
-import { useDevices, useQuarantineDevice, useReleaseDevice, exportDevicesCSV, exportDevicesPDF, useAllTags, useBulkTagDevices } from '../api/hooks';
+import { Monitor, Shield, ShieldOff, Search, RefreshCw, ExternalLink, Tag, Square, CheckSquare, Download } from 'lucide-react';
+import { useDevices, useQuarantineDevice, useReleaseDevice, exportDevicesCSV, exportDevicesPDF, useAllTags, useBulkTagDevices, useSyncDevices } from '../api/hooks';
 import { useAuthStore } from '../stores/auth';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
@@ -142,6 +142,7 @@ export default function DevicesPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedDevices, setSelectedDevices] = useState<Set<string>>(new Set());
   const [showBulkTagModal, setShowBulkTagModal] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const user = useAuthStore((state) => state.user);
   const canManage = user?.role === 'admin' || user?.role === 'operator';
@@ -156,6 +157,7 @@ export default function DevicesPage() {
 
   const { data: tagsData } = useAllTags();
   const bulkTagMutation = useBulkTagDevices();
+  const syncDevices = useSyncDevices();
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
   const availableTags = tagsData?.tags || [];
@@ -214,6 +216,32 @@ export default function DevicesPage() {
     setSelectedDevices(new Set());
   };
 
+  const handleSync = async () => {
+    try {
+      setSyncMessage(null);
+      const result = await syncDevices.mutateAsync({ source: 'adguard', overwriteExisting: false });
+      if (result.updated_devices > 0) {
+        setSyncMessage({
+          type: 'success',
+          text: `Synced ${result.updated_devices} device name${result.updated_devices !== 1 ? 's' : ''} from AdGuard Home`,
+        });
+      } else {
+        setSyncMessage({
+          type: 'success',
+          text: 'No new device names to sync from AdGuard Home',
+        });
+      }
+      // Auto-hide message after 5 seconds
+      setTimeout(() => setSyncMessage(null), 5000);
+    } catch {
+      setSyncMessage({
+        type: 'error',
+        text: 'Failed to sync device names. Is AdGuard Home configured?',
+      });
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
+
   const currentPageIds = data?.items?.map((d) => d.id) || [];
   const allCurrentSelected = currentPageIds.length > 0 && currentPageIds.every((id) => selectedDevices.has(id));
   const someCurrentSelected = currentPageIds.some((id) => selectedDevices.has(id));
@@ -236,6 +264,19 @@ export default function DevicesPage() {
               status: statusFilter || undefined,
             })}
           />
+          {canManage && (
+            <button
+              onClick={handleSync}
+              disabled={syncDevices.isPending}
+              className="btn-secondary"
+              title="Sync device names from AdGuard Home"
+            >
+              <Download
+                className={clsx('w-4 h-4 mr-2', syncDevices.isPending && 'animate-pulse')}
+              />
+              Sync Names
+            </button>
+          )}
           <button
             onClick={() => refetch()}
             disabled={isFetching}
@@ -248,6 +289,26 @@ export default function DevicesPage() {
           </button>
         </div>
       </div>
+
+      {/* Sync Message */}
+      {syncMessage && (
+        <div
+          className={clsx(
+            'p-3 rounded-lg border flex items-center justify-between',
+            syncMessage.type === 'success'
+              ? 'bg-success-50 dark:bg-success-900/20 border-success-200 dark:border-success-800 text-success-700 dark:text-success-300'
+              : 'bg-danger-50 dark:bg-danger-900/20 border-danger-200 dark:border-danger-800 text-danger-700 dark:text-danger-300'
+          )}
+        >
+          <span className="text-sm">{syncMessage.text}</span>
+          <button
+            onClick={() => setSyncMessage(null)}
+            className="text-current opacity-70 hover:opacity-100"
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">

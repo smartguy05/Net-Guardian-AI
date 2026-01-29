@@ -14,6 +14,7 @@ from app.api.v1.auth import get_current_user, require_operator
 from app.db.session import get_async_session
 from app.models.device import Device, DeviceStatus, DeviceType
 from app.models.user import User
+from app.services.device_sync_service import get_device_sync_service
 from app.services.export_service import (
     DEVICES_COLUMNS,
     DEVICES_HEADERS,
@@ -266,6 +267,22 @@ class BulkTagResponse(BaseModel):
     devices: list[DeviceResponse]
 
 
+class DeviceSyncRequest(BaseModel):
+    source: str = Field("adguard", description="Source to sync from (currently only 'adguard')")
+    overwrite_existing: bool = Field(
+        False, description="If true, overwrites existing hostnames"
+    )
+
+
+class DeviceSyncResponse(BaseModel):
+    success: bool
+    total_devices: int
+    updated_devices: int
+    skipped_devices: int
+    source: str
+    details: list[dict[str, str]]
+
+
 @router.get("/tags/all", response_model=TagsResponse)
 async def get_all_tags(
     session: Annotated[AsyncSession, Depends(get_async_session)],
@@ -331,6 +348,54 @@ async def bulk_tag_devices(
         updated_count=len(updated_devices),
         devices=[_device_to_response(d) for d in updated_devices],
     )
+
+
+@router.post("/sync", response_model=DeviceSyncResponse)
+async def sync_device_names(
+    request: DeviceSyncRequest,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _operator: Annotated[User, Depends(require_operator)],
+) -> DeviceSyncResponse:
+    """Sync device names from external sources like AdGuard Home.
+
+    This endpoint fetches device names from the specified source and updates
+    matching devices in the database. Devices are matched by IP address or
+    MAC address.
+
+    Currently supported sources:
+    - adguard: Syncs device names from AdGuard Home clients
+
+    Requires operator or admin role.
+    """
+    if request.source != "adguard":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported sync source: {request.source}. Supported: adguard",
+        )
+
+    try:
+        sync_service = get_device_sync_service()
+        result = await sync_service.sync_from_adguard(
+            session=session,
+            overwrite_existing=request.overwrite_existing,
+        )
+
+        # Commit the session since we passed it to the service
+        await session.commit()
+
+        return DeviceSyncResponse(
+            success=True,
+            total_devices=result.total_devices,
+            updated_devices=result.updated_devices,
+            skipped_devices=result.skipped_devices,
+            source=result.source,
+            details=result.details,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync devices: {str(e)}",
+        )
 
 
 # =============================================================================

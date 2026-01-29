@@ -44,7 +44,18 @@
       "Bash(uvicorn app.main:app:*)",
       "Bash(tasklist:*)",
       "Bash(alembic revision:*)",
-      "Bash(ruff check:*)"
+      "Bash(ruff check:*)",
+      "Bash(mypy:*)",
+      "Bash(python -m mypy:*)",
+      "Bash(python3 -m mypy:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(pip show:*)",
+      "Bash(pip3 show:*)",
+      "Bash(pip install mypy)",
+      "Bash(pip install:*)",
+      "Bash(source /home/anthony/Code/Net-Guardian-AI/backend/.venv/bin/activate)",
+      "Bash(/home/anthony/Code/Net-Guardian-AI/backend/.venv/bin/mypy:*)",
+      "Bash(.venv/bin/python:*)"
     ]
   }
 }

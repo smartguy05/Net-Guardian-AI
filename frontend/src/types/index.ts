@@ -75,6 +75,26 @@ export interface DeviceListResponse {
   total: number;
 }
 
+export interface DeviceSyncRequest {
+  source: string;
+  overwrite_existing: boolean;
+}
+
+export interface DeviceSyncResponse {
+  success: boolean;
+  total_devices: number;
+  updated_devices: number;
+  skipped_devices: number;
+  source: string;
+  details: Array<{
+    device_id: string;
+    mac_address: string;
+    old_hostname: string;
+    new_hostname: string;
+    matched_by: string;
+  }>;
+}
+
 // Event types
 export type EventType = 'dns' | 'firewall' | 'auth' | 'http' | 'system' | 'unknown';
 export type EventSeverity = 'debug' | 'info' | 'warning' | 'error' | 'critical';

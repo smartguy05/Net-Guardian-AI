@@ -204,3 +204,37 @@ Fixed 460 mypy strict type check errors across 50+ files:
 - 17 devices with varied types/statuses
 - 6 log sources (AdGuard, nginx, syslog-nas, NetFlow, sFlow, Loki)
 - 380+ events, 6 detection rules, 13 patterns, 6 irregular logs, 5 suggested rules
+
+---
+
+## AdGuard Device Name Sync (January 2026)
+
+**Feature**: Sync device names from AdGuard Home clients to NetGuardian devices
+
+**Backend**:
+- `backend/app/services/integrations/adguard.py`:
+  - `get_all_clients()`: Fetches both configured and auto-discovered clients
+  - `get_device_name_mapping()`: Returns IP/MAC to name mapping with normalized MACs
+- `backend/app/services/device_sync_service.py`:
+  - `DeviceSyncService.sync_from_adguard()`: Matches AdGuard clients to devices by IP/MAC
+  - Supports `overwrite_existing` flag to optionally replace existing hostnames
+  - Returns detailed sync results (total, updated, skipped, match details)
+- `backend/app/api/v1/devices.py`:
+  - POST `/api/v1/devices/sync` endpoint to trigger sync
+  - Requires operator role
+
+**Frontend**:
+- `frontend/src/types/index.ts`: DeviceSyncRequest and DeviceSyncResponse types
+- `frontend/src/api/hooks.ts`: useSyncDevices mutation hook
+- `frontend/src/pages/DevicesPage.tsx`: "Sync Names" button with success/error feedback
+
+**Tests**:
+- `tests/services/test_device_sync_service.py`: 6 tests for sync service
+- `tests/test_phase4_integrations.py`: 4 tests for new AdGuard methods
+- `tests/api/test_devices_api.py`: 4 tests for sync API endpoint
+
+**Documentation**:
+- `docs/user-guide.md`: Added "Sync Device Names from AdGuard Home" section
+- `frontend/src/content/helpContent.ts`: Added help section for Sync Names feature
+- `frontend/src/pages/DocsPage.tsx`: Added "Sync from AdGuard" subsection
+- `README.md`: Updated Device Inventory feature description

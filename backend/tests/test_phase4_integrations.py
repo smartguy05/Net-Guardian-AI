@@ -92,6 +92,120 @@ class TestAdGuardHomeService:
             assert result.action == ActionType.BLOCK_DEVICE
             assert "not enabled" in result.message.lower()
 
+    @pytest.mark.asyncio
+    async def test_get_all_clients_not_enabled(self):
+        """Test get_all_clients returns empty list when not enabled."""
+        with patch("app.services.integrations.adguard.settings") as mock_settings:
+            mock_settings.adguard_enabled = False
+            mock_settings.adguard_url = ""
+            mock_settings.adguard_username = ""
+            mock_settings.adguard_password = ""
+
+            service = AdGuardHomeService()
+            result = await service.get_all_clients()
+
+            assert result == []
+
+    @pytest.mark.asyncio
+    async def test_get_device_name_mapping_not_enabled(self):
+        """Test get_device_name_mapping returns empty dict when not enabled."""
+        with patch("app.services.integrations.adguard.settings") as mock_settings:
+            mock_settings.adguard_enabled = False
+            mock_settings.adguard_url = ""
+            mock_settings.adguard_username = ""
+            mock_settings.adguard_password = ""
+
+            service = AdGuardHomeService()
+            result = await service.get_device_name_mapping()
+
+            assert result == {}
+
+    @pytest.mark.asyncio
+    async def test_get_all_clients_processes_configured_and_auto(self):
+        """Test get_all_clients processes both configured and auto clients."""
+        from unittest.mock import AsyncMock
+
+        with patch("app.services.integrations.adguard.settings") as mock_settings:
+            mock_settings.adguard_enabled = True
+            mock_settings.adguard_url = "http://localhost:3000"
+            mock_settings.adguard_username = "admin"
+            mock_settings.adguard_password = "password"
+            mock_settings.adguard_verify_ssl = True
+
+            service = AdGuardHomeService()
+
+            # Mock _get_clients to return test data
+            mock_clients_data = {
+                "clients": [
+                    {
+                        "name": "Configured Device",
+                        "ids": ["192.168.1.100", "aa:bb:cc:dd:ee:01"],
+                        "tags": ["family"],
+                    }
+                ],
+                "auto_clients": [
+                    {
+                        "name": "Auto Device",
+                        "ip": "192.168.1.101",
+                        "whois_info": {},
+                    }
+                ],
+            }
+
+            service._get_clients = AsyncMock(return_value=mock_clients_data)
+
+            result = await service.get_all_clients()
+
+            assert len(result) == 2
+
+            # Check configured client
+            configured = next(c for c in result if c["source"] == "configured")
+            assert configured["name"] == "Configured Device"
+            assert "192.168.1.100" in configured["ids"]
+
+            # Check auto client
+            auto = next(c for c in result if c["source"] == "auto")
+            assert auto["name"] == "Auto Device"
+            assert "192.168.1.101" in auto["ids"]
+
+    @pytest.mark.asyncio
+    async def test_get_device_name_mapping_normalizes_mac(self):
+        """Test get_device_name_mapping normalizes MAC addresses."""
+        from unittest.mock import AsyncMock
+
+        with patch("app.services.integrations.adguard.settings") as mock_settings:
+            mock_settings.adguard_enabled = True
+            mock_settings.adguard_url = "http://localhost:3000"
+            mock_settings.adguard_username = "admin"
+            mock_settings.adguard_password = "password"
+            mock_settings.adguard_verify_ssl = True
+
+            service = AdGuardHomeService()
+
+            # Mock get_all_clients
+            mock_clients = [
+                {
+                    "name": "Device 1",
+                    "ids": ["AA-BB-CC-DD-EE-01", "192.168.1.100"],
+                    "source": "configured",
+                },
+                {
+                    "name": "Device 2",
+                    "ids": ["AA:BB:CC:DD:EE:02"],
+                    "source": "configured",
+                },
+            ]
+
+            service.get_all_clients = AsyncMock(return_value=mock_clients)
+
+            result = await service.get_device_name_mapping()
+
+            # MAC should be normalized (lowercase with colons)
+            assert result.get("aa:bb:cc:dd:ee:01") == "Device 1"
+            assert result.get("aa:bb:cc:dd:ee:02") == "Device 2"
+            # IP should be preserved
+            assert result.get("192.168.1.100") == "Device 1"
+
 
 class TestUniFiService:
     """Tests for UniFi Controller integration."""

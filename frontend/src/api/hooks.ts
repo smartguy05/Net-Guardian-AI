@@ -17,6 +17,7 @@ import type {
   DetectionRunResponse,
   Device,
   DeviceListResponse,
+  DeviceSyncResponse,
   EventListResponse,
   IncidentSummaryRequest,
   IncidentSummaryResponse,
@@ -365,6 +366,29 @@ export function useUpdateDevice() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['devices'] });
       queryClient.invalidateQueries({ queryKey: ['devices', variables.id] });
+    },
+  });
+}
+
+export function useSyncDevices() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      source = 'adguard',
+      overwriteExisting = false,
+    }: {
+      source?: string;
+      overwriteExisting?: boolean;
+    } = {}): Promise<DeviceSyncResponse> => {
+      const response = await apiClient.post('/devices/sync', {
+        source,
+        overwrite_existing: overwriteExisting,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['devices'] });
     },
   });
 }
