@@ -184,6 +184,19 @@ Fixed 460 mypy strict type check errors across 50+ files:
 
 ---
 
+## Log Source Edit Feature (January 2026)
+
+**Frontend**:
+- `EditSourceModal.tsx`: Full edit modal for log sources with source-type-specific config forms
+- `SourcesPage.tsx`: Added Edit button to SourceCard, integrated EditSourceModal
+- Supports editing: name, description, and configuration (URL, auth, poll interval, file path, UDP port/host)
+- Source type and parser type are displayed read-only (cannot be changed after creation)
+- Sensitive fields (password, API key, token) show placeholder - leave empty to keep existing value
+
+**Backend**: Already supported via PUT `/api/v1/sources/{source_id}` endpoint
+
+---
+
 ## Demo Data
 
 `backend/scripts/seed_demo_data.py`:

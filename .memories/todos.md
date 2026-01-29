@@ -153,6 +153,16 @@ Remaining tasks organized by priority.
 
 ---
 
+## Recent Additions (January 2026)
+
+### Log Source Edit Feature - COMPLETE
+- [x] EditSourceModal component with source-type-specific config forms
+- [x] Edit button added to SourceCard in SourcesPage
+- [x] Name, description, and configuration editing support
+- [x] Sensitive field handling (password, token placeholders)
+
+---
+
 ## Future Enhancements (Nice to Have)
 
 - [ ] Dashboard customization (drag-and-drop widgets)

@@ -8,6 +8,7 @@ import {
   PowerOff,
   Copy,
   Check,
+  Pencil,
 } from 'lucide-react';
 import { useSources, useUpdateSource, useDeleteSource } from '../api/hooks';
 import { useAuthStore } from '../stores/auth';
@@ -15,6 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import type { LogSource } from '../types';
 import AddSourceModal from '../components/AddSourceModal';
+import EditSourceModal from '../components/EditSourceModal';
 
 const sourceTypeLabels: Record<string, string> = {
   api_pull: 'API Pull',
@@ -22,7 +24,7 @@ const sourceTypeLabels: Record<string, string> = {
   api_push: 'API Push',
 };
 
-function SourceCard({ source }: { source: LogSource }) {
+function SourceCard({ source, onEdit }: { source: LogSource; onEdit: (source: LogSource) => void }) {
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === 'admin';
   const updateSource = useUpdateSource();
@@ -131,6 +133,13 @@ function SourceCard({ source }: { source: LogSource }) {
         {isAdmin && (
           <div className="flex flex-col gap-2">
             <button
+              onClick={() => onEdit(source)}
+              className="btn-secondary text-xs px-3 py-1.5"
+            >
+              <Pencil className="w-3 h-3 mr-1" />
+              Edit
+            </button>
+            <button
               onClick={handleToggle}
               disabled={updateSource.isPending}
               className={clsx(
@@ -171,6 +180,7 @@ export default function SourcesPage() {
   const user = useAuthStore((state) => state.user);
   const isAdmin = user?.role === 'admin';
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingSource, setEditingSource] = useState<LogSource | null>(null);
 
   const { data, isLoading, refetch, isFetching } = useSources();
 
@@ -235,7 +245,7 @@ export default function SourcesPage() {
           ))
         ) : data?.items.length ? (
           data.items.map((source) => (
-            <SourceCard key={source.id} source={source} />
+            <SourceCard key={source.id} source={source} onEdit={setEditingSource} />
           ))
         ) : (
           <div className="card p-12 text-center">
@@ -254,6 +264,13 @@ export default function SourcesPage() {
       <AddSourceModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+      />
+
+      {/* Edit Source Modal */}
+      <EditSourceModal
+        isOpen={editingSource !== null}
+        onClose={() => setEditingSource(null)}
+        source={editingSource}
       />
     </div>
   );
