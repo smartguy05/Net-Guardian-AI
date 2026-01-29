@@ -253,7 +253,7 @@ async def query_network(
     )
 
 
-@router.post("/chat")
+@router.post("/chat", response_model=None)
 async def chat(
     request: ChatRequest,
     session: Annotated[AsyncSession, Depends(get_async_session)],
