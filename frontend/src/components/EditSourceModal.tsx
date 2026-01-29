@@ -150,16 +150,12 @@ export default function EditSourceModal({ isOpen, onClose, source }: EditSourceM
     }
 
     // Validate custom parser config
+    // Note: We only check if pattern is provided, not regex syntax validity.
+    // Python regex syntax (e.g., (?P<name>...)) differs from JavaScript,
+    // so the backend will validate the pattern when the source is used.
     if (source?.parser_type === 'custom') {
       if (!customPattern.trim()) {
         newErrors.customPattern = 'Regex pattern is required for custom parser';
-      } else {
-        // Validate regex syntax
-        try {
-          new RegExp(customPattern);
-        } catch {
-          newErrors.customPattern = 'Invalid regular expression syntax';
-        }
       }
     }
 

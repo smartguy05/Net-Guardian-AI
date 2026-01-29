@@ -162,16 +162,12 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     }
 
     // Custom parser validation
+    // Note: We only check if pattern is provided, not regex syntax validity.
+    // Python regex syntax (e.g., (?P<name>...)) differs from JavaScript,
+    // so the backend will validate the pattern when the source is used.
     if (parserType === 'custom') {
       if (!customPattern.trim()) {
         newErrors.customPattern = 'Regex pattern is required for custom parser';
-      } else {
-        // Try to validate the regex
-        try {
-          new RegExp(customPattern);
-        } catch {
-          newErrors.customPattern = 'Invalid regex pattern';
-        }
       }
     }
 
