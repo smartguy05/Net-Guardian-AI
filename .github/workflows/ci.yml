@@ -207,7 +207,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./backend
-          file: ./deploy/Dockerfile.backend
+          file: ./backend/Dockerfile
           push: false
           tags: netguardian-backend:test
           cache-from: type=gha
@@ -217,7 +217,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
-          file: ./deploy/Dockerfile.frontend
+          file: ./frontend/Dockerfile
           push: false
           tags: netguardian-frontend:test
           cache-from: type=gha
