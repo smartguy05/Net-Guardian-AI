@@ -79,6 +79,7 @@ const sections: Section[] = [
       { id: 'devices-inventory', title: 'Device Inventory' },
       { id: 'devices-details', title: 'Device Details' },
       { id: 'devices-tagging', title: 'Tagging & Organization' },
+      { id: 'devices-sync', title: 'Sync from AdGuard' },
       { id: 'devices-baselines', title: 'Behavioral Baselines' },
     ],
   },
@@ -650,6 +651,27 @@ docker logs netguardian-backend | grep "Initial admin"`}</CodeBlock>
                 <li><strong>Remove Tags</strong> - Remove specific tags from a device</li>
                 <li><strong>Bulk Tagging</strong> - Select multiple devices and add/remove tags in bulk</li>
                 <li><strong>Filter by Tags</strong> - Click tags in the filter panel to show matching devices</li>
+              </ul>
+            </div>
+
+            <div id="devices-sync" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Sync from AdGuard Home</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                If you use AdGuard Home for DNS filtering, you can import device names to make your device list more readable.
+              </p>
+              <h3 className="text-lg font-medium mb-3">How to Sync</h3>
+              <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-400 mb-4">
+                <li>Click the <strong>"Sync Names"</strong> button on the Devices page</li>
+                <li>NetGuardian will fetch all clients from AdGuard Home</li>
+                <li>Devices are matched by IP address or MAC address</li>
+                <li>Names are applied to matching devices</li>
+              </ol>
+              <h3 className="text-lg font-medium mb-3">Important Notes</h3>
+              <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
+                <li>Only devices without existing names are updated (preserves manual names)</li>
+                <li>Requires AdGuard Home integration to be configured (<code className="text-sm bg-gray-100 dark:bg-zinc-700 px-1 rounded">ADGUARD_ENABLED=true</code>)</li>
+                <li>Both configured clients and auto-discovered clients in AdGuard are synced</li>
+                <li>Requires Operator or Admin role</li>
               </ul>
             </div>
 

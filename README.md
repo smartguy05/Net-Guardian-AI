@@ -21,7 +21,7 @@ All phases complete! The system provides comprehensive network security monitori
 
 ### Core Features
 - **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow), Grafana Loki, Authentik
-- **Device Inventory** - Auto-discovery with network topology visualization
+- **Device Inventory** - Auto-discovery, AdGuard name sync, network topology visualization
 - **Real-time Event Processing** - Redis Streams event bus with WebSocket updates
 - **Authentication & RBAC** - JWT tokens, 2FA (TOTP), Authentik SSO, admin/operator/viewer roles
 - **Dashboard** - Device list, event feed, alerts, stats overview

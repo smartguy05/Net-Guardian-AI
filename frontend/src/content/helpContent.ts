@@ -113,6 +113,18 @@ export const helpContent: Record<string, HelpContent> = {
           'Requires Operator or Admin role to manage quarantine',
         ],
       },
+      {
+        title: 'Sync Names from AdGuard',
+        description:
+          'Import device names from AdGuard Home to identify devices by their friendly names.',
+        tips: [
+          'Click "Sync Names" to pull device names from AdGuard Home',
+          'Devices are matched by IP address or MAC address',
+          'Only devices without names will be updated (existing names preserved)',
+          'Requires AdGuard Home integration to be configured',
+          'Requires Operator or Admin role',
+        ],
+      },
     ],
   },
 

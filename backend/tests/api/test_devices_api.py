@@ -849,3 +849,127 @@ class TestExportDevices:
 
         assert response.media_type == "application/pdf"
         mock_export.to_pdf.assert_called_once()
+
+
+class TestDeviceSync:
+    """Tests for device sync from external sources endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_sync_devices_success(self, mock_db_session, mock_current_user_operator):
+        """Should sync devices from AdGuard successfully."""
+        from app.api.v1.devices import DeviceSyncRequest, sync_device_names
+        from app.services.device_sync_service import DeviceSyncResult
+
+        mock_sync_result = DeviceSyncResult(
+            total_devices=10,
+            updated_devices=5,
+            skipped_devices=3,
+            source="adguard",
+            details=[
+                {
+                    "device_id": "123",
+                    "mac_address": "AA:BB:CC:DD:EE:01",
+                    "old_hostname": "(none)",
+                    "new_hostname": "Living Room TV",
+                    "matched_by": "ip:192.168.1.100",
+                }
+            ],
+        )
+
+        with patch("app.api.v1.devices.get_device_sync_service") as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.sync_from_adguard.return_value = mock_sync_result
+            mock_get_service.return_value = mock_service
+
+            request = DeviceSyncRequest(source="adguard", overwrite_existing=False)
+
+            response = await sync_device_names(
+                request=request,
+                session=mock_db_session,
+                _operator=mock_current_user_operator,
+            )
+
+            assert response.success is True
+            assert response.total_devices == 10
+            assert response.updated_devices == 5
+            assert response.skipped_devices == 3
+            assert response.source == "adguard"
+            assert len(response.details) == 1
+
+    @pytest.mark.asyncio
+    async def test_sync_devices_unsupported_source(
+        self, mock_db_session, mock_current_user_operator
+    ):
+        """Should reject unsupported sync source."""
+        from app.api.v1.devices import DeviceSyncRequest, sync_device_names
+
+        request = DeviceSyncRequest(source="unsupported", overwrite_existing=False)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await sync_device_names(
+                request=request,
+                session=mock_db_session,
+                _operator=mock_current_user_operator,
+            )
+
+        assert exc_info.value.status_code == 400
+        assert "unsupported" in exc_info.value.detail.lower()
+
+    @pytest.mark.asyncio
+    async def test_sync_devices_with_overwrite(
+        self, mock_db_session, mock_current_user_operator
+    ):
+        """Should pass overwrite_existing flag to service."""
+        from app.api.v1.devices import DeviceSyncRequest, sync_device_names
+        from app.services.device_sync_service import DeviceSyncResult
+
+        mock_sync_result = DeviceSyncResult(
+            total_devices=5,
+            updated_devices=5,
+            skipped_devices=0,
+            source="adguard",
+            details=[],
+        )
+
+        with patch("app.api.v1.devices.get_device_sync_service") as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.sync_from_adguard.return_value = mock_sync_result
+            mock_get_service.return_value = mock_service
+
+            request = DeviceSyncRequest(source="adguard", overwrite_existing=True)
+
+            await sync_device_names(
+                request=request,
+                session=mock_db_session,
+                _operator=mock_current_user_operator,
+            )
+
+            # Verify overwrite_existing was passed to service
+            mock_service.sync_from_adguard.assert_called_once_with(
+                session=mock_db_session,
+                overwrite_existing=True,
+            )
+
+    @pytest.mark.asyncio
+    async def test_sync_devices_error_handling(
+        self, mock_db_session, mock_current_user_operator
+    ):
+        """Should handle service errors gracefully."""
+        from app.api.v1.devices import DeviceSyncRequest, sync_device_names
+
+        with patch("app.api.v1.devices.get_device_sync_service") as mock_get_service:
+            mock_service = AsyncMock()
+            mock_service.sync_from_adguard.side_effect = Exception("Connection failed")
+            mock_get_service.return_value = mock_service
+
+            request = DeviceSyncRequest(source="adguard", overwrite_existing=False)
+
+            with pytest.raises(HTTPException) as exc_info:
+                await sync_device_names(
+                    request=request,
+                    session=mock_db_session,
+                    _operator=mock_current_user_operator,
+                )
+
+            assert exc_info.value.status_code == 500
+            assert "Connection failed" in exc_info.value.detail

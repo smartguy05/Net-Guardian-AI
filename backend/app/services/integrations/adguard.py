@@ -432,6 +432,91 @@ class AdGuardHomeService(IntegrationService):
             logger.error("Error getting blocked devices", error=str(e))
             return []
 
+    async def get_all_clients(self) -> list[dict[str, Any]]:
+        """Get all clients from AdGuard Home with their device info.
+
+        Returns a list of clients with their names and identifiers (MAC/IP).
+        This is used to sync device names from AdGuard Home to NetGuardian.
+
+        Returns:
+            List of client dicts with 'name', 'ids' (MAC/IP addresses),
+            and other client metadata.
+        """
+        if not self.is_enabled:
+            return []
+
+        try:
+            clients_data = await self._get_clients()
+            clients = clients_data.get("clients", [])
+
+            # Also get auto-discovered clients from runtime
+            auto_clients = clients_data.get("auto_clients", [])
+
+            result = []
+
+            # Process configured clients
+            for client in clients:
+                result.append(
+                    {
+                        "name": client.get("name"),
+                        "ids": client.get("ids", []),
+                        "tags": client.get("tags", []),
+                        "source": "configured",
+                    }
+                )
+
+            # Process auto-discovered clients (from DHCP/DNS)
+            for auto_client in auto_clients:
+                # Auto clients have different structure
+                whois_info = auto_client.get("whois_info", {})
+                name = auto_client.get("name") or whois_info.get("name")
+                ip = auto_client.get("ip")
+
+                if ip:
+                    result.append(
+                        {
+                            "name": name,
+                            "ids": [ip],
+                            "tags": [],
+                            "source": "auto",
+                        }
+                    )
+
+            return result
+
+        except Exception as e:
+            logger.error("Error getting all clients", error=str(e))
+            return []
+
+    async def get_device_name_mapping(self) -> dict[str, str]:
+        """Get a mapping of IP/MAC addresses to device names from AdGuard Home.
+
+        Returns:
+            Dict mapping identifier (IP or MAC) to device name.
+        """
+        if not self.is_enabled:
+            return {}
+
+        try:
+            clients = await self.get_all_clients()
+            mapping: dict[str, str] = {}
+
+            for client in clients:
+                name = client.get("name")
+                if not name:
+                    continue
+
+                for identifier in client.get("ids", []):
+                    # Normalize MAC addresses
+                    normalized_id = identifier.lower().replace("-", ":")
+                    mapping[normalized_id] = name
+
+            return mapping
+
+        except Exception as e:
+            logger.error("Error getting device name mapping", error=str(e))
+            return {}
+
 
 # Global service instance
 _adguard_service: AdGuardHomeService | None = None

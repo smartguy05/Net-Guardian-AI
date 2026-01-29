@@ -84,6 +84,21 @@ Quarantining blocks the device at:
 2. Click "Release" button
 3. Confirm the action
 
+### Sync Device Names from AdGuard Home
+
+If you use AdGuard Home for DNS filtering, you can import device names to make your device list more readable:
+
+1. Navigate to the Devices page
+2. Click the "Sync Names" button (requires Operator or Admin role)
+3. NetGuardian will fetch all clients from AdGuard Home
+4. Devices are matched by IP address or MAC address
+5. Names are applied to matching devices
+
+**Notes:**
+- Only devices without existing names are updated (preserves manual names)
+- Requires AdGuard Home integration to be configured (`ADGUARD_ENABLED=true`)
+- Both configured clients and auto-discovered clients in AdGuard are synced
+
 ## Events
 
 ### Event Feed
