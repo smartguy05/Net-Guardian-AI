@@ -12,10 +12,35 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.auth import require_admin
 from app.collectors.registry import CollectorRegistry, get_collector
 from app.db.session import get_async_session
+from app.events.bus import get_event_bus
 from app.models.log_source import LogSource, ParserType, SourceType
 from app.models.user import User
 
 logger = structlog.get_logger()
+
+
+async def _publish_source_event(event_type: str, source_id: str) -> None:
+    """Publish a source change event to notify the collector service."""
+    try:
+        event_bus = await get_event_bus()
+        await event_bus.publish_system_event(
+            event_type,
+            {"source_id": source_id},
+        )
+        logger.info(
+            "source_event_published",
+            event_type=event_type,
+            source_id=source_id,
+        )
+    except Exception as e:
+        # Don't fail the API request if event publishing fails
+        logger.warning(
+            "source_event_publish_failed",
+            event_type=event_type,
+            source_id=source_id,
+            error=str(e),
+        )
+
 
 router = APIRouter()
 
@@ -145,6 +170,9 @@ async def create_source(
     await session.commit()
     await session.refresh(source)
 
+    # Notify collector service of new source
+    await _publish_source_event("source_created", source.id)
+
     return _source_to_response(source)
 
 
@@ -198,6 +226,9 @@ async def update_source(
     await session.commit()
     await session.refresh(source)
 
+    # Notify collector service of source update
+    await _publish_source_event("source_updated", source.id)
+
     return _source_to_response(source)
 
 
@@ -216,6 +247,9 @@ async def delete_source(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Log source not found",
         )
+
+    # Notify collector service before deleting (so it can stop the collector)
+    await _publish_source_event("source_deleted", source_id)
 
     await session.delete(source)
     await session.commit()

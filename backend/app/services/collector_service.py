@@ -96,6 +96,9 @@ class CollectorService:
         self._semantic_queue: asyncio.Queue[RawEvent] = asyncio.Queue(maxsize=SEMANTIC_QUEUE_SIZE)
         self._semantic_task: asyncio.Task[None] | None = None
 
+        # System event consumer for source changes
+        self._system_event_task: asyncio.Task[None] | None = None
+
     async def start(self) -> None:
         """Start the collector service."""
         if self._running:
@@ -108,6 +111,14 @@ class CollectorService:
 
         # Start semantic analysis background task
         self._semantic_task = asyncio.create_task(self._semantic_analysis_worker())
+
+        # Start system event consumer for source changes
+        self._system_event_task = self._event_bus.start_consumer(
+            EventBus.STREAM_SYSTEM,
+            "collector_service",
+            "collector_worker",
+            self._handle_source_event,
+        )
 
         # Load and start all enabled sources
         await self._load_sources()
@@ -135,6 +146,15 @@ class CollectorService:
             except asyncio.CancelledError:
                 pass
             self._semantic_task = None
+
+        # Stop system event consumer
+        if self._system_event_task:
+            self._system_event_task.cancel()
+            try:
+                await self._system_event_task
+            except asyncio.CancelledError:
+                pass
+            self._system_event_task = None
 
         # Clear caches
         self._device_cache.clear()
@@ -528,6 +548,52 @@ class CollectorService:
                 await asyncio.sleep(1)
 
         logger.info("semantic_analysis_worker_stopped")
+
+    async def _handle_source_event(
+        self, event_type: str, message_id: str, data: dict[str, Any]
+    ) -> None:
+        """Handle source change events from the API.
+
+        Args:
+            event_type: Type of event (source_created, source_updated, source_deleted)
+            message_id: Redis message ID
+            data: Event data containing source_id
+        """
+        source_id = data.get("source_id")
+        if not source_id:
+            logger.warning(
+                "source_event_missing_id",
+                event_type=event_type,
+                message_id=message_id,
+            )
+            return
+
+        logger.info(
+            "source_event_received",
+            event_type=event_type,
+            source_id=source_id,
+        )
+
+        try:
+            if event_type == "source_created":
+                await self.add_source(source_id)
+            elif event_type == "source_updated":
+                await self.reload_source(source_id)
+            elif event_type == "source_deleted":
+                await self.remove_source(source_id)
+            else:
+                logger.debug(
+                    "source_event_ignored",
+                    event_type=event_type,
+                    source_id=source_id,
+                )
+        except Exception as e:
+            logger.error(
+                "source_event_handler_error",
+                event_type=event_type,
+                source_id=source_id,
+                error=str(e),
+            )
 
     async def reload_source(self, source_id: str) -> None:
         """Reload a source configuration."""
