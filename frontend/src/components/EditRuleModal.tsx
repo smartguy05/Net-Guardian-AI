@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useUpdateRule, useRuleFields } from '../api/hooks';
 import type { DetectionRule, RuleCondition, RuleAction, AlertSeverity } from '../types';
+import ValueCombobox from './ValueCombobox';
 
 const OPERATORS = [
   { value: 'eq', label: 'equals' },
@@ -299,12 +300,12 @@ export default function EditRuleModal({ rule, onClose }: EditRuleModalProps) {
                       ))}
                     </select>
 
-                    <input
-                      type="text"
+                    <ValueCombobox
+                      fieldName={condition.field}
                       value={String(condition.value)}
-                      onChange={(e) => updateCondition(index, { value: e.target.value })}
+                      onChange={(value) => updateCondition(index, { value })}
                       placeholder="Value..."
-                      className="input py-1.5 text-sm flex-1"
+                      className="flex-1"
                     />
 
                     <button

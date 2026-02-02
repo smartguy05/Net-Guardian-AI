@@ -457,6 +457,33 @@ Fixed 460 mypy strict type check errors across 50+ files:
 
 ---
 
+## Detection Rule Value Combobox (February 2026)
+
+**Feature**: Detection rule value field now shows a dropdown with values from existing event data, while still allowing free text entry.
+
+**Backend** (`backend/app/api/v1/rules.py`):
+- Added `FieldValuesResponse` Pydantic model
+- Added `_FIELD_COLUMN_MAP` mapping field names to RawEvent columns
+- New endpoint `GET /rules/fields/{field_name}/values`:
+  - Returns distinct non-null values for the specified field
+  - Supports optional `search` query param for prefix filtering
+  - Supports `limit` param (default 100, max 500)
+  - Maps field names: event_type, severity, source_ip, dest_ip, domain, port, protocol, action, query_type, response_status, blocked_reason, parser_type
+
+**Frontend**:
+- `frontend/src/components/ValueCombobox.tsx`: New combobox component
+  - Fetches suggestions via `useFieldValues` hook when field is selected
+  - Shows loading state while fetching
+  - Filters suggestions as user types
+  - Allows selecting from dropdown or entering custom text
+  - Click-outside closes dropdown and commits value
+  - Keyboard navigation (Escape, ArrowDown, Enter)
+- `frontend/src/api/hooks.ts`: Added `useFieldValues` hook with 30s cache
+- `frontend/src/components/CreateRuleModal.tsx`: Uses ValueCombobox for condition value
+- `frontend/src/components/EditRuleModal.tsx`: Uses ValueCombobox for condition value
+
+---
+
 ## CenturyLink C4000XG Router Integration (February 2026)
 
 **Feature**: Device blocking via C4000XG modem/router's parental control (Access Scheduler) feature

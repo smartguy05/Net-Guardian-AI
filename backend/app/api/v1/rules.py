@@ -5,14 +5,14 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import String, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin
 from app.db.session import get_async_session
 from app.models.alert import AlertSeverity
 from app.models.detection_rule import DetectionRule
-from app.models.raw_event import EventType
+from app.models.raw_event import EventType, RawEvent
 from app.models.user import User
 
 router = APIRouter()
@@ -178,6 +178,14 @@ class ConditionFieldInfo(BaseModel):
     description: str
     type: str
     example_values: list[str] | None = None
+
+
+class FieldValuesResponse(BaseModel):
+    """Response containing distinct field values."""
+
+    field: str
+    values: list[str]
+    total: int
 
 
 # --- Helper Functions ---
@@ -401,6 +409,65 @@ async def get_condition_fields(
             type="string",
         ),
     ]
+
+
+# Field name to database column mapping
+_FIELD_COLUMN_MAP: dict[str, Any] = {
+    "event_type": RawEvent.event_type,
+    "severity": RawEvent.severity,
+    "source_ip": RawEvent.client_ip,
+    "dest_ip": RawEvent.target_ip,
+    "domain": RawEvent.domain,
+    "port": RawEvent.port,
+    "protocol": RawEvent.protocol,
+    "action": RawEvent.action,
+    "query_type": RawEvent.query_type,
+    "response_status": RawEvent.response_status,
+    "blocked_reason": RawEvent.blocked_reason,
+    "parser_type": RawEvent.source_id,  # source_id contains parser info
+}
+
+
+@router.get("/fields/{field_name}/values", response_model=FieldValuesResponse)
+async def get_field_values(
+    field_name: str,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    _current_user: Annotated[User, Depends(get_current_user)],
+    search: str | None = Query(None, description="Filter values by prefix"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum values to return"),
+) -> FieldValuesResponse:
+    """Get distinct values for a specific field from event data.
+
+    Returns values found in the events database that can be used for rule conditions.
+    Supports optional search filtering to narrow down results.
+    """
+    if field_name not in _FIELD_COLUMN_MAP:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Field '{field_name}' is not queryable. Available fields: {', '.join(_FIELD_COLUMN_MAP.keys())}",
+        )
+
+    column = _FIELD_COLUMN_MAP[field_name]
+
+    # Build query for distinct non-null values
+    query = select(func.distinct(column)).where(column.isnot(None))
+
+    # Apply search filter if provided
+    if search:
+        # Cast to string for enum columns and apply ilike
+        query = query.where(func.cast(column, String).ilike(f"{search}%"))
+
+    # Order and limit
+    query = query.order_by(func.cast(column, String)).limit(limit)
+
+    result = await session.execute(query)
+    values = [str(v) for v in result.scalars().all()]
+
+    return FieldValuesResponse(
+        field=field_name,
+        values=values,
+        total=len(values),
+    )
 
 
 @router.get("/{rule_id}", response_model=RuleResponse)

@@ -1751,6 +1751,26 @@ export function useTestRule() {
   });
 }
 
+export interface FieldValuesResponse {
+  field: string;
+  values: string[];
+  total: number;
+}
+
+export function useFieldValues(fieldName: string, search?: string) {
+  return useQuery({
+    queryKey: ['rules', 'fields', fieldName, 'values', search],
+    queryFn: async (): Promise<FieldValuesResponse> => {
+      const params: Record<string, string> = {};
+      if (search) params.search = search;
+      const response = await apiClient.get(`/rules/fields/${fieldName}/values`, { params });
+      return response.data;
+    },
+    enabled: !!fieldName,
+    staleTime: 30000, // Cache for 30 seconds
+  });
+}
+
 // Threat Intelligence hooks
 import type {
   ThreatIntelFeed,
