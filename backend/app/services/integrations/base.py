@@ -14,6 +14,7 @@ class IntegrationType(Enum):
     PFSENSE = "pfsense"
     OPNSENSE = "opnsense"
     SSH = "ssh"
+    C4000XG = "c4000xg"
 
 
 class ActionType(Enum):

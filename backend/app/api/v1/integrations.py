@@ -9,6 +9,7 @@ from app.api.v1.auth import get_current_user, require_admin
 from app.config import settings
 from app.models.user import User
 from app.services.integrations.adguard import get_adguard_service
+from app.services.integrations.c4000xg import get_c4000xg_service
 from app.services.integrations.pfsense import get_pfsense_service
 from app.services.integrations.unifi import get_unifi_service
 
@@ -158,11 +159,26 @@ async def test_router_connection(
             details=result.details or {},
             error=result.error,
         )
+    elif router_type == "c4000xg":
+        c4000xg_service = get_c4000xg_service()
+        if not c4000xg_service.is_configured:
+            return TestConnectionResponse(
+                success=False,
+                message="C4000XG is not configured",
+                error="Missing URL, username, or password in configuration",
+            )
+        result = await c4000xg_service.test_connection()
+        return TestConnectionResponse(
+            success=result.success,
+            message=result.message,
+            details=result.details or {},
+            error=result.error,
+        )
     else:
         return TestConnectionResponse(
             success=False,
             message=f"Unknown router integration type: {router_type}",
-            error="Supported types: unifi, pfsense, opnsense",
+            error="Supported types: unifi, pfsense, opnsense, c4000xg",
         )
 
 
@@ -187,6 +203,11 @@ async def get_router_blocked_devices(
         if not pfsense_service.is_enabled:
             return []
         return await pfsense_service.get_blocked_devices()
+    elif router_type == "c4000xg":
+        c4000xg_service = get_c4000xg_service()
+        if not c4000xg_service.is_enabled:
+            return []
+        return await c4000xg_service.get_blocked_devices()
     else:
         return []
 

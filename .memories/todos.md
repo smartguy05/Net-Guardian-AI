@@ -174,6 +174,17 @@ Remaining tasks organized by priority.
 
 ---
 
+## Router Integrations (COMPLETE)
+
+### CenturyLink C4000XG - COMPLETE
+- [x] Research C4000XG API (CGI-based, session auth, parental control for blocking)
+- [x] C4000XGService implementation (block/unblock via parental control rules)
+- [x] Quarantine service integration (auto-detect c4000xg router type)
+- [x] API endpoints for testing and listing blocked devices
+- [x] Unit tests (44 tests)
+
+---
+
 ## Future Enhancements (Nice to Have)
 
 - [ ] Dashboard customization (drag-and-drop widgets)
