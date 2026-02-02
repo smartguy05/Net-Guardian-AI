@@ -57,7 +57,9 @@
       "Bash(/home/anthony/Code/Net-Guardian-AI/backend/.venv/bin/mypy:*)",
       "Bash(.venv/bin/python:*)",
       "Bash(python3 -m pytest:*)",
-      "Bash(pytest:*)"
+      "Bash(pytest:*)",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:www.centurylink.com)"
     ]
   }
 }

@@ -338,6 +338,86 @@ curl -X POST http://localhost:8000/api/v1/sources \
 | nginx | Nginx access and error logs |
 | custom | Regex-based custom format |
 
+## Threat Intelligence Feeds
+
+NetGuardian can ingest threat intelligence feeds to enrich event analysis and detect known malicious indicators.
+
+### Adding Feeds
+
+1. Navigate to **Threat Intel > Feeds**
+2. Click **Add Feed**
+3. Configure the feed URL, type, and authentication
+4. Set the update interval
+
+### Free Public Feeds
+
+These feeds are free and require no authentication:
+
+| Feed | URL | Type | Update Interval |
+|------|-----|------|-----------------|
+| Abuse.ch URLhaus | `https://urlhaus.abuse.ch/downloads/csv_recent/` | CSV | 6 hours |
+| Feodo Tracker C2 IPs | `https://feodotracker.abuse.ch/downloads/ipblocklist.txt` | IP List | 12 hours |
+| Abuse.ch SSL Blacklist | `https://sslbl.abuse.ch/blacklist/sslipblacklist.txt` | IP List | 12 hours |
+| ThreatFox IOCs | `https://threatfox.abuse.ch/export/json/recent/` | JSON | 6 hours |
+| Spamhaus DROP | `https://www.spamhaus.org/drop/drop.txt` | IP List | 24 hours |
+| CINSscore Bad IPs | `https://cinsscore.com/list/ci-badguys.txt` | IP List | 24 hours |
+
+### Feeds Requiring Free Registration
+
+| Feed | URL | Type | Notes |
+|------|-----|------|-------|
+| PhishTank | `https://data.phishtank.com/data/online-valid.json` | JSON | Requires free API key |
+| AlienVault OTX | `https://otx.alienvault.com/` | JSON | Requires free account |
+
+### Supported Feed Types
+
+| Type | Description | Example |
+|------|-------------|---------|
+| `IP_LIST` | Plain text, one IP or CIDR per line | Feodo Tracker, Spamhaus |
+| `URL_LIST` | One URL or domain per line | Domain blocklists |
+| `CSV` | Comma-separated with configurable column mapping | URLhaus |
+| `JSON` | JSON with configurable field mapping and array path | ThreatFox, PhishTank |
+
+### Field Mapping (CSV)
+
+For CSV feeds, configure which columns contain the data:
+
+```json
+{
+  "value_column": 2,
+  "type_column": 3,
+  "severity_column": null,
+  "default_type": "url",
+  "default_severity": "high",
+  "skip_header": true
+}
+```
+
+### Field Mapping (JSON)
+
+For JSON feeds, configure the path to the data array and field names:
+
+```json
+{
+  "array_path": "data.indicators",
+  "value_field": "ioc",
+  "type_field": "ioc_type",
+  "severity_field": "threat_level",
+  "default_type": "domain",
+  "default_severity": "medium"
+}
+```
+
+### Indicator Types
+
+NetGuardian supports these indicator types:
+- **IP** - IPv4/IPv6 addresses
+- **CIDR** - IP ranges (e.g., `192.168.1.0/24`)
+- **Domain** - Domain names
+- **URL** - Full URLs
+- **Hash (MD5/SHA1/SHA256)** - File hashes
+- **Email** - Email addresses
+
 ## Development
 
 ### Development Scripts

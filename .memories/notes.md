@@ -1243,3 +1243,19 @@ echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/
 **Connection test shows:**
 - For directories: "Directory is readable: /path (N files match 'pattern')"
 - For files: "File is readable: /path" (unchanged behavior)
+
+---
+
+## Known Bugs
+
+### ThreatIntelService.fetch_feed - Unbound Variable Bug (February 2026)
+
+**Issue:** When `fetch_feed` raises an exception early (before `content` is defined), the exception handler references `content` causing `UnboundLocalError: cannot access local variable 'content' where it is not associated with a value`.
+
+**Location:** `backend/app/services/threat_intel_service.py` - `_fetch_feed_content()` method
+
+**Discovered by:** Test `test_fetch_feed_error_handling` which mocks HTTP response to raise an exception.
+
+**Fix needed:** Move `content` initialization before the try block or handle the case where `content` is undefined in the exception handler.
+
+**Status:** Known bug, not yet fixed. Test demonstrates the issue.

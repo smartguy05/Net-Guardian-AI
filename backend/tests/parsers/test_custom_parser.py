@@ -682,3 +682,179 @@ class TestIPv6Support:
         results = parser.parse(f"{ipv6_full} Request")
 
         assert results[0].client_ip == ipv6_full
+
+
+class TestMultilineContentField:
+    """Tests for multiline log entry support with continuation lines."""
+
+    def test_multiline_content_field_appends_continuation(self):
+        """Should append continuation lines to the specified field."""
+        config = {
+            "pattern": r"^(?P<timestamp>\S+) (?P<level>\w+) (?P<message>.*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        # Simulates a log entry with stack trace - passed as list item (pre-grouped by file collector)
+        entry = "2024-06-15T10:00:00 ERROR Something failed\n    at com.example.Class.method(Class.java:42)\n    at com.example.Main.main(Main.java:10)"
+
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        assert "Something failed" in results[0].parsed_fields["message"]
+        assert "at com.example.Class.method" in results[0].parsed_fields["message"]
+        assert "at com.example.Main.main" in results[0].parsed_fields["message"]
+
+    def test_multiline_preserves_raw_message(self):
+        """Should preserve full entry in raw_message."""
+        config = {
+            "pattern": r"^(?P<timestamp>\S+) (?P<message>.*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        entry = "2024-06-15T10:00:00 First line\nSecond line\nThird line"
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        assert results[0].raw_message == entry
+        assert "Second line" in results[0].raw_message
+        assert "Third line" in results[0].raw_message
+
+    def test_multiline_without_config_creates_separate_entries(self):
+        """Without multiline config, should create separate entries per line."""
+        config = {
+            "pattern": r"^(?P<message>.*)$",
+        }
+        parser = CustomParser(config)
+
+        # Without multiline_content_field, newlines split into separate entries
+        entry = "Line 1\nLine 2\nLine 3"
+        results = parser.parse(entry)
+
+        assert len(results) == 3
+        assert results[0].raw_message == "Line 1"
+        assert results[1].raw_message == "Line 2"
+        assert results[2].raw_message == "Line 3"
+
+    def test_multiline_with_empty_continuation(self):
+        """Should handle entries where continuation is empty."""
+        config = {
+            "pattern": r"^(?P<timestamp>\S+) (?P<message>.*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        # Entry with only first line (no continuation) - passed as list item
+        entry = "2024-06-15T10:00:00 Just a single line message"
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        assert results[0].parsed_fields["message"] == "Just a single line message"
+
+    def test_multiline_home_assistant_format(self):
+        """Should parse Home Assistant log format with stack traces."""
+        config = {
+            "pattern": r"^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) (?P<level>\w+) \((?P<component>[^)]+)\) \[(?P<module>[^\]]+)\] (?P<message>.*)$",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S.%f",
+            "severity_field": "level",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        entry = "2024-06-15 10:30:45.123456 ERROR (MainThread) [homeassistant.components.sensor] Error fetching data\nTraceback (most recent call last):\n  File \"/config/custom_components/test.py\", line 42\n    return await self.fetch()\nConnectionError: Failed to connect"
+
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        assert results[0].parsed_fields["component"] == "MainThread"
+        assert results[0].parsed_fields["module"] == "homeassistant.components.sensor"
+        assert "Error fetching data" in results[0].parsed_fields["message"]
+        assert "Traceback" in results[0].parsed_fields["message"]
+        assert "ConnectionError" in results[0].parsed_fields["message"]
+        assert results[0].severity == EventSeverity.ERROR
+
+    def test_multiline_field_appends_to_existing_value(self):
+        """Should append continuation to existing field value."""
+        config = {
+            "pattern": r"^(?P<message>Error: .*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        entry = "Error: Something went wrong\nDetails: More info here"
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        assert results[0].parsed_fields["message"] == "Error: Something went wrong\nDetails: More info here"
+
+    def test_multiline_field_creates_when_empty(self):
+        """Should create field with continuation if first line match is empty."""
+        config = {
+            "pattern": r"^(?P<timestamp>\S+)(?P<message>)$",  # message group matches empty
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        entry = "2024-06-15\nContinuation text"
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        # When message field is empty, continuation becomes the value
+        assert results[0].parsed_fields["message"] == "Continuation text"
+
+    def test_multiline_preserves_indentation(self):
+        """Should preserve indentation in continuation lines."""
+        config = {
+            "pattern": r"^(?P<message>.*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        entry = "First line\n    indented line\n        more indented"
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        # Note: The entry is treated as one log entry with embedded newlines
+        # The continuation should preserve the indentation
+        assert "    indented line" in results[0].parsed_fields["message"]
+        assert "        more indented" in results[0].parsed_fields["message"]
+
+    def test_multiline_multiple_entries(self):
+        """Should handle multiple multiline entries passed as a list."""
+        config = {
+            "pattern": r"^(?P<timestamp>\S+) (?P<message>.*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        # Two separate log entries (each pre-combined by file collector)
+        entries = [
+            "2024-06-15T10:00:00 First error\n  Stack trace 1",
+            "2024-06-15T10:00:01 Second error\n  Stack trace 2",
+        ]
+        results = parser.parse(entries)
+
+        assert len(results) == 2
+        assert "First error" in results[0].parsed_fields["message"]
+        assert "Stack trace 1" in results[0].parsed_fields["message"]
+        assert "Second error" in results[1].parsed_fields["message"]
+        assert "Stack trace 2" in results[1].parsed_fields["message"]
+
+    def test_multiline_regex_only_matches_first_line(self):
+        """Should only match regex against first line, not continuation."""
+        config = {
+            # Pattern that would fail if matched against full entry (has $ anchor)
+            # The $ anchor ensures we only match to end of first line
+            "pattern": r"^(?P<timestamp>\d{4}-\d{2}-\d{2}) (?P<level>\w+): (?P<message>.*)$",
+            "multiline_content_field": "message",
+        }
+        parser = CustomParser(config)
+
+        entry = "2024-06-15 ERROR: Main message\nThis line has: colons and stuff"
+        results = parser.parse([entry])  # Pass as list item
+
+        assert len(results) == 1
+        assert results[0].parsed_fields["level"] == "ERROR"
+        assert "Main message" in results[0].parsed_fields["message"]
+        assert "This line has" in results[0].parsed_fields["message"]

@@ -448,7 +448,7 @@ export default function QuarantinePage() {
             </table>
           </div>
           <div className="p-3 border-t border-gray-200 dark:border-zinc-700 text-center">
-            <Link to="/audit" className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+            <Link to="/dashboard/audit" className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
               View all audit logs
             </Link>
           </div>

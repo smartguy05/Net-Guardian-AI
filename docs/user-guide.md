@@ -575,6 +575,209 @@ Detected threats appear in the events feed with:
 - Detected patterns
 - Recommended actions
 
+## Threat Intelligence
+
+### Overview
+
+Threat Intelligence allows you to import feeds of known malicious indicators (IPs, domains, URLs, hashes) and correlate them against your network traffic. When a device communicates with a known threat, NetGuardian can alert you or take automated action.
+
+### Threat Intel Page
+
+Access via **Threat Intel** in the sidebar. The page has three tabs:
+
+**Feeds Tab:**
+- Lists all configured threat intelligence feeds
+- Shows feed status (last fetch time, indicator count, errors)
+- Actions: Enable/disable, fetch now, edit, delete
+
+**Indicators Tab:**
+- Search and browse all threat indicators
+- Filter by type (IP, domain, URL, hash), severity, or feed
+- View hit counts (how often an indicator was matched)
+
+**Stats Tab:**
+- Overview of threat intelligence coverage
+- Indicators by type and severity
+- Recent hit statistics
+
+### Adding a Threat Intelligence Feed
+
+1. Go to **Threat Intel > Feeds**
+2. Click **Add Feed**
+3. Configure:
+   - **Name:** Descriptive name for the feed
+   - **URL:** Feed download URL
+   - **Feed Type:** Format of the feed (see below)
+   - **Update Interval:** How often to refresh (hours)
+   - **Authentication:** None, API key, Bearer token, or Basic auth
+
+### Feed Types
+
+| Type | Description | When to Use |
+|------|-------------|-------------|
+| IP List | Plain text, one IP/CIDR per line | Simple blocklists like Spamhaus |
+| URL List | One URL or domain per line | Domain/URL blocklists |
+| CSV | Comma-separated values | Feeds like URLhaus with multiple columns |
+| JSON | JSON format | API-based feeds like ThreatFox |
+
+### Free Public Feeds
+
+These feeds require no registration:
+
+| Feed | URL | Type |
+|------|-----|------|
+| **Abuse.ch URLhaus** | `https://urlhaus.abuse.ch/downloads/csv_recent/` | CSV |
+| **Feodo Tracker C2** | `https://feodotracker.abuse.ch/downloads/ipblocklist.txt` | IP List |
+| **SSL Blacklist** | `https://sslbl.abuse.ch/blacklist/sslipblacklist.txt` | IP List |
+| **ThreatFox IOCs** | `https://threatfox.abuse.ch/export/json/recent/` | JSON |
+| **Spamhaus DROP** | `https://www.spamhaus.org/drop/drop.txt` | IP List |
+| **CINSscore** | `https://cinsscore.com/list/ci-badguys.txt` | IP List |
+
+### Feeds Requiring Registration
+
+| Feed | URL | Notes |
+|------|-----|-------|
+| **PhishTank** | `https://data.phishtank.com/data/online-valid.json` | Free API key required |
+| **AlienVault OTX** | `https://otx.alienvault.com/` | Free account required |
+
+### Configuring CSV Feeds
+
+For CSV feeds like URLhaus, configure field mapping to tell NetGuardian which columns contain the data:
+
+**Field Mapping Options:**
+- **value_column:** Column index containing the indicator (0-based)
+- **type_column:** Column index for indicator type (optional)
+- **severity_column:** Column index for severity (optional)
+- **default_type:** Default type if not in feed (ip, domain, url)
+- **default_severity:** Default severity (low, medium, high, critical)
+- **skip_header:** Skip first row if it's a header (default: true)
+
+**Example for URLhaus:**
+```json
+{
+  "value_column": 2,
+  "default_type": "url",
+  "default_severity": "high",
+  "skip_header": true
+}
+```
+
+### Configuring JSON Feeds
+
+For JSON feeds, configure the path to the data and field names:
+
+**Field Mapping Options:**
+- **array_path:** Path to the indicator array (e.g., `data.indicators`)
+- **value_field:** Field name for the indicator value
+- **type_field:** Field name for indicator type
+- **severity_field:** Field name for severity
+- **confidence_field:** Field name for confidence score
+
+**Example for ThreatFox:**
+```json
+{
+  "array_path": "data",
+  "value_field": "ioc",
+  "type_field": "ioc_type",
+  "severity_field": "threat_level_name",
+  "default_confidence": 80
+}
+```
+
+### Authentication Options
+
+**None:** For public feeds with no authentication.
+
+**API Key:** Adds a custom header with your API key.
+```json
+{
+  "header": "X-API-Key",
+  "key": "your-api-key-here"
+}
+```
+
+**Bearer Token:** Adds Authorization: Bearer header.
+```json
+{
+  "token": "your-bearer-token"
+}
+```
+
+**Basic Auth:** Username/password authentication.
+```json
+{
+  "username": "user",
+  "password": "pass"
+}
+```
+
+### Indicator Types
+
+NetGuardian recognizes these indicator types:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| IP | IPv4 or IPv6 address | `185.220.101.1` |
+| CIDR | IP range | `192.168.1.0/24` |
+| Domain | Domain name | `malware.evil.com` |
+| URL | Full URL | `http://evil.com/payload.exe` |
+| Hash (MD5) | MD5 file hash | `d41d8cd98f00b204...` |
+| Hash (SHA1) | SHA1 file hash | `da39a3ee5e6b4b0d...` |
+| Hash (SHA256) | SHA256 file hash | `e3b0c44298fc1c14...` |
+| Email | Email address | `attacker@malicious.com` |
+
+### Checking Indicators
+
+**Manual Lookup:**
+1. Go to **Threat Intel > Indicators**
+2. Enter an IP, domain, or URL in the search box
+3. View matching indicators and their sources
+
+**Automatic Matching:**
+- Events are automatically checked against threat indicators
+- Matches increment the indicator's hit count
+- High-severity matches can trigger alerts via playbooks
+
+### Using Threat Intel with Playbooks
+
+Create a playbook to respond to threat intel matches:
+
+```
+Trigger: Event matches threat indicator with severity >= high
+Actions:
+  1. Create alert with severity: high
+  2. Quarantine device
+  3. Send webhook notification
+```
+
+### Refreshing Feeds
+
+**Manual Refresh:**
+1. Go to **Threat Intel > Feeds**
+2. Click the refresh icon next to a feed
+3. Wait for fetch to complete
+
+**Automatic Refresh:**
+Feeds are automatically updated based on their configured interval.
+
+### Troubleshooting Feeds
+
+**Feed Fetch Failed:**
+- Check the URL is accessible
+- Verify authentication credentials
+- Check the feed status message for specific errors
+- Review backend logs for detailed error information
+
+**No Indicators Imported:**
+- Verify field mapping matches the feed format
+- Check if feed content is in expected format
+- Try downloading the feed URL manually to inspect format
+
+**Indicators Not Matching:**
+- Verify the indicator type matches your events
+- Check indicator is not expired (if feed includes expiry)
+- Ensure the feed is enabled
+
 ## Best Practices
 
 ### Security

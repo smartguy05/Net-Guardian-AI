@@ -290,3 +290,144 @@ Fixed 460 mypy strict type check errors across 50+ files:
 **Tests** (`backend/tests/collectors/test_file_collector.py`):
 - 17 new tests for directory watching mode
 - Tests for: directory mode detection, glob pattern matching, multi-file reading, position tracking, file creation/deletion handling, connection testing
+
+---
+
+## Multi-line Log Support (February 2026)
+
+**Feature**: Added multi-line log support to File Watcher Collector for logs with stack traces
+
+**Backend - File Collector** (`backend/app/collectors/file_collector.py`):
+- Added `multiline_start_pattern` config option (regex pattern marking start of new log entry)
+- Added `_line_buffers: dict[Path, list[str]]` for per-file line buffering
+- Added `_multiline_pattern: re.Pattern` compiled regex for efficiency
+- Modified `_read_lines_from_file()` to handle buffering:
+  - Lines matching start pattern flush the previous buffer and start a new entry
+  - Lines not matching are appended to the current buffer as continuation lines
+  - Continuation lines are joined with newlines into the final log entry
+  - Buffers are preserved between reads for incomplete entries
+- Clean up buffers in `_on_file_deleted()` and `stop()`
+
+**Backend - Custom Parser** (`backend/app/parsers/custom_parser.py`):
+- Added `multiline_content_field` parser config option
+- Modified `parse()` to split multi-line entries into first line + continuation
+- Regex matches first line only (since `.*` doesn't cross newlines)
+- If `multiline_content_field` is set, continuation lines are appended to that field
+- Full entry preserved in `raw_message`
+
+**Frontend**:
+- `AddSourceModal.tsx`:
+  - Added "Multiline Start Pattern" input field for file_watch sources
+  - Added "Multiline Content Field" input field for custom parser config
+- `EditSourceModal.tsx`: Same fields, loads from source config
+
+**File Watcher Config Schema**:
+```json
+{
+  "path": "/var/log/myapp/app.log",
+  "follow": true,
+  "multiline_start_pattern": "^\\d{4}-\\d{2}-\\d{2}"
+}
+```
+
+**Custom Parser Config Schema**:
+```json
+{
+  "pattern": "(?P<timestamp>...) (?P<level>...) (?P<message>.*)",
+  "severity_field": "level",
+  "multiline_content_field": "message"
+}
+```
+
+**Use Case**: Home Assistant logs with stack traces - the timestamp pattern marks where each log entry starts, continuation lines (stack traces) are appended to the `message` field.
+
+---
+
+## Threat Intelligence Feed Documentation (February 2026)
+
+**README.md**:
+- Added "Threat Intelligence Feeds" section with comprehensive feed documentation
+- Listed 6 free public feeds (Abuse.ch URLhaus, Feodo Tracker, SSL Blacklist, ThreatFox, Spamhaus DROP, CINSscore)
+- Listed 2 feeds requiring registration (PhishTank, AlienVault OTX)
+- Documented feed types (IP_LIST, URL_LIST, CSV, JSON)
+- Added field mapping examples for CSV and JSON feeds
+- Listed supported indicator types (IP, CIDR, Domain, URL, Hash, Email)
+
+**docs/user-guide.md**:
+- Added comprehensive "Threat Intelligence" section after Ollama Monitoring
+- Documented Threat Intel page tabs (Feeds, Indicators, Stats)
+- Step-by-step guide for adding feeds with all feed types explained
+- Complete field mapping documentation for CSV and JSON feeds
+- Authentication options (None, API Key, Bearer, Basic)
+- Indicator lookup and automatic matching explanation
+- Playbook integration for automated threat response
+- Troubleshooting section for common feed issues
+
+**frontend/src/content/helpContent.ts**:
+- Enhanced `/dashboard/threat-intel` help panel with 3 new sections:
+  - "Free Public Feeds": Lists 6 free feeds with URLs and types
+  - "Feed Types": Explains IP List, URL List, CSV, JSON formats
+  - "Indicator Types": Documents IP, CIDR, Domain, URL, Hash, Email types
+
+---
+
+## Dark Mode Fix - Device Detail Page (February 2026)
+
+**Issue**: Device detail page and Edit Device modal had poor contrast in dark mode.
+
+**Fixed in `frontend/src/pages/DeviceDetailPage.tsx`**:
+- EditDeviceForm modal: Added `dark:bg-zinc-800`, `dark:border-zinc-700`, `dark:text-white` and dark hover states
+- Form labels (Hostname, Device Type, Tags): Added `dark:text-gray-300`
+- Device info card labels: Added `dark:text-gray-400` to all header labels
+- Device info card values: Added `dark:text-white` to all value text
+- IP address badges: Added `dark:bg-zinc-700` and `dark:text-gray-200`
+
+---
+
+## Audit Logs Page (February 2026)
+
+**Issue**: "View all audit logs" link on Quarantine page led to blank page - no AuditPage existed.
+
+**Implementation**:
+- `frontend/src/pages/AuditPage.tsx`: New page with:
+  - Header with title, entry count, export and refresh buttons
+  - Filters: Action type dropdown (14 action types), target type dropdown (7 types), success/fail filter
+  - Table: Timestamp, Action (badge), User, Target (type + name), Description, Status (success/fail icons)
+  - Pagination with page size options
+  - Empty state with helpful message
+  - CSV/PDF export using existing `exportAuditCSV`/`exportAuditPDF` functions
+- `frontend/src/App.tsx`: Added AuditPage import and `/dashboard/audit` route
+- `frontend/src/pages/QuarantinePage.tsx`: Fixed link from `/audit` to `/dashboard/audit`
+
+---
+
+## Test Suite Fixes - Comprehensive Coverage Tests (February 2026)
+
+**Issue**: After creating comprehensive tests for low-coverage areas, 23 tests were failing due to API changes and implementation differences.
+
+**Tests Fixed**:
+
+1. **test_quarantine_service.py** (11 IntegrationResult fixes):
+   - Imported `ActionType` from integrations base
+   - Changed all `action="block"` to `action=ActionType.BLOCK`
+   - Changed all `action="unblock"` to `action=ActionType.UNBLOCK`
+   - Added required `message` parameter to all `IntegrationResult` instances
+
+2. **test_custom_parser.py** (12 multiline test fixes):
+   - Changed multiline tests to pass entries as list items (`parser.parse([entry])`)
+   - Parser splits string input on newlines first (line 144), so multiline entries with embedded newlines must be passed as list items where each item is one complete entry
+   - Fixed regex pattern in `test_multiline_regex_only_matches_first_line` from `[^\\n]*` to `.*`
+
+3. **test_threat_intel_service.py** (1 stats test fix):
+   - Added 16th mock result (was 15) to match the number of queries in `get_stats()`:
+     - 3 queries: total_feeds, enabled_feeds, total_indicators
+     - 8 queries: one for each IndicatorType
+     - 4 queries: one for each severity level
+     - 1 query: recent_hits
+
+4. **test_file_collector.py** (3 multiline test fixes):
+   - Added trigger entries to flush multiline buffers
+   - Multiline buffering keeps last entry in buffer until a new entry arrives (correct streaming behavior)
+   - Tests: `test_read_lines_multiline_buffering`, `test_read_lines_multiline_preserves_order`, `test_multiline_directory_mode`
+
+**Result**: 1118 tests passed, 1 pre-existing test failing (reveals actual bug in ThreatIntelService.fetch_feed)

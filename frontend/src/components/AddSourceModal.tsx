@@ -76,6 +76,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
   const [watchDirectory, setWatchDirectory] = useState(false);
   const [filePattern, setFilePattern] = useState('*.log');
   const [readFromEnd, setReadFromEnd] = useState(true);
+  const [multilineStartPattern, setMultilineStartPattern] = useState('');
 
   // UDP Listen config
   const [udpPort, setUdpPort] = useState(5514);
@@ -86,6 +87,7 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
   const [customTimestampField, setCustomTimestampField] = useState('timestamp');
   const [customTimestampFormat, setCustomTimestampFormat] = useState('');
   const [customSeverityField, setCustomSeverityField] = useState('level');
+  const [multilineContentField, setMultilineContentField] = useState('');
 
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -107,12 +109,14 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
     setWatchDirectory(false);
     setFilePattern('*.log');
     setReadFromEnd(true);
+    setMultilineStartPattern('');
     setUdpPort(5514);
     setUdpHost('0.0.0.0');
     setCustomPattern('');
     setCustomTimestampField('timestamp');
     setCustomTimestampFormat('');
     setCustomSeverityField('level');
+    setMultilineContentField('');
     setErrors({});
   };
 
@@ -217,6 +221,9 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
       if (watchDirectory && filePattern.trim()) {
         config.file_pattern = filePattern;
       }
+      if (multilineStartPattern.trim()) {
+        config.multiline_start_pattern = multilineStartPattern;
+      }
       return config;
     }
 
@@ -244,6 +251,9 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
       }
       if (customSeverityField.trim()) {
         config.severity_field = customSeverityField;
+      }
+      if (multilineContentField.trim()) {
+        config.multiline_content_field = multilineContentField;
       }
       return config;
     }
@@ -597,6 +607,22 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                         </p>
                       </div>
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Multiline Start Pattern <span className="text-gray-400 dark:text-gray-500">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={multilineStartPattern}
+                        onChange={(e) => setMultilineStartPattern(e.target.value)}
+                        placeholder="^\d{4}-\d{2}-\d{2}"
+                        className="input font-mono text-sm"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Regex to detect the start of a new log entry. Lines not matching are joined to the previous entry (useful for stack traces).
+                      </p>
+                    </div>
                   </>
                 )}
 
@@ -737,6 +763,22 @@ export default function AddSourceModal({ isOpen, onClose }: AddSourceModalProps)
                       />
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                         Python strptime format. Leave empty for auto-detection. Example: %Y-%m-%d %H:%M:%S.%f
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Multiline Content Field <span className="text-gray-400 dark:text-gray-500">(optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={multilineContentField}
+                        onChange={(e) => setMultilineContentField(e.target.value)}
+                        placeholder="message"
+                        className="input w-48"
+                      />
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        For multi-line logs (with stack traces): append continuation lines to this field. Use with Multiline Start Pattern in File Watch config.
                       </p>
                     </div>
 

@@ -362,7 +362,7 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/threat-intel': {
     title: 'Threat Intelligence',
     overview:
-      'Manage threat intelligence feeds, look up indicators, and maintain local indicator lists for detection.',
+      'Manage threat intelligence feeds, look up indicators, and correlate network traffic against known threats.',
     sections: [
       {
         title: 'Feeds Tab',
@@ -373,6 +373,30 @@ export const helpContent: Record<string, HelpContent> = {
           'Toggle feeds to enable/disable indicator matching',
           'Sync button manually refreshes feed data',
           'Delete feeds you no longer need',
+        ],
+      },
+      {
+        title: 'Free Public Feeds',
+        description:
+          'These feeds are free and require no registration. Add them via the Feeds tab.',
+        tips: [
+          'Abuse.ch URLhaus: urlhaus.abuse.ch/downloads/csv_recent/ (CSV)',
+          'Feodo Tracker C2: feodotracker.abuse.ch/downloads/ipblocklist.txt (IP List)',
+          'SSL Blacklist: sslbl.abuse.ch/blacklist/sslipblacklist.txt (IP List)',
+          'ThreatFox IOCs: threatfox.abuse.ch/export/json/recent/ (JSON)',
+          'Spamhaus DROP: spamhaus.org/drop/drop.txt (IP List)',
+          'CINSscore: cinsscore.com/list/ci-badguys.txt (IP List)',
+        ],
+      },
+      {
+        title: 'Feed Types',
+        description:
+          'Select the correct feed type when adding a new feed.',
+        tips: [
+          'IP List: Plain text with one IP or CIDR per line',
+          'URL List: One URL or domain per line',
+          'CSV: Comma-separated values (configure column mapping)',
+          'JSON: JSON format (configure field mapping and array path)',
         ],
       },
       {
@@ -394,6 +418,19 @@ export const helpContent: Record<string, HelpContent> = {
           'Add indicators manually based on incident investigations',
           'Local indicators have highest priority in matching',
           'Edit or delete indicators as threats evolve',
+        ],
+      },
+      {
+        title: 'Indicator Types',
+        description:
+          'NetGuardian supports these indicator types for threat matching.',
+        tips: [
+          'IP: IPv4 or IPv6 addresses',
+          'CIDR: IP ranges (e.g., 192.168.1.0/24)',
+          'Domain: Domain names',
+          'URL: Full URLs including path',
+          'Hash: MD5, SHA1, or SHA256 file hashes',
+          'Email: Email addresses',
         ],
       },
     ],

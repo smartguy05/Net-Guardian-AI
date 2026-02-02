@@ -96,12 +96,12 @@ function EditDeviceForm({
           className="fixed inset-0 bg-gray-900/50 transition-opacity"
           onClick={onClose}
         />
-        <div className="relative w-full max-w-md bg-white rounded-xl shadow-xl">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Edit Device</h2>
+        <div className="relative w-full max-w-md bg-white dark:bg-zinc-800 rounded-xl shadow-xl">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Device</h2>
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-700"
             >
               <X className="w-5 h-5" />
             </button>
@@ -109,7 +109,7 @@ function EditDeviceForm({
 
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Hostname
               </label>
               <input
@@ -122,7 +122,7 @@ function EditDeviceForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Device Type
               </label>
               <select
@@ -139,7 +139,7 @@ function EditDeviceForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Tags (comma-separated)
               </label>
               <input
@@ -697,7 +697,7 @@ export default function DeviceDetailPage() {
 
           <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Status</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
               <span
                 className={clsx(
                   'inline-flex mt-1 px-3 py-1 rounded-full text-sm font-medium',
@@ -709,54 +709,54 @@ export default function DeviceDetailPage() {
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Device Type</h3>
-              <p className="mt-1 text-gray-900 capitalize">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Device Type</h3>
+              <p className="mt-1 text-gray-900 dark:text-white capitalize">
                 {device.device_type || 'Unknown'}
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Manufacturer</h3>
-              <p className="mt-1 text-gray-900">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Manufacturer</h3>
+              <p className="mt-1 text-gray-900 dark:text-white">
                 {device.manufacturer || 'Unknown'}
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">IP Addresses</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">IP Addresses</h3>
               <div className="mt-1 flex flex-wrap gap-1">
                 {device.ip_addresses.length > 0 ? (
                   device.ip_addresses.map((ip) => (
                     <span
                       key={ip}
-                      className="px-2 py-0.5 bg-gray-100 rounded text-sm font-mono"
+                      className="px-2 py-0.5 bg-gray-100 dark:bg-zinc-700 rounded text-sm font-mono dark:text-gray-200"
                     >
                       {ip}
                     </span>
                   ))
                 ) : (
-                  <span className="text-gray-500">No IPs recorded</span>
+                  <span className="text-gray-500 dark:text-gray-400">No IPs recorded</span>
                 )}
               </div>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">First Seen</h3>
-              <p className="mt-1 text-gray-900">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">First Seen</h3>
+              <p className="mt-1 text-gray-900 dark:text-white">
                 {format(new Date(device.first_seen), 'MMM d, yyyy HH:mm')}
               </p>
             </div>
 
             <div>
-              <h3 className="text-sm font-medium text-gray-500">Last Seen</h3>
-              <p className="mt-1 text-gray-900">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Seen</h3>
+              <p className="mt-1 text-gray-900 dark:text-white">
                 {formatDistanceToNow(new Date(device.last_seen), { addSuffix: true })}
               </p>
             </div>
 
             {device.profile_tags.length > 0 && (
               <div className="md:col-span-3">
-                <h3 className="text-sm font-medium text-gray-500">Tags</h3>
+                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Tags</h3>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {device.profile_tags.map((tag) => (
                     <span

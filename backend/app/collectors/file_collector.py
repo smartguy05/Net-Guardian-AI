@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import fnmatch
 import os
+import re
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import TYPE_CHECKING, TextIO
@@ -94,6 +95,10 @@ class FileWatchCollector(BaseCollector):
         encoding: File encoding (default: utf-8)
         read_from_end: Start reading from end of file (default: True)
         batch_size: Number of lines to read at once (default: 100)
+        multiline_start_pattern: Regex pattern that marks the start of a new log entry.
+            When set, lines not matching this pattern are treated as continuation lines
+            and appended to the previous log entry. Useful for logs with stack traces.
+            Example: "^\\d{4}-\\d{2}-\\d{2}" matches lines starting with a date.
 
     When path is a directory:
         - Use file_pattern to filter which files to watch (e.g., "*.log", "app-*.log")
@@ -112,10 +117,25 @@ class FileWatchCollector(BaseCollector):
         self._file_handles: dict[Path, TextIO] = {}
         self._file_positions: dict[Path, int] = {}
         self._modified_files: set[Path] = set()
+        # Multi-line log buffering per file
+        self._line_buffers: dict[Path, list[str]] = {}
         self._event_queue: asyncio.Queue[ParseResult] = asyncio.Queue()
         self._loop: asyncio.AbstractEventLoop | None = None
         self._read_task: asyncio.Task[None] | None = None
         self._file_modified = asyncio.Event()
+        # Compile multiline pattern if configured
+        self._multiline_pattern: re.Pattern[str] | None = None
+        multiline_start = self.config.get("multiline_start_pattern")
+        if multiline_start:
+            try:
+                self._multiline_pattern = re.compile(multiline_start)
+            except re.error as e:
+                logger.error(
+                    "invalid_multiline_pattern",
+                    source_id=source.id,
+                    pattern=multiline_start,
+                    error=str(e),
+                )
 
     @property
     def file_path(self) -> Path:
@@ -138,6 +158,12 @@ class FileWatchCollector(BaseCollector):
         """Get the file encoding."""
         encoding: str = self.config.get("encoding", "utf-8")
         return encoding
+
+    @property
+    def multiline_start_pattern(self) -> str | None:
+        """Get the regex pattern that marks the start of a new log entry."""
+        pattern: str | None = self.config.get("multiline_start_pattern")
+        return pattern
 
     # Backward compatibility properties for single-file mode
     @property
@@ -188,6 +214,7 @@ class FileWatchCollector(BaseCollector):
                 pass
             del self._file_handles[path]
             self._file_positions.pop(path, None)
+            self._line_buffers.pop(path, None)
             self._modified_files.discard(path)
 
     def _scan_directory(self) -> list[Path]:
@@ -261,12 +288,17 @@ class FileWatchCollector(BaseCollector):
             self._open_single_file(path)
 
     def _read_lines_from_file(self, path: Path) -> list[str]:
-        """Read new lines from a specific file."""
+        """Read new lines from a specific file.
+
+        If multiline_start_pattern is configured, lines are buffered until
+        a new log entry starts. Continuation lines (not matching the start
+        pattern) are joined with newlines to the previous entry.
+        """
         if path not in self._file_handles:
             return []
 
         file_handle = self._file_handles[path]
-        lines = []
+        raw_lines: list[str] = []
         batch_size = self.config.get("batch_size", 100)
 
         try:
@@ -279,7 +311,7 @@ class FileWatchCollector(BaseCollector):
                 line = file_handle.readline()
                 if not line:
                     break
-                lines.append(line.rstrip("\n\r"))
+                raw_lines.append(line.rstrip("\n\r"))
 
             # Update position
             self._file_positions[path] = file_handle.tell()
@@ -291,8 +323,41 @@ class FileWatchCollector(BaseCollector):
                 path=str(path),
                 error=str(e),
             )
+            return []
 
-        return lines
+        # If no multiline pattern, return lines as-is
+        if self._multiline_pattern is None:
+            return raw_lines
+
+        # Handle multiline buffering
+        complete_entries: list[str] = []
+
+        # Get or initialize buffer for this file
+        if path not in self._line_buffers:
+            self._line_buffers[path] = []
+        buffer = self._line_buffers[path]
+
+        for line in raw_lines:
+            if self._multiline_pattern.match(line):
+                # This line starts a new log entry
+                if buffer:
+                    # Emit the previous buffered entry
+                    complete_entries.append("\n".join(buffer))
+                # Start new buffer with this line
+                buffer = [line]
+            else:
+                # Continuation line - append to current buffer
+                if buffer:
+                    buffer.append(line)
+                else:
+                    # Orphan continuation line (no start line yet)
+                    # Include it as its own entry to avoid data loss
+                    complete_entries.append(line)
+
+        # Save buffer for next read (may contain incomplete entry)
+        self._line_buffers[path] = buffer
+
+        return complete_entries
 
     def _read_new_lines(self) -> list[str]:
         """Read any new lines from all tracked files."""
@@ -446,6 +511,7 @@ class FileWatchCollector(BaseCollector):
                 pass
         self._file_handles.clear()
         self._file_positions.clear()
+        self._line_buffers.clear()
         self._modified_files.clear()
 
         logger.info("file_watch_collector_stopped", source_id=self.source_id)

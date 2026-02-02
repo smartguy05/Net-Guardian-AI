@@ -742,3 +742,285 @@ class TestFileEventHandlerPatternMatching:
             # Should not match other patterns
             assert handler._matches_pattern(f"{temp_dir}/error.log") is False
             assert handler._matches_pattern(f"{temp_dir}/app.log") is False
+
+
+class TestFileWatchCollectorMultiline:
+    """Tests for multiline log entry support."""
+
+    def test_multiline_pattern_property(self):
+        """Test multiline_start_pattern config property."""
+        source = create_mock_source(
+            config={"path": "/test", "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}"}
+        )
+        collector = FileWatchCollector(source, MagicMock())
+
+        assert collector._multiline_pattern is not None
+        assert collector._multiline_pattern.match("2024-06-15")
+
+    def test_multiline_pattern_not_set(self):
+        """Test that multiline_pattern is None when not configured."""
+        source = create_mock_source(config={"path": "/test"})
+        collector = FileWatchCollector(source, MagicMock())
+
+        assert collector._multiline_pattern is None
+
+    def test_multiline_buffers_initialized(self):
+        """Test that line buffers are initialized."""
+        source = create_mock_source(
+            config={"path": "/test", "multiline_start_pattern": r"^\d{4}"}
+        )
+        collector = FileWatchCollector(source, MagicMock())
+
+        assert hasattr(collector, "_line_buffers")
+        assert isinstance(collector._line_buffers, dict)
+
+    def test_read_lines_multiline_buffering(self):
+        """Test that multiline entries are buffered correctly."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            # Write multiline log entries
+            # Note: Last entry needs a "trigger" entry to flush it from buffer
+            f.write("2024-06-15 10:00:00 First entry\n")
+            f.write("  Continuation of first entry\n")
+            f.write("2024-06-15 10:00:01 Second entry\n")
+            f.write("2024-06-15 10:00:02 Trigger entry\n")  # Triggers flush of second entry
+            temp_path = f.name
+
+        try:
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            collector._open_file()
+            lines = collector._read_new_lines()
+
+            # Should get 2 complete entries (trigger entry stays buffered)
+            assert len(lines) == 2
+            assert "First entry" in lines[0]
+            assert "Continuation of first entry" in lines[0]
+            assert "Second entry" in lines[1]
+        finally:
+            if collector._file_handle:
+                collector._file_handle.close()
+            os.unlink(temp_path)
+
+    def test_read_lines_multiline_preserves_order(self):
+        """Test that multiline entries preserve line order."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            f.write("2024-01-01 Entry 1\n")
+            f.write("  Stack trace line 1\n")
+            f.write("  Stack trace line 2\n")
+            f.write("2024-01-02 Entry 2\n")
+            f.write("2024-01-03 Trigger\n")  # Triggers flush of Entry 2
+            temp_path = f.name
+
+        try:
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            collector._open_file()
+            lines = collector._read_new_lines()
+
+            assert len(lines) == 2
+            # First entry should have both stack trace lines
+            assert "Stack trace line 1" in lines[0]
+            assert "Stack trace line 2" in lines[0]
+            # Verify order is preserved
+            assert lines[0].index("line 1") < lines[0].index("line 2")
+        finally:
+            if collector._file_handle:
+                collector._file_handle.close()
+            os.unlink(temp_path)
+
+    def test_read_lines_without_multiline(self):
+        """Test normal line reading when multiline not configured."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            f.write("Line 1\n")
+            f.write("Line 2\n")
+            f.write("Line 3\n")
+            temp_path = f.name
+
+        try:
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                    # No multiline_start_pattern
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            collector._open_file()
+            lines = collector._read_new_lines()
+
+            # Should get each line separately
+            assert len(lines) == 3
+            assert lines[0] == "Line 1"
+            assert lines[1] == "Line 2"
+            assert lines[2] == "Line 3"
+        finally:
+            if collector._file_handle:
+                collector._file_handle.close()
+            os.unlink(temp_path)
+
+    def test_read_lines_multiline_incomplete_entry(self):
+        """Test that incomplete multiline entries stay buffered."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            # Write one complete entry and start of another
+            f.write("2024-01-01 Complete entry\n")
+            f.write("2024-01-02 Incomplete entry\n")
+            temp_path = f.name
+
+        try:
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "read_from_end": False,
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            collector._open_file()
+            lines = collector._read_new_lines()
+
+            # First read should return the complete entry, second stays buffered
+            assert len(lines) == 1
+            assert "Complete entry" in lines[0]
+
+            # Now add more to the file
+            with open(temp_path, "a") as f:
+                f.write("  Continuation\n")
+                f.write("2024-01-03 Third entry\n")
+
+            lines = collector._read_new_lines()
+
+            # Should now get the previously buffered entry with continuation
+            assert len(lines) == 1
+            assert "Incomplete entry" in lines[0]
+            assert "Continuation" in lines[0]
+        finally:
+            if collector._file_handle:
+                collector._file_handle.close()
+            os.unlink(temp_path)
+
+    def test_multiline_directory_mode(self):
+        """Test multiline buffering in directory mode."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file1 = Path(temp_dir) / "app1.log"
+            # Add trigger entry to flush the second entry from buffer
+            file1.write_text("2024-01-01 Entry in file 1\n  Continuation\n2024-01-02 Second\n2024-01-03 Trigger\n")
+
+            source = create_mock_source(
+                config={
+                    "path": temp_dir,
+                    "file_pattern": "*.log",
+                    "read_from_end": False,
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            collector._open_file()
+            lines = collector._read_new_lines()
+
+            # Should get 2 complete entries (trigger stays buffered)
+            assert len(lines) == 2
+            assert "Entry in file 1" in lines[0]
+            assert "Continuation" in lines[0]
+            assert "Second" in lines[1]
+
+            # Clean up
+            for handle in collector._file_handles.values():
+                handle.close()
+
+    def test_multiline_buffers_per_file(self):
+        """Test that each file has its own buffer in directory mode."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file1 = Path(temp_dir) / "app1.log"
+            file2 = Path(temp_dir) / "app2.log"
+            file1.write_text("2024-01-01 Entry from file 1\n")
+            file2.write_text("2024-01-01 Entry from file 2\n")
+
+            source = create_mock_source(
+                config={
+                    "path": temp_dir,
+                    "file_pattern": "*.log",
+                    "read_from_end": False,
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            collector._open_file()
+            _ = collector._read_new_lines()
+
+            # Each file should have its own buffer entry
+            assert len(collector._line_buffers) == 2
+            assert file1 in collector._line_buffers
+            assert file2 in collector._line_buffers
+
+            # Clean up
+            for handle in collector._file_handles.values():
+                handle.close()
+
+    @pytest.mark.asyncio
+    async def test_stop_clears_multiline_buffers(self):
+        """Test that stop clears multiline buffers."""
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            f.write("2024-01-01 Test entry\n")
+            temp_path = f.name
+
+        try:
+            source = create_mock_source(
+                config={
+                    "path": temp_path,
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            await collector.start()
+            assert collector._line_buffers is not None
+
+            await collector.stop()
+            assert len(collector._line_buffers) == 0
+        finally:
+            os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_file_deleted_clears_buffer(self):
+        """Test that file deletion clears its buffer."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            file1 = Path(temp_dir) / "app1.log"
+            file1.write_text("2024-01-01 Entry\n")
+
+            source = create_mock_source(
+                config={
+                    "path": temp_dir,
+                    "file_pattern": "*.log",
+                    "multiline_start_pattern": r"^\d{4}-\d{2}-\d{2}",
+                }
+            )
+            collector = FileWatchCollector(source, MagicMock())
+
+            await collector.start()
+            # Read to populate buffer
+            collector._read_new_lines()
+            assert file1 in collector._line_buffers
+
+            # Simulate file deletion
+            await collector._on_file_deleted(file1)
+            assert file1 not in collector._line_buffers
+
+            await collector.stop()

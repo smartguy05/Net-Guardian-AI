@@ -26,6 +26,9 @@ class CustomParser(BaseParser):
         severity_field: Name of capture group for severity
         severity_map: Map of severity strings to EventSeverity values
         field_map: Map of ParseResult fields to capture group names
+        multiline_content_field: Field name to append continuation lines to (e.g., "message").
+            When set and the input contains newlines after the first line, appends them
+            to this field. Useful with file watcher's multiline_start_pattern.
     """
 
     DEFAULT_SEVERITY_MAP = {
@@ -66,6 +69,8 @@ class CustomParser(BaseParser):
             **self.config.get("severity_map", {}),
         }
         self.field_map = self.config.get("field_map", {})
+        # For multi-line log support: append continuation lines to this field
+        self.multiline_content_field = self.config.get("multiline_content_field")
 
     def _parse_timestamp(self, value: str | None) -> datetime:
         """Parse timestamp string to datetime."""
@@ -126,7 +131,12 @@ class CustomParser(BaseParser):
         return groups.get(field)
 
     def parse(self, raw_data: Any) -> list[ParseResult]:
-        """Parse log lines using configured regex patterns."""
+        """Parse log lines using configured regex patterns.
+
+        For multi-line entries (containing newlines), the regex is matched against
+        the first line. If multiline_content_field is configured, continuation
+        lines are appended to that field.
+        """
         results = []
 
         # Handle string or list input
@@ -137,15 +147,25 @@ class CustomParser(BaseParser):
         else:
             lines = [str(raw_data)]
 
-        for line in lines:
-            line = line.strip()
-            if not line:
+        for entry in lines:
+            entry = entry.strip()
+            if not entry:
                 continue
 
-            # Try each pattern until one matches
+            # Split entry into first line and continuation lines
+            # This handles multi-line log entries (e.g., with stack traces)
+            if "\n" in entry:
+                first_line, continuation = entry.split("\n", 1)
+                first_line = first_line.strip()
+                continuation = continuation.rstrip()
+            else:
+                first_line = entry
+                continuation = None
+
+            # Try each pattern until one matches (against first line only)
             matched = False
             for pattern in self.patterns:
-                match = pattern.match(line)
+                match = pattern.match(first_line)
                 if match:
                     try:
                         groups = match.groupdict()
@@ -154,8 +174,15 @@ class CustomParser(BaseParser):
                         timestamp_str = groups.get(self.timestamp_field)
                         timestamp = self._parse_timestamp(timestamp_str)
 
-                        # Get message (available for custom use cases)
-                        _message = groups.get("message", line)
+                        # Append continuation lines to specified field if configured
+                        if continuation and self.multiline_content_field:
+                            field_value = groups.get(self.multiline_content_field, "")
+                            if field_value:
+                                groups[self.multiline_content_field] = (
+                                    f"{field_value}\n{continuation}"
+                                )
+                            else:
+                                groups[self.multiline_content_field] = continuation
 
                         # Get optional integer fields
                         port = self._map_field(groups, "port")
@@ -169,7 +196,7 @@ class CustomParser(BaseParser):
                             timestamp=timestamp,
                             event_type=self.default_event_type,
                             severity=self._get_severity(groups),
-                            raw_message=line,
+                            raw_message=entry,  # Full entry including continuation
                             client_ip=self._map_field(groups, "client_ip"),
                             target_ip=self._map_field(groups, "target_ip"),
                             domain=self._map_field(groups, "domain"),
@@ -187,7 +214,7 @@ class CustomParser(BaseParser):
                         logger.warning(
                             "custom_parse_error",
                             error=str(e),
-                            line=line[:200],
+                            line=first_line[:200],
                         )
 
             if not matched:
@@ -196,8 +223,8 @@ class CustomParser(BaseParser):
                     timestamp=datetime.now(UTC),
                     event_type=self.default_event_type,
                     severity=EventSeverity.INFO,
-                    raw_message=line,
-                    parsed_fields={"message": line},
+                    raw_message=entry,
+                    parsed_fields={"message": entry},
                 )
                 results.append(result)
 
