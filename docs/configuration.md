@@ -301,7 +301,7 @@ Enable device quarantine via router firewall rules.
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ROUTER_INTEGRATION_TYPE` | string | `` | Router type: `unifi`, `pfsense`, `opnsense`, `ssh` |
+| `ROUTER_INTEGRATION_TYPE` | string | `` | Router type: `unifi`, `pfsense`, `opnsense`, `c4000xg`, `ssh` |
 | `ROUTER_URL` | string | `` | Router management URL |
 | `ROUTER_USERNAME` | string | `` | Router admin username |
 | `ROUTER_PASSWORD` | string | `` | Router admin password |
@@ -326,6 +326,18 @@ ROUTER_URL=https://192.168.1.1
 ROUTER_USERNAME=admin
 ROUTER_PASSWORD=securepassword
 ```
+
+### CenturyLink C4000XG Example
+
+```env
+ROUTER_INTEGRATION_TYPE=c4000xg
+ROUTER_URL=https://192.168.1.1
+ROUTER_USERNAME=admin
+ROUTER_PASSWORD=securepassword
+ROUTER_VERIFY_SSL=false
+```
+
+> **Note:** The C4000XG integration uses the router's parental control (Access Scheduler) feature to block devices. This is an undocumented CGI API and may change with firmware updates.
 
 ---
 

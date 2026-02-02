@@ -235,7 +235,7 @@ ADGUARD_URL=http://192.168.1.1:3000
 ADGUARD_USERNAME=admin
 ADGUARD_PASSWORD=your-password
 
-# Router Integration - optional (unifi, pfsense, opnsense)
+# Router Integration - optional (unifi, pfsense, opnsense, c4000xg)
 ROUTER_INTEGRATION_TYPE=unifi
 ROUTER_URL=https://192.168.1.1:8443
 ROUTER_USERNAME=admin

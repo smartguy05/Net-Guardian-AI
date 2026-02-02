@@ -184,7 +184,7 @@ llm_cache_enabled: bool = True
 | FR-RA-001: Alert Severity Levels | Complete | info, low, medium, high, critical |
 | FR-RA-002: Notification Channels | Partial | Webhook support via playbooks, ntfy.sh pending |
 | FR-RA-003: DNS-Level Blocking | Complete | AdGuard Home integration |
-| FR-RA-004: Router-Level Quarantine | Complete | UniFi, pfSense/OPNsense integration |
+| FR-RA-004: Router-Level Quarantine | Complete | UniFi, pfSense/OPNsense, C4000XG integration |
 | FR-RA-005: Quarantine Management | Complete | Full quarantine UI with audit trail |
 | FR-RA-006: Response Playbooks | Complete | Configurable action chains with triggers |
 
@@ -698,7 +698,7 @@ ADGUARD_PASSWORD=your-password
 ADGUARD_VERIFY_SSL=true
 
 # Router Integration (Phase 4)
-# Options: unifi, pfsense, opnsense
+# Options: unifi, pfsense, opnsense, c4000xg
 ROUTER_INTEGRATION_TYPE=unifi
 ROUTER_URL=https://192.168.1.1:8443
 ROUTER_USERNAME=admin

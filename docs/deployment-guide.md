@@ -147,14 +147,14 @@ ADGUARD_PASSWORD=your-password
 ADGUARD_VERIFY_SSL=true
 ```
 
-**Router Integration (UniFi/pfSense/OPNsense):**
+**Router Integration (UniFi/pfSense/OPNsense/C4000XG):**
 ```bash
-ROUTER_INTEGRATION_TYPE=unifi  # or: pfsense, opnsense
+ROUTER_INTEGRATION_TYPE=unifi  # or: pfsense, opnsense, c4000xg
 ROUTER_URL=https://192.168.1.1:8443
 ROUTER_USERNAME=admin
 ROUTER_PASSWORD=your-password
-ROUTER_SITE=default
-ROUTER_VERIFY_SSL=true
+ROUTER_SITE=default  # UniFi only
+ROUTER_VERIFY_SSL=true  # Set to false for C4000XG self-signed cert
 ```
 
 **Ollama Monitoring:**

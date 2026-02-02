@@ -1133,7 +1133,7 @@ curl -X POST http://localhost:8000/api/v1/semantic/runs/{source_id}/trigger \\
               </p>
               <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
                 <li><strong>AdGuard Home</strong> - DNS-level blocking via AdGuard API</li>
-                <li><strong>Router Integration</strong> - Device blocking via pfSense, OPNsense, or UniFi</li>
+                <li><strong>Router Integration</strong> - Device blocking via pfSense, OPNsense, UniFi, or C4000XG</li>
               </ul>
             </div>
 
@@ -1623,12 +1623,13 @@ ADGUARD_PASSWORD=your-password`}</CodeBlock>
                 <li><strong>pfSense</strong> - Block via firewall rules</li>
                 <li><strong>OPNsense</strong> - Block via firewall rules</li>
                 <li><strong>UniFi</strong> - Block via controller API</li>
+                <li><strong>CenturyLink C4000XG</strong> - Block via parental control rules</li>
               </ul>
-              <CodeBlock language="env">{`ROUTER_INTEGRATION_TYPE=pfsense  # or unifi, opnsense
+              <CodeBlock language="env">{`ROUTER_INTEGRATION_TYPE=pfsense  # or unifi, opnsense, c4000xg
 ROUTER_URL=https://192.168.1.1
 ROUTER_USERNAME=admin
 ROUTER_PASSWORD=your-password
-ROUTER_VERIFY_SSL=true`}</CodeBlock>
+ROUTER_VERIFY_SSL=true  # Set to false for C4000XG`}</CodeBlock>
             </div>
 
             <div id="integrations-authentik" className="mb-12">
