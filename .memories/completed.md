@@ -484,6 +484,45 @@ Fixed 460 mypy strict type check errors across 50+ files:
 
 ---
 
+## AI Chat Intent Classification (February 2026)
+
+**Feature**: Intelligent intent detection for AI chat that injects appropriate context based on user intent
+
+**New Files**:
+- `backend/app/models/chat_intent.py`: ChatIntent enum (6 types), IntentClassification and ChatContext dataclasses
+- `backend/app/services/doc_loader.py`: Singleton service for loading help content and docs with caching
+- `backend/app/services/chat_context_service.py`: Intent classification via Haiku + quick heuristics, context building
+- `backend/data/help_content.json`: Exported help content from frontend for backend access
+- `backend/tests/services/test_chat_context_service.py`: 40 unit tests
+
+**Intent Types**:
+| Intent | Example Queries | Context Source |
+|--------|-----------------|----------------|
+| `app_help` | "How do I quarantine a device?" | helpContent.ts data |
+| `setup_config` | "How do I configure Authentik?" | configuration.md |
+| `troubleshooting` | "Why isn't my log source working?" | config + diagnostics |
+| `log_analysis` | "What is this device doing?" | Network context (devices, alerts, anomalies) |
+| `vulnerability_research` | "What is CVE-2024-XXXX?" | Minimal - uses LLM training knowledge |
+| `general_chat` | "Hello", "Thanks" | Minimal context |
+
+**Architecture**:
+```
+User Message → classify_intent() [Haiku] → build_context(intent) → stream_chat_with_context() [Sonnet]
+```
+
+**Modified Files**:
+- `backend/app/services/llm_service.py`: Added `stream_chat_with_context()` and `query_with_context()` methods
+- `backend/app/api/v1/chat.py`: Updated /chat and /query endpoints to use intent classification, added `intent` field to responses
+
+**Key Features**:
+- Quick heuristic classification for obvious cases (greetings, CVEs, errors) - no API call needed
+- LLM-based classification via Haiku for ambiguous cases
+- Intent-specific system prompts for each category
+- Conditional network context loading - only fetches database data when needed
+- Response includes detected intent for frontend debugging
+
+---
+
 ## CenturyLink C4000XG Router Integration (February 2026)
 
 **Feature**: Device blocking via C4000XG modem/router's parental control (Access Scheduler) feature

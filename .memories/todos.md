@@ -185,6 +185,23 @@ Remaining tasks organized by priority.
 
 ---
 
+## AI Chat Improvements (COMPLETE)
+
+### Intent Classification - COMPLETE
+- [x] ChatIntent enum with 6 intent types (app_help, setup_config, troubleshooting, log_analysis, vulnerability_research, general_chat)
+- [x] IntentClassification and ChatContext dataclasses
+- [x] DocLoader service for loading help content and docs
+- [x] ChatContextService with classify_intent() and build_context()
+- [x] Quick heuristic classification for greetings, CVEs, errors
+- [x] LLM-based classification via Haiku for ambiguous cases
+- [x] Intent-specific system prompts
+- [x] Conditional network context loading
+- [x] Updated chat.py endpoints to use intent classification
+- [x] Added stream_chat_with_context() and query_with_context() to LLM service
+- [x] 40 unit tests for chat context service
+
+---
+
 ## Future Enhancements (Nice to Have)
 
 - [ ] Dashboard customization (drag-and-drop widgets)
