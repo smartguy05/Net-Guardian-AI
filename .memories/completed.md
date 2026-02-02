@@ -430,4 +430,27 @@ Fixed 460 mypy strict type check errors across 50+ files:
    - Multiline buffering keeps last entry in buffer until a new entry arrives (correct streaming behavior)
    - Tests: `test_read_lines_multiline_buffering`, `test_read_lines_multiline_preserves_order`, `test_multiline_directory_mode`
 
-**Result**: 1118 tests passed, 1 pre-existing test failing (reveals actual bug in ThreatIntelService.fetch_feed)
+5. **test_threat_intel_service.py** (AsyncMock __aexit__ fix):
+   - `AsyncMock()` is truthy, causing exception suppression in async context managers
+   - Changed `mock_client_instance.__aexit__.return_value = AsyncMock()` to `mock_client_instance.__aexit__ = AsyncMock(return_value=False)`
+   - Python `__aexit__` returning truthy value suppresses the exception
+
+**ThreatIntelService Bug Fix** (`backend/app/services/threat_intel_service.py`):
+- Exception handler at line 189 was calling `await self.session.commit()` directly
+- If original exception was database-related, session might be in bad state and commit would fail
+- Fixed by wrapping status update in try/except with rollback:
+  ```python
+  except Exception as e:
+      try:
+          await self.session.rollback()
+          feed.last_fetch_at = datetime.now(UTC)
+          feed.last_fetch_status = "error"
+          feed.last_fetch_message = str(e)[:500]
+          await self.session.commit()
+      except Exception:
+          pass
+      logger.error(...)
+      return {"success": False, "error": str(e)}
+  ```
+
+**Result**: All 1119 tests pass (48 threat intel service tests verified)

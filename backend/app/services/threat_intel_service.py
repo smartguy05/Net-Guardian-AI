@@ -183,10 +183,16 @@ class ThreatIntelService:
             }
 
         except Exception as e:
-            feed.last_fetch_at = datetime.now(UTC)
-            feed.last_fetch_status = "error"
-            feed.last_fetch_message = str(e)
-            await self.session.commit()
+            # Try to update feed status - but session may be in bad state
+            try:
+                await self.session.rollback()  # Clear any pending changes
+                feed.last_fetch_at = datetime.now(UTC)
+                feed.last_fetch_status = "error"
+                feed.last_fetch_message = str(e)[:500]  # Truncate long error messages
+                await self.session.commit()
+            except Exception:
+                # Best effort - if we can't update status, just log and continue
+                pass
 
             logger.error(
                 "Feed fetch failed",

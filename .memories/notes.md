@@ -1246,16 +1246,26 @@ echo 'unqualified-search-registries = ["docker.io"]' | sudo tee /etc/containers/
 
 ---
 
-## Known Bugs
+## Test Mock Gotchas
 
-### ThreatIntelService.fetch_feed - Unbound Variable Bug (February 2026)
+### AsyncMock __aexit__ Suppresses Exceptions (February 2026)
 
-**Issue:** When `fetch_feed` raises an exception early (before `content` is defined), the exception handler references `content` causing `UnboundLocalError: cannot access local variable 'content' where it is not associated with a value`.
+**Problem:** Test `test_fetch_feed_error_handling` was failing with `UnboundLocalError: cannot access local variable 'content'` instead of the expected "Connection failed" error.
 
-**Location:** `backend/app/services/threat_intel_service.py` - `_fetch_feed_content()` method
+**Cause:** The test mock setup had:
+```python
+mock_client_instance.__aexit__.return_value = AsyncMock()  # Bug!
+```
 
-**Discovered by:** Test `test_fetch_feed_error_handling` which mocks HTTP response to raise an exception.
+`AsyncMock()` is **truthy**. When an exception occurs inside `async with`:
+1. Python calls `__aexit__(exc_type, exc_val, exc_tb)`
+2. If `__aexit__` returns a truthy value, Python **suppresses the exception**
+3. Execution continues after the `async with` block
+4. Code tries to use variables that were never assigned → `UnboundLocalError`
 
-**Fix needed:** Move `content` initialization before the try block or handle the case where `content` is undefined in the exception handler.
+**Solution:** Return `False` so the exception propagates correctly:
+```python
+mock_client_instance.__aexit__ = AsyncMock(return_value=False)
+```
 
-**Status:** Known bug, not yet fixed. Test demonstrates the issue.
+**Lesson:** When mocking async context managers, always set `__aexit__` to return `False` (or `None`) unless you specifically want to suppress exceptions.

@@ -649,7 +649,8 @@ class TestThreatIntelServiceFeedFetching:
             mock_client_instance = AsyncMock()
             mock_client_instance.get.side_effect = Exception("Connection failed")
             mock_client_instance.__aenter__.return_value = mock_client_instance
-            mock_client_instance.__aexit__.return_value = AsyncMock()
+            # Return False so exception propagates (truthy value suppresses exceptions)
+            mock_client_instance.__aexit__ = AsyncMock(return_value=False)
             mock_client.return_value = mock_client_instance
 
             result = await threat_intel_service.fetch_feed(sample_feed.id)

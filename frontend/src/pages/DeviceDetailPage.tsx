@@ -564,7 +564,7 @@ function AnomaliesList({ deviceId }: { deviceId: string }) {
       ))}
       {data.total > 20 && (
         <Link
-          to={`/anomalies?device_id=${deviceId}`}
+          to={`/dashboard/anomalies?device_id=${deviceId}`}
           className="block text-center text-sm text-primary-600 hover:text-primary-700 py-2"
         >
           View all {data.total} anomalies
@@ -601,7 +601,7 @@ export default function DeviceDetailPage() {
     return (
       <div className="space-y-6">
         <Link
-          to="/devices"
+          to="/dashboard/devices"
           className="inline-flex items-center text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -638,7 +638,7 @@ export default function DeviceDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
-            to="/devices"
+            to="/dashboard/devices"
             className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
           >
             <ArrowLeft className="w-5 h-5" />

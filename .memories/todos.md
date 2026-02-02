@@ -131,7 +131,7 @@ Remaining tasks organized by priority.
 
 ---
 
-## Test Suite Improvements (COMPLETE - 898 tests passing)
+## Test Suite Improvements (COMPLETE - 1119 tests passing)
 
 ### Completed
 - [x] Phase 1: Test Infrastructure (conftest.py, factories.py)
@@ -150,6 +150,9 @@ Remaining tasks organized by priority.
 - [x] Phase 5.5: test_users_api.py (22 tests - list, create, update, delete, reset password)
 - [x] Phase 5.6: test_rules_api.py (36 tests - CRUD, enable/disable, test rule, validation)
 - [x] Test suite fixes: Fixed 33 failing tests (Query object issues, mock attributes, UDP socket mocking)
+- [x] Comprehensive coverage tests: quarantine_service, custom_parser multiline, threat_intel_service, nginx_parser, file_collector
+- [x] Fixed 23 failing tests: IntegrationResult API changes, multiline parser behavior, AsyncMock __aexit__ suppression
+- [x] ThreatIntelService bug fix: Exception handler session state handling with rollback
 
 ---
 
