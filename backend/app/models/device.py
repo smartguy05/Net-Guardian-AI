@@ -29,6 +29,7 @@ class DeviceType(str, Enum):
     IOT = "iot"
     SERVER = "server"
     NETWORK = "network"
+    MEDIA = "media"  # TVs, speakers, streaming devices
     UNKNOWN = "unknown"
 
 

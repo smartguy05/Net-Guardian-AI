@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   BarChart3,
   RefreshCw,
+  Tv,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import clsx from 'clsx';
@@ -40,6 +41,7 @@ const deviceTypeIcons: Record<string, typeof Monitor> = {
   server: Server,
   network: Wifi,
   iot: Wifi,
+  media: Tv,
   unknown: HelpCircle,
 };
 
@@ -55,6 +57,7 @@ const deviceTypeOptions = [
   { value: 'mobile', label: 'Mobile Device' },
   { value: 'server', label: 'Server' },
   { value: 'network', label: 'Network Device' },
+  { value: 'media', label: 'Media/Entertainment' },
   { value: 'iot', label: 'IoT Device' },
   { value: 'unknown', label: 'Unknown' },
 ];

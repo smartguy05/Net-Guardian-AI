@@ -92,12 +92,14 @@ function DeviceRow({ device, isSelected, onSelectChange, showCheckbox }: DeviceR
         </div>
       </td>
       <td className="hidden lg:table-cell px-6 py-4 whitespace-nowrap">
-        <div className="text-sm text-gray-900 dark:text-gray-100">
-          {device.manufacturer || '-'}
+        <div className="text-sm text-gray-900 dark:text-gray-100 capitalize">
+          {device.device_type === 'media' ? 'Media/Entertainment' : device.device_type || 'Unknown'}
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          {device.device_type || 'Unknown type'}
-        </div>
+        {device.manufacturer && (
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            {device.manufacturer}
+          </div>
+        )}
       </td>
       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
         <span className={clsx(status.class, 'text-xs sm:text-sm')}>{status.label}</span>
@@ -413,7 +415,7 @@ export default function DevicesPage() {
                   IP Address
                 </th>
                 <th className="hidden lg:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Manufacturer
+                  Type
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Status
