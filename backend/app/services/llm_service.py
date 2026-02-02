@@ -619,6 +619,119 @@ Please provide an incident summary:
             logger.error("chat_stream_error", error=str(e))
             yield f"Error: {e}"
 
+    async def stream_chat_with_context(
+        self,
+        messages: list[dict[str, str]],
+        system_prompt: str,
+        context_text: str = "",
+        model_type: LLMModel = LLMModel.DEFAULT,
+    ) -> AsyncGenerator[str, None]:
+        """Stream a chat response with custom system prompt and context.
+
+        This method supports intent-based context injection, allowing
+        different system prompts and documentation context based on
+        the classified intent of the user's message.
+
+        Args:
+            messages: Conversation history.
+            system_prompt: Custom system prompt based on intent.
+            context_text: Documentation or other context to inject.
+            model_type: Which model to use.
+
+        Yields:
+            Response text chunks.
+        """
+        if not self.is_enabled:
+            yield "LLM service is not enabled. Please configure your Anthropic API key."
+            return
+
+        # Prepend context to first user message
+        formatted_messages: list[MessageParam] = []
+        context_added = False
+
+        for msg in messages:
+            if msg["role"] == "user" and not context_added and context_text:
+                formatted_messages.append(
+                    {
+                        "role": "user",
+                        "content": f"## Reference Documentation\n{context_text}\n\n## User Message\n{msg['content']}",
+                    }
+                )
+                context_added = True
+            else:
+                formatted_messages.append({"role": msg["role"], "content": msg["content"]})  # type: ignore[typeddict-item]
+
+        # If no context was added but we have messages, use them as-is
+        if not formatted_messages and messages:
+            formatted_messages = [
+                {"role": msg["role"], "content": msg["content"]}  # type: ignore[typeddict-item]
+                for msg in messages
+            ]
+
+        try:
+            async with self.client.messages.stream(
+                model=self._get_model(model_type),
+                max_tokens=settings.llm_max_tokens,
+                temperature=settings.llm_temperature,
+                system=system_prompt,
+                messages=formatted_messages,
+            ) as stream:
+                async for text in stream.text_stream:
+                    yield text
+
+        except Exception as e:
+            logger.error("chat_stream_with_context_error", error=str(e))
+            yield f"Error: {e}"
+
+    async def query_with_context(
+        self,
+        query: str,
+        system_prompt: str,
+        context_text: str = "",
+        model_type: LLMModel = LLMModel.DEFAULT,
+    ) -> str:
+        """Process a query with custom system prompt and context.
+
+        Non-streaming version of stream_chat_with_context for
+        the /query endpoint.
+
+        Args:
+            query: User's question.
+            system_prompt: Custom system prompt based on intent.
+            context_text: Documentation or other context to inject.
+            model_type: Which model to use.
+
+        Returns:
+            The complete response text.
+        """
+        if not self.is_enabled:
+            return "LLM service is not enabled. Please configure your Anthropic API key."
+
+        # Build the user message with context
+        if context_text:
+            user_content = f"## Reference Documentation\n{context_text}\n\n## User Question\n{query}"
+        else:
+            user_content = query
+
+        try:
+            messages: list[MessageParam] = [{"role": "user", "content": user_content}]
+            response = await self.client.messages.create(
+                model=self._get_model(model_type),
+                max_tokens=settings.llm_max_tokens,
+                temperature=settings.llm_temperature,
+                system=system_prompt,
+                messages=messages,
+            )
+
+            return _extract_text_from_content(response.content)
+
+        except APIError as e:
+            logger.error("llm_query_with_context_error", error=str(e))
+            return f"I encountered an error processing your query: {e}"
+        except Exception as e:
+            logger.error("llm_query_with_context_error", error=str(e))
+            return f"Sorry, I couldn't process your query: {e}"
+
 
 # Global service instance
 _llm_service: LLMService | None = None

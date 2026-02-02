@@ -11,14 +11,20 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import structlog
+
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
 from app.models.alert import Alert, AlertStatus
 from app.models.anomaly import AnomalyDetection, AnomalyStatus
+from app.models.chat_intent import ChatIntent
 from app.models.device import Device, DeviceStatus
 from app.models.raw_event import EventType, RawEvent
 from app.models.user import User
+from app.services.chat_context_service import get_chat_context_service
 from app.services.llm_service import LLMModel, get_llm_service
+
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -38,6 +44,7 @@ class QueryResponse(BaseModel):
     query: str
     response: str
     model_used: str
+    intent: str | None = None
 
 
 class ChatRequest(BaseModel):
@@ -48,6 +55,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     model_used: str
+    intent: str | None = None
 
 
 class IncidentSummaryRequest(BaseModel):
@@ -213,6 +221,8 @@ async def query_network(
     - Network security posture
     - Recent alerts and anomalies
     - Traffic patterns and trends
+    - Application usage and configuration
+    - Troubleshooting issues
     """
     llm_service = get_llm_service()
 
@@ -228,13 +238,33 @@ async def query_network(
         model_map = {"fast": LLMModel.FAST, "default": LLMModel.DEFAULT, "deep": LLMModel.DEEP}
         model_type = model_map.get(request.model, LLMModel.DEFAULT)
 
-    # Build network context
-    context = await _build_network_context(session)
+    # Classify intent using Haiku (fast/cheap)
+    context_service = get_chat_context_service()
+    classification = await context_service.classify_intent(request.query)
 
-    # Query the LLM
-    response = await llm_service.query_network(
+    logger.info(
+        "query_intent_classified",
+        intent=classification.intent.value,
+        confidence=classification.confidence,
+    )
+
+    # Only build network context if the intent requires it
+    network_context = None
+    if classification.needs_network_context:
+        network_context = await _build_network_context(session)
+
+    # Build context based on intent
+    chat_context = context_service.build_context(
+        classification=classification,
+        network_context=network_context,
+        message=request.query,
+    )
+
+    # Query with intent-specific context
+    response = await llm_service.query_with_context(
         query=request.query,
-        context=context,
+        system_prompt=chat_context.system_prompt,
+        context_text=chat_context.context_text,
         model_type=model_type,
     )
 
@@ -250,6 +280,7 @@ async def query_network(
         query=request.query,
         response=response,
         model_used=model_id,
+        intent=classification.intent.value,
     )
 
 
@@ -263,6 +294,13 @@ async def chat(
 
     Supports both regular and streaming responses. For streaming,
     set stream=true in the request body.
+
+    The assistant can help with:
+    - Network security analysis and log interpretation
+    - Application usage and feature guidance
+    - Configuration and setup questions
+    - Troubleshooting issues
+    - Vulnerability research
     """
     llm_service = get_llm_service()
 
@@ -272,16 +310,46 @@ async def chat(
             detail="LLM service is not enabled. Please configure your Anthropic API key.",
         )
 
-    # Build network context
-    context = await _build_network_context(session)
-
     # Convert messages to expected format
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
+    # Get the latest user message for intent classification
+    latest_user_message = ""
+    for msg in reversed(request.messages):
+        if msg.role == "user":
+            latest_user_message = msg.content
+            break
+
+    # Classify intent using Haiku (fast/cheap)
+    context_service = get_chat_context_service()
+    classification = await context_service.classify_intent(latest_user_message)
+
+    logger.info(
+        "chat_intent_classified",
+        intent=classification.intent.value,
+        confidence=classification.confidence,
+    )
+
+    # Only build network context if the intent requires it
+    network_context = None
+    if classification.needs_network_context:
+        network_context = await _build_network_context(session)
+
+    # Build context based on intent
+    chat_context = context_service.build_context(
+        classification=classification,
+        network_context=network_context,
+        message=latest_user_message,
+    )
+
     if request.stream:
-        # Return streaming response
+        # Return streaming response with intent-aware context
         async def generate() -> AsyncGenerator[str, None]:
-            async for chunk in llm_service.stream_chat(messages, context):
+            async for chunk in llm_service.stream_chat_with_context(
+                messages=messages,
+                system_prompt=chat_context.system_prompt,
+                context_text=chat_context.context_text,
+            ):
                 yield f"data: {chunk}\n\n"
             yield "data: [DONE]\n\n"
 
@@ -296,7 +364,11 @@ async def chat(
     else:
         # Non-streaming: collect full response
         full_response = ""
-        async for chunk in llm_service.stream_chat(messages, context):
+        async for chunk in llm_service.stream_chat_with_context(
+            messages=messages,
+            system_prompt=chat_context.system_prompt,
+            context_text=chat_context.context_text,
+        ):
             full_response += chunk
 
         from app.config import settings
@@ -304,6 +376,7 @@ async def chat(
         return ChatResponse(
             response=full_response,
             model_used=settings.llm_model_default,
+            intent=classification.intent.value,
         )
 
 
