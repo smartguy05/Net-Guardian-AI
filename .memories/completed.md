@@ -454,3 +454,43 @@ Fixed 460 mypy strict type check errors across 50+ files:
   ```
 
 **Result**: All 1119 tests pass (48 threat intel service tests verified)
+
+---
+
+## CenturyLink C4000XG Router Integration (February 2026)
+
+**Feature**: Device blocking via C4000XG modem/router's parental control (Access Scheduler) feature
+
+**Backend**:
+- `backend/app/services/integrations/c4000xg.py`:
+  - `C4000XGService` class implementing `IntegrationService` interface
+  - CGI API authentication with session cookie management (`_login`, `_ensure_session`)
+  - GET/POST request helpers for `/cgi/cgi_get` and `/cgi/cgi_set` endpoints
+  - `block_device()`: Creates parental control rule with Target=Drop for 24/7 blocking
+  - `unblock_device()`: Finds and deletes blocking rule by MAC address
+  - `is_device_blocked()`: Queries parental control rules for MAC
+  - `get_blocked_devices()`: Lists all devices with Drop rules
+  - `get_connected_devices()`: Queries Device.Hosts.Host for device discovery
+  - MAC address normalization (handles XX:XX:XX:XX:XX:XX, XX-XX-XX-XX-XX-XX, XXXXXXXXXXXX formats)
+- `backend/app/services/integrations/base.py`: Added `IntegrationType.C4000XG`
+- `backend/app/services/integrations/__init__.py`: Exported C4000XGService, get_c4000xg_service
+- `backend/app/services/quarantine_service.py`: Added C4000XG to router auto-detection
+- `backend/app/api/v1/integrations.py`: Added C4000XG test connection and blocked devices endpoints
+
+**Configuration** (backend/.env):
+```
+ROUTER_INTEGRATION_TYPE=c4000xg
+ROUTER_URL=https://192.168.1.1
+ROUTER_USERNAME=admin
+ROUTER_PASSWORD=<password>
+ROUTER_VERIFY_SSL=false
+```
+
+**Tests** (`backend/tests/services/test_c4000xg.py`):
+- 44 tests covering: configuration, MAC normalization, authentication, test_connection, block_device, unblock_device, is_device_blocked, get_blocked_devices, get_connected_devices, singleton pattern
+
+**Notes**:
+- Uses undocumented CGI API - may change with firmware updates
+- Parental control rules block by MAC address 24/7
+- Session-based auth requires handling session expiry and re-login
+- MAC randomization on iOS/Android devices can defeat MAC-based blocking

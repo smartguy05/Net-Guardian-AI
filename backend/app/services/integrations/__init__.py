@@ -7,6 +7,7 @@ from app.services.integrations.base import (
     IntegrationService,
     IntegrationType,
 )
+from app.services.integrations.c4000xg import C4000XGService, get_c4000xg_service
 from app.services.integrations.pfsense import PfSenseService, get_pfsense_service
 from app.services.integrations.unifi import UniFiService, get_unifi_service
 
@@ -17,6 +18,8 @@ __all__ = [
     "IntegrationType",
     "AdGuardHomeService",
     "get_adguard_service",
+    "C4000XGService",
+    "get_c4000xg_service",
     "UniFiService",
     "get_unifi_service",
     "PfSenseService",

@@ -16,6 +16,7 @@ from app.models.user import User
 from app.services.audit_service import AuditService, get_audit_service
 from app.services.integrations.adguard import AdGuardHomeService, get_adguard_service
 from app.services.integrations.base import IntegrationService
+from app.services.integrations.c4000xg import get_c4000xg_service
 from app.services.integrations.pfsense import get_pfsense_service
 from app.services.integrations.unifi import get_unifi_service
 
@@ -82,6 +83,8 @@ class QuarantineService:
             self._router = get_unifi_service()
         elif settings.router_integration_type in ("pfsense", "opnsense"):
             self._router = get_pfsense_service()
+        elif settings.router_integration_type == "c4000xg":
+            self._router = get_c4000xg_service()
         else:
             self._router = None
 
