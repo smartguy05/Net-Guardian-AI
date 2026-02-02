@@ -9,9 +9,7 @@ Tests cover:
 - Edge cases and error handling
 """
 
-from datetime import UTC, datetime, timezone
-
-import pytest
+from datetime import UTC, datetime
 
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.nginx_parser import (
