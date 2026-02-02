@@ -216,19 +216,28 @@ export default function DevicesPage() {
     setSelectedDevices(new Set());
   };
 
-  const handleSync = async () => {
+  const handleSync = async (event: React.MouseEvent) => {
+    // Hold Shift to force overwrite existing names
+    const overwriteExisting = event.shiftKey;
     try {
       setSyncMessage(null);
-      const result = await syncDevices.mutateAsync({ source: 'adguard', overwriteExisting: false });
+      const result = await syncDevices.mutateAsync({ source: 'adguard', overwriteExisting });
       if (result.updated_devices > 0) {
         setSyncMessage({
           type: 'success',
           text: `Synced ${result.updated_devices} device name${result.updated_devices !== 1 ? 's' : ''} from AdGuard Home`,
         });
+        // Refresh to show updated names
+        refetch();
+      } else if (result.skipped_devices > 0 && !overwriteExisting) {
+        setSyncMessage({
+          type: 'success',
+          text: `No new names found. ${result.skipped_devices} device${result.skipped_devices !== 1 ? 's' : ''} already have names. Hold Shift + click to overwrite.`,
+        });
       } else {
         setSyncMessage({
           type: 'success',
-          text: 'No new device names to sync from AdGuard Home',
+          text: 'No matching device names found in AdGuard Home clients.',
         });
       }
       // Auto-hide message after 5 seconds
@@ -269,7 +278,7 @@ export default function DevicesPage() {
               onClick={handleSync}
               disabled={syncDevices.isPending}
               className="btn-secondary"
-              title="Sync device names from AdGuard Home"
+              title="Sync device names from AdGuard Home (Shift+click to overwrite existing)"
             >
               <Download
                 className={clsx('w-4 h-4 mr-2', syncDevices.isPending && 'animate-pulse')}
