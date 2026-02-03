@@ -24,6 +24,7 @@ import PatternsPage from './pages/PatternsPage';
 import SuggestedRulesPage from './pages/SuggestedRulesPage';
 import OIDCCallbackPage from './pages/OIDCCallbackPage';
 import AuditPage from './pages/AuditPage';
+import SecurityPatternsPage from './pages/SecurityPatternsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -84,6 +85,7 @@ function App() {
         <Route path="patterns" element={<PatternsPage />} />
         <Route path="suggested-rules" element={<SuggestedRulesPage />} />
         <Route path="audit" element={<AuditPage />} />
+        <Route path="security-patterns" element={<SecurityPatternsPage />} />
       </Route>
     </Routes>
   );

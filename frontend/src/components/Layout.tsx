@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   Shield,
   ShieldOff,
+  ShieldAlert,
   LayoutDashboard,
   Monitor,
   Activity,
@@ -41,6 +42,7 @@ const navigation = [
   { name: 'Suggested Rules', href: '/dashboard/suggested-rules', icon: Lightbulb, adminOnly: false },
   { name: 'Rules', href: '/dashboard/rules', icon: ListFilter, adminOnly: false },
   { name: 'Threat Intel', href: '/dashboard/threat-intel', icon: Shield, adminOnly: false },
+  { name: 'Security Patterns', href: '/dashboard/security-patterns', icon: ShieldAlert, adminOnly: false },
   { name: 'Quarantine', href: '/dashboard/quarantine', icon: ShieldOff, adminOnly: false },
   { name: 'AI Chat', href: '/dashboard/chat', icon: MessageSquare, adminOnly: false },
   { name: 'Sources', href: '/dashboard/sources', icon: Database, adminOnly: false },

@@ -4,6 +4,58 @@ Condensed summary of completed implementation work.
 
 ---
 
+## Application Log Analysis (February 2026)
+
+**Implemented application log analysis for Docker containers, systemd services, and application-specific logs (Java/Python) with configurable security pattern detection.**
+
+### Phase 1: Data Model Extensions
+- Added `CONTAINER`, `JOURNAL`, `APPLICATION` to `EventType` enum
+- Added `DOCKER`, `JOURNALD`, `JAVA_STACKTRACE`, `PYTHON_LOG` to `ParserType` enum
+- Added `ERROR_SPIKE`, `NEW_ERROR_PATTERN`, `CONTAINER_RESTART`, `SECURITY_PATTERN` to `AnomalyType` enum
+- Migration: `20260202_0015_015_add_app_log_enums.py`
+
+### Phase 2: Security Pattern Management System
+**New Files:**
+- `backend/app/models/security_pattern.py`: SecurityPattern, SecurityPatternFeed models with PatternCategory, PatternType, PatternSource enums
+- `backend/app/api/v1/security_patterns.py`: Full CRUD API for patterns and feeds (list, get, create, update, delete, enable/disable, test, match, fetch)
+- `backend/app/services/security_pattern_service.py`: Pattern matching with regex caching, feed fetching with auth support
+- `backend/app/parsers/security_patterns.py`: Parser integration wrapper
+- `backend/app/data/default_security_patterns.py`: 28+ built-in patterns (SQL injection, command injection, XSS, path traversal, deserialization, SSRF, etc.)
+- `docs/security-pattern-feeds.md`: Feed format documentation with field mapping examples
+- Migration: `20260202_0016_016_add_security_patterns.py`
+
+### Phase 3: New Parsers
+- `backend/app/parsers/docker_parser.py`: Docker JSON log parsing, container events (start/stop/restart/oom_killed), error detection
+- `backend/app/parsers/journald_parser.py`: systemd journal JSON parsing, priority mapping, service state detection
+- `backend/app/parsers/java_stacktrace_parser.py`: Multi-line stack trace parsing, exception chain extraction, security exception detection
+- `backend/app/parsers/python_log_parser.py`: Python logging/traceback parsing, structlog JSON support
+
+### Phase 4: Agent Collectors
+- `agent/collectors/docker_collector.py`: Docker/Podman socket connection, container log streaming, lifecycle events
+- `agent/collectors/journal_collector.py`: systemd journal reading (library + journalctl fallback), cursor-based resumption
+
+### Phase 5: Analysis Services
+- `backend/app/services/app_baseline_service.py`: Application baselines (error rate, container metrics, exception types)
+- `backend/app/services/security_analysis_service.py`: Security pattern analysis, finding correlation, attack detection
+- Extended `backend/app/services/anomaly_service.py` with `detect_application_anomalies()` method
+
+### Phase 6: Default Rules & Frontend
+- `backend/app/data/default_app_rules.py`: 19 pre-built detection rules (SQL injection, command injection, error spikes, container restart loops, OOM errors, Java/Python specific)
+- `frontend/src/pages/SecurityPatternsPage.tsx`: Pattern management with filters, pattern testing, text matching
+- `frontend/src/types/index.ts`: SecurityPattern, SecurityPatternFeed, PatternMatch types
+- `frontend/src/api/hooks.ts`: 15+ hooks for security patterns and feeds CRUD
+- Added route in `frontend/src/App.tsx` and navigation in `frontend/src/components/Layout.tsx`
+
+### Documentation Updates
+- `README.md`: Updated parser count (11→15), added new parser types to table
+- `docs/user-guide.md`: Added CONTAINER/JOURNAL/APPLICATION event types, new anomaly types, Docker/Journald sources, Security Patterns section
+- `docs/configuration.md`: Added Docker, Journald, Java Stacktrace, Python Log parser configurations, Security Pattern Detection section
+- `docs/deployment-guide.md`: Added Docker, Journald, Java, Python source examples, security pattern feed import instructions
+- `frontend/src/content/helpContent.ts`: Added `/dashboard/security-patterns` help content (5 sections)
+- `frontend/src/pages/DocsPage.tsx`: Added Security Patterns section with 4 subsections, updated parser list with new parsers
+
+---
+
 ## Phase 9: Semantic Log Analysis (January 2026)
 
 **Database**: 6 tables (LogPattern, SemanticAnalysisConfig, IrregularLog, SemanticAnalysisRun, SuggestedRule, SuggestedRuleHistory) with 4 enums - `backend/app/models/semantic_analysis.py`

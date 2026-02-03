@@ -13,6 +13,7 @@ NetGuardian AI is configured via environment variables. All settings can be set 
 - [Authentik SSO Integration](#authentik-sso-integration)
 - [CORS Settings](#cors-settings)
 - [Log Ingestion](#log-ingestion)
+- [Security Pattern Detection](#security-pattern-detection)
 - [AdGuard Home Integration](#adguard-home-integration)
 - [Router Integration](#router-integration)
 - [LLM Configuration](#llm-configuration)
@@ -269,6 +270,101 @@ collector:
 - `514` - Standard syslog (requires privileged access)
 - `5514` - Recommended non-privileged alternative
 - `1514` - Alternative non-privileged port
+
+### Docker Parser Configuration
+
+Parser-specific settings when using the `docker` parser type:
+
+| Config Field | Default | Description |
+|--------------|---------|-------------|
+| `detect_errors` | `true` | Enable error pattern detection in logs |
+| `error_keywords` | `["error", "exception", "fatal", "panic"]` | Keywords to flag as errors |
+
+### Journald Parser Configuration
+
+Parser-specific settings when using the `journald` parser type:
+
+| Config Field | Default | Description |
+|--------------|---------|-------------|
+| `units` | `[]` | Systemd units to monitor (empty = all) |
+| `priority_min` | `6` | Minimum priority level (0=emerg, 7=debug) |
+| `include_kernel` | `false` | Include kernel messages |
+
+### Java Stacktrace Parser Configuration
+
+Parser-specific settings when using the `java_stacktrace` parser type:
+
+| Config Field | Default | Description |
+|--------------|---------|-------------|
+| `detect_security_exceptions` | `true` | Flag security-related exceptions |
+| `max_stack_frames` | `50` | Maximum stack frames to capture |
+
+### Python Log Parser Configuration
+
+Parser-specific settings when using the `python_log` parser type:
+
+| Config Field | Default | Description |
+|--------------|---------|-------------|
+| `detect_security_exceptions` | `true` | Flag security-related exceptions |
+| `structlog_enabled` | `true` | Parse structlog JSON format |
+
+---
+
+## Security Pattern Detection
+
+Configure security pattern detection for application logs.
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `SECURITY_PATTERNS_ENABLED` | bool | `true` | Enable security pattern detection |
+| `SECURITY_PATTERNS_CACHE_TTL` | int | `300` | Compiled pattern cache TTL in seconds |
+
+### Built-in Patterns
+
+NetGuardian includes 28+ built-in security patterns covering:
+
+- **SQL Injection:** UNION attacks, OR 1=1, comment injection, time-based blind injection
+- **Command Injection:** Shell metacharacters, backticks, $() substitution
+- **Path Traversal:** ../ sequences, URL-encoded variants
+- **XSS:** Script tags, event handlers, javascript: URIs
+- **Deserialization:** Java gadget classes (ysoserial)
+- **SSRF:** Internal IPs, cloud metadata endpoints
+- **Auth Bypass:** Admin injection, password reset abuse
+- **Log Injection:** CRLF injection, log forging
+- **LDAP Injection:** LDAP filter manipulation
+- **XXE:** XML external entity attacks
+
+Built-in patterns cannot be deleted but can be disabled.
+
+### Pattern Feed Configuration
+
+Import patterns from external feeds via the UI (**Security Patterns > Feeds**):
+
+| Config Field | Description |
+|--------------|-------------|
+| `url` | Feed URL returning JSON with patterns |
+| `auth_type` | `none`, `basic`, `bearer`, or `api_key` |
+| `auth_config` | Authentication credentials |
+| `update_interval_hours` | How often to fetch updates (default: 24) |
+| `field_mapping` | Map feed fields to pattern schema |
+
+**Expected Feed JSON Format:**
+```json
+{
+  "patterns": [
+    {
+      "name": "Pattern Name",
+      "description": "Description",
+      "category": "sql_injection",
+      "pattern_type": "regex",
+      "pattern": "(?i)union\\s+select",
+      "severity": "high",
+      "tags": ["owasp"],
+      "examples": ["' UNION SELECT *--"]
+    }
+  ]
+}
+```
 
 ---
 

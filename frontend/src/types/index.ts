@@ -727,3 +727,159 @@ export interface SuggestedRuleHistory {
 export interface SuggestedRuleHistoryListResponse {
   items: SuggestedRuleHistory[];
 }
+
+// Security Pattern types
+export type PatternCategory =
+  | 'sql_injection'
+  | 'command_injection'
+  | 'path_traversal'
+  | 'xss'
+  | 'deserialization'
+  | 'ssrf'
+  | 'auth_bypass'
+  | 'log_injection'
+  | 'ldap_injection'
+  | 'xxe'
+  | 'custom';
+
+export type PatternType = 'regex' | 'literal' | 'keyword';
+export type PatternSource = 'builtin' | 'user' | 'feed';
+
+export interface SecurityPattern {
+  id: string;
+  name: string;
+  description: string | null;
+  category: PatternCategory;
+  pattern_type: PatternType;
+  pattern: string;
+  severity: AlertSeverity;
+  enabled: boolean;
+  tags: string[];
+  extra_data: Record<string, unknown>;
+  source: PatternSource;
+  feed_id: string | null;
+  examples: string[];
+  references: string[];
+  hit_count: number;
+  last_hit_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SecurityPatternListResponse {
+  items: SecurityPattern[];
+  total: number;
+}
+
+export interface CreateSecurityPatternRequest {
+  name: string;
+  description?: string;
+  category: PatternCategory;
+  pattern_type: PatternType;
+  pattern: string;
+  severity: AlertSeverity;
+  enabled?: boolean;
+  tags?: string[];
+  extra_data?: Record<string, unknown>;
+  examples?: string[];
+  references?: string[];
+}
+
+export interface UpdateSecurityPatternRequest {
+  name?: string;
+  description?: string;
+  category?: PatternCategory;
+  pattern_type?: PatternType;
+  pattern?: string;
+  severity?: AlertSeverity;
+  enabled?: boolean;
+  tags?: string[];
+  extra_data?: Record<string, unknown>;
+  examples?: string[];
+  references?: string[];
+}
+
+export interface TestPatternRequest {
+  pattern: string;
+  pattern_type: PatternType;
+  test_text: string;
+}
+
+export interface TestPatternResponse {
+  matched: boolean;
+  matched_text: string | null;
+  match_start: number | null;
+  match_end: number | null;
+}
+
+export interface MatchTextRequest {
+  text: string;
+  categories?: PatternCategory[];
+}
+
+export interface PatternMatch {
+  pattern_id: string;
+  pattern_name: string;
+  category: PatternCategory;
+  severity: AlertSeverity;
+  matched_text: string;
+  match_start: number;
+  match_end: number;
+  context: Record<string, unknown>;
+}
+
+export interface SecurityPatternFeed {
+  id: string;
+  name: string;
+  description: string | null;
+  url: string;
+  enabled: boolean;
+  update_interval_hours: number;
+  auth_type: string;
+  auth_config: Record<string, unknown>;
+  field_mapping: Record<string, unknown>;
+  last_fetch_at: string | null;
+  last_fetch_status: string | null;
+  last_fetch_message: string | null;
+  pattern_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SecurityPatternFeedListResponse {
+  items: SecurityPatternFeed[];
+  total: number;
+}
+
+export interface CreateSecurityPatternFeedRequest {
+  name: string;
+  description?: string;
+  url: string;
+  enabled?: boolean;
+  update_interval_hours?: number;
+  auth_type?: string;
+  auth_config?: Record<string, unknown>;
+  field_mapping?: Record<string, unknown>;
+}
+
+export interface UpdateSecurityPatternFeedRequest {
+  name?: string;
+  description?: string;
+  url?: string;
+  enabled?: boolean;
+  update_interval_hours?: number;
+  auth_type?: string;
+  auth_config?: Record<string, unknown>;
+  field_mapping?: Record<string, unknown>;
+}
+
+export interface SecurityPatternStats {
+  total_patterns: number;
+  enabled_patterns: number;
+  total_feeds: number;
+  enabled_feeds: number;
+  patterns_by_category: Record<string, number>;
+  patterns_by_severity: Record<string, number>;
+  total_hits: number;
+  recent_hits: number;
+}

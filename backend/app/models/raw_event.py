@@ -30,6 +30,9 @@ class EventType(str, Enum):
     LLM = "llm"  # LLM/AI model interactions (Ollama monitoring)
     ENDPOINT = "endpoint"  # Endpoint agent events (process, file, network)
     FLOW = "flow"  # NetFlow/sFlow network flow data
+    CONTAINER = "container"  # Docker/Podman container logs
+    JOURNAL = "journal"  # systemd journal entries
+    APPLICATION = "application"  # Application logs with stack traces
     UNKNOWN = "unknown"
 
 

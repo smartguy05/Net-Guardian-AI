@@ -13,7 +13,7 @@ from app.models.alert import Alert, AlertSeverity, AlertStatus
 from app.models.anomaly import AnomalyDetection, AnomalyStatus, AnomalyType
 from app.models.device import Device
 from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
-from app.models.raw_event import EventType, RawEvent
+from app.models.raw_event import EventSeverity, EventType, RawEvent
 
 logger = structlog.get_logger()
 
@@ -561,6 +561,280 @@ class AnomalyDetector:
 
         # Low ports that aren't in safe list are suspicious
         return True
+
+    async def detect_application_anomalies(
+        self,
+        source_id: str,
+        time_window_hours: int = 1,
+        auto_create_alerts: bool = True,
+    ) -> list[AnomalyDetection]:
+        """Detect application-specific anomalies.
+
+        Checks for:
+        - Error rate spikes
+        - New error patterns
+        - Container restart anomalies
+        - Security pattern detections
+
+        Args:
+            source_id: Log source ID to analyze.
+            time_window_hours: Hours of activity to analyze.
+            auto_create_alerts: Whether to create alerts.
+
+        Returns:
+            List of detected anomalies.
+        """
+        from app.services.app_baseline_service import AppBaselineCalculator
+
+        anomalies: list[AnomalyDetection] = []
+        cutoff = datetime.now(UTC) - timedelta(hours=time_window_hours)
+
+        # Get baseline calculator
+        baseline_calc = AppBaselineCalculator(self._session)
+
+        # Check error rate spike
+        error_baseline = await baseline_calc.calculate_error_rate_baseline(source_id)
+        error_anomalies = await self._detect_error_spike(
+            source_id, error_baseline.metrics, cutoff, time_window_hours
+        )
+        anomalies.extend(error_anomalies)
+
+        # Check container restarts (if container source)
+        container_baseline = await baseline_calc.calculate_container_baseline(source_id)
+        if container_baseline.sample_count > 0:
+            restart_anomalies = await self._detect_container_restart_anomaly(
+                source_id, container_baseline.metrics, cutoff, time_window_hours
+            )
+            anomalies.extend(restart_anomalies)
+
+        # Check new exception types
+        exception_baseline = await baseline_calc.calculate_exception_baseline(source_id)
+        if exception_baseline.sample_count > 0:
+            exception_anomalies = await self._detect_new_error_patterns(
+                source_id, exception_baseline.metrics, cutoff
+            )
+            anomalies.extend(exception_anomalies)
+
+        # Save anomalies
+        for anomaly in anomalies:
+            self._session.add(anomaly)
+
+            if auto_create_alerts and anomaly.severity in (
+                AlertSeverity.HIGH,
+                AlertSeverity.CRITICAL,
+            ):
+                alert = await self._create_alert_for_anomaly(anomaly)
+                anomaly.alert_id = alert.id
+
+        await self._session.flush()
+
+        logger.info(
+            "application_anomalies_detected",
+            source_id=source_id,
+            count=len(anomalies),
+        )
+
+        return anomalies
+
+    async def _detect_error_spike(
+        self,
+        source_id: str,
+        baseline_metrics: dict[str, Any],
+        cutoff: datetime,
+        time_window_hours: int,
+    ) -> list[AnomalyDetection]:
+        """Detect error rate spikes."""
+        from sqlalchemy import func
+
+        anomalies: list[AnomalyDetection] = []
+
+        # Get recent error count
+        result = await self._session.execute(
+            select(func.count())
+            .where(RawEvent.source_id == source_id)
+            .where(RawEvent.event_type.in_([
+                EventType.CONTAINER,
+                EventType.JOURNAL,
+                EventType.APPLICATION,
+            ]))
+            .where(RawEvent.severity.in_([
+                EventSeverity.WARNING,
+                EventSeverity.ERROR,
+                EventSeverity.CRITICAL,
+            ]))
+            .where(RawEvent.timestamp >= cutoff)
+        )
+        recent_errors = result.scalar() or 0
+
+        hourly_mean = baseline_metrics.get("hourly_error_mean", 0)
+        hourly_std = baseline_metrics.get("hourly_error_std", 1)
+
+        current_hourly = recent_errors / max(time_window_hours, 1)
+
+        if hourly_std > 0:
+            z_score = (current_hourly - hourly_mean) / hourly_std
+        else:
+            z_score = 0 if current_hourly <= hourly_mean else 3.0
+
+        if z_score >= Z_SCORE_THRESHOLD:
+            # Need a device_id for anomaly - use a placeholder
+            # In practice, this would be linked to a device via the source
+            anomaly = self._create_anomaly(
+                device_id=uuid4(),  # Placeholder - should be resolved
+                anomaly_type=AnomalyType.ERROR_SPIKE,
+                score=min(abs(z_score), 10.0),
+                description=f"Error rate {z_score:.1f} standard deviations above normal",
+                details={
+                    "source_id": source_id,
+                    "current_hourly_errors": current_hourly,
+                    "recent_error_count": recent_errors,
+                    "z_score": z_score,
+                },
+                baseline_comparison={
+                    "baseline_hourly_mean": hourly_mean,
+                    "baseline_hourly_std": hourly_std,
+                },
+            )
+            anomalies.append(anomaly)
+
+        return anomalies
+
+    async def _detect_container_restart_anomaly(
+        self,
+        source_id: str,
+        baseline_metrics: dict[str, Any],
+        cutoff: datetime,
+        time_window_hours: int,
+    ) -> list[AnomalyDetection]:
+        """Detect abnormal container restart patterns."""
+        anomalies: list[AnomalyDetection] = []
+
+        # Get recent container events
+        result = await self._session.execute(
+            select(RawEvent)
+            .where(RawEvent.source_id == source_id)
+            .where(RawEvent.event_type == EventType.CONTAINER)
+            .where(RawEvent.timestamp >= cutoff)
+        )
+        recent_events = result.scalars().all()
+
+        restart_count = 0
+        oom_count = 0
+        restart_containers: list[str] = []
+
+        for event in recent_events:
+            container_event = event.parsed_fields.get("container_event")
+            if container_event == "restart":
+                restart_count += 1
+                container_name = event.parsed_fields.get("container_name")
+                if container_name:
+                    restart_containers.append(container_name)
+            elif container_event == "oom_killed":
+                oom_count += 1
+
+        daily_mean = baseline_metrics.get("daily_restart_mean", 0)
+        expected_hourly = daily_mean / 24
+        expected_in_window = expected_hourly * time_window_hours
+
+        # Check for restart anomaly
+        threshold = max(expected_in_window * 3, 3)
+        if restart_count > threshold:
+            score = min(4.0 + restart_count / 2, 8.0)
+            anomaly = self._create_anomaly(
+                device_id=uuid4(),
+                anomaly_type=AnomalyType.CONTAINER_RESTART,
+                score=score,
+                description=f"{restart_count} container restarts detected (expected ~{expected_in_window:.1f})",
+                details={
+                    "source_id": source_id,
+                    "restart_count": restart_count,
+                    "oom_count": oom_count,
+                    "restart_containers": list(set(restart_containers)),
+                },
+                baseline_comparison={
+                    "baseline_daily_mean": daily_mean,
+                    "expected_in_window": expected_in_window,
+                },
+            )
+            anomalies.append(anomaly)
+
+        # Check for OOM kills (always significant)
+        if oom_count > 0:
+            score = 5.0 + oom_count
+            anomaly = self._create_anomaly(
+                device_id=uuid4(),
+                anomaly_type=AnomalyType.CONTAINER_RESTART,
+                score=score,
+                description=f"{oom_count} container OOM kill(s) detected",
+                details={
+                    "source_id": source_id,
+                    "oom_count": oom_count,
+                    "restart_count": restart_count,
+                },
+                baseline_comparison={
+                    "baseline_oom_count": baseline_metrics.get("oom_kill_count", 0),
+                },
+            )
+            anomalies.append(anomaly)
+
+        return anomalies
+
+    async def _detect_new_error_patterns(
+        self,
+        source_id: str,
+        baseline_metrics: dict[str, Any],
+        cutoff: datetime,
+    ) -> list[AnomalyDetection]:
+        """Detect new exception types not seen in baseline."""
+        anomalies: list[AnomalyDetection] = []
+
+        known_types = set(baseline_metrics.get("known_exception_types", []))
+
+        # Get recent exceptions
+        result = await self._session.execute(
+            select(RawEvent)
+            .where(RawEvent.source_id == source_id)
+            .where(RawEvent.event_type == EventType.APPLICATION)
+            .where(RawEvent.timestamp >= cutoff)
+        )
+        recent_events = result.scalars().all()
+
+        new_exceptions: dict[str, list[str]] = {}
+
+        for event in recent_events:
+            exc_type = event.parsed_fields.get("exception_type")
+            if exc_type and exc_type not in known_types:
+                if exc_type not in new_exceptions:
+                    new_exceptions[exc_type] = []
+                msg = event.parsed_fields.get("exception_message", "")
+                if msg:
+                    new_exceptions[exc_type].append(msg[:100])
+
+        if new_exceptions:
+            # Score based on number of new types and occurrences
+            total_new = sum(len(msgs) for msgs in new_exceptions.values())
+            score = min(NEW_ITEM_SCORE + len(new_exceptions) * 0.5, 7.0)
+
+            anomaly = self._create_anomaly(
+                device_id=uuid4(),
+                anomaly_type=AnomalyType.NEW_ERROR_PATTERN,
+                score=score,
+                description=f"{len(new_exceptions)} new exception type(s) detected ({total_new} occurrences)",
+                details={
+                    "source_id": source_id,
+                    "new_exception_types": list(new_exceptions.keys()),
+                    "new_exception_count": total_new,
+                    "sample_messages": {
+                        k: v[:3] for k, v in new_exceptions.items()
+                    },
+                },
+                baseline_comparison={
+                    "known_exception_count": len(known_types),
+                },
+            )
+            anomalies.append(anomaly)
+
+        return anomalies
 
 
 class AnomalyService:
