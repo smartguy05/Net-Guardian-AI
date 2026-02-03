@@ -267,6 +267,33 @@ The LLM system uses a factory pattern for provider abstraction (`app/services/ll
 - `ollama_provider.py`: Local Ollama implementation
 - `factory.py`: Provider instantiation based on configuration
 
+### Application Log Analysis
+
+The application log analysis pipeline processes Docker, Journald, Java, and Python logs:
+
+**Parsers** (`app/parsers/`):
+- `docker_parser.py`: Docker/Podman container logs (JSON format, lifecycle events)
+- `journald_parser.py`: systemd journal entries (priority mapping)
+- `java_stacktrace_parser.py`: Multi-line Java stack traces
+- `python_log_parser.py`: Python logging/structlog formats
+
+**Anomaly Detection Flow**:
+1. `AnomalyDetector.detect_anomalies()` calls `_detect_application_anomalies_for_device()`
+2. Quick count check skips devices with no app events (efficiency optimization)
+3. `AppBaselineCalculator.calculate_all_baselines_for_device()` fetches all events in one query
+4. Detection methods check: ERROR_SPIKE, CONTAINER_RESTART, NEW_ERROR_PATTERN
+5. Results are cached with 5-minute TTL (process-local, not shared across workers)
+
+**Security Pattern Detection** (`app/services/security_pattern_service.py`):
+- Regex-based pattern matching for SQL injection, XSS, path traversal, etc.
+- 28+ built-in patterns in `app/data/default_security_patterns.py`
+- Called by parsers via `detect_security_patterns()` wrapper
+
+**Baseline Caching** (`app/services/app_baseline_service.py`):
+- `_device_baseline_cache`: In-memory dict with TTL
+- Process-local only (not shared in multi-worker deployments)
+- Use `clear_device_baseline_cache()` for manual invalidation
+
 ## Testing
 
 Tests are in `backend/tests/`. The test suite uses pytest with async support (`asyncio_mode = "auto"`). Current coverage: 488 tests.

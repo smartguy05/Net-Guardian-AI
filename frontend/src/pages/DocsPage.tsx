@@ -34,6 +34,7 @@ import {
   Hash,
   Lightbulb,
   Scan,
+  ShieldAlert,
 } from 'lucide-react';
 import { useThemeStore } from '../stores/theme';
 import clsx from 'clsx';
@@ -163,6 +164,17 @@ const sections: Section[] = [
       { id: 'threat-intel-feeds', title: 'Managing Feeds' },
       { id: 'threat-intel-indicators', title: 'Indicators' },
       { id: 'threat-intel-lookup', title: 'Manual Lookup' },
+    ],
+  },
+  {
+    id: 'security-patterns',
+    title: 'Security Patterns',
+    icon: ShieldAlert,
+    subsections: [
+      { id: 'security-patterns-overview', title: 'Overview' },
+      { id: 'security-patterns-categories', title: 'Pattern Categories' },
+      { id: 'security-patterns-feeds', title: 'Pattern Feeds' },
+      { id: 'security-patterns-testing', title: 'Testing Patterns' },
     ],
   },
   {
@@ -1283,6 +1295,84 @@ curl -X POST http://localhost:8000/api/v1/semantic/runs/{source_id}/trigger \\
             </div>
           </section>
 
+          {/* Security Patterns Section */}
+          <section id="security-patterns" className="mb-16">
+            <h1 className="text-3xl font-bold mb-6">Security Patterns</h1>
+
+            <div id="security-patterns-overview" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Overview</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Security Patterns detect malicious content in application logs such as SQL injection,
+                command injection, path traversal, and other attack signatures. Unlike threat intelligence
+                feeds that match IPs and domains, security patterns analyze log content for attack indicators.
+              </p>
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4">
+                <p className="text-blue-800 dark:text-blue-200">
+                  <strong>Built-in Patterns:</strong> NetGuardian ships with default patterns for common attacks.
+                  These can be disabled but not deleted.
+                </p>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400">
+                Navigate to <strong>Security → Security Patterns</strong> to manage patterns and feeds.
+              </p>
+            </div>
+
+            <div id="security-patterns-categories" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Pattern Categories</h2>
+              <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400">
+                <li><strong>sql_injection</strong> - UNION attacks, OR 1=1, comment injection, stacked queries</li>
+                <li><strong>command_injection</strong> - Shell metacharacters, command substitution, pipe injection</li>
+                <li><strong>path_traversal</strong> - Directory traversal (../) and URL-encoded variants</li>
+                <li><strong>xss</strong> - Script tags, event handlers, javascript: URIs</li>
+                <li><strong>deserialization</strong> - Java gadget classes, pickle exploits</li>
+                <li><strong>ssrf</strong> - Internal IP access, cloud metadata endpoints</li>
+                <li><strong>auth_bypass</strong> - Authentication bypass attempts</li>
+                <li><strong>custom</strong> - User-defined patterns for specific applications</li>
+              </ul>
+            </div>
+
+            <div id="security-patterns-feeds" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Pattern Feeds</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Import patterns from external URLs to stay current with emerging threats. Feeds can be
+                updated on a schedule or manually refreshed.
+              </p>
+              <h3 className="text-lg font-medium mb-3">Feed Configuration</h3>
+              <ul className="list-disc list-inside space-y-2 text-gray-600 dark:text-gray-400 mb-4">
+                <li><strong>URL</strong> - The feed endpoint returning JSON patterns</li>
+                <li><strong>Update Interval</strong> - How often to fetch (1-168 hours)</li>
+                <li><strong>Authentication</strong> - None, Basic, Bearer token, or API key</li>
+                <li><strong>Field Mapping</strong> - Map feed fields to NetGuardian schema</li>
+              </ul>
+              <h3 className="text-lg font-medium mb-3">Expected JSON Format</h3>
+              <CodeBlock language="json">{`{
+  "version": "1.0",
+  "name": "My Security Patterns",
+  "patterns": [
+    {
+      "id": "sql-union-001",
+      "name": "SQL UNION Attack",
+      "category": "sql_injection",
+      "pattern_type": "regex",
+      "pattern": "(?i)union\\\\s+(all\\\\s+)?select",
+      "severity": "high"
+    }
+  ]
+}`}</CodeBlock>
+            </div>
+
+            <div id="security-patterns-testing" className="mb-12">
+              <h2 className="text-2xl font-bold mb-4">Testing Patterns</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Use the <strong>Test</strong> tab to validate patterns against sample text before enabling them.
+                This helps ensure your regex patterns match the expected content without false positives.
+              </p>
+              <p className="text-gray-600 dark:text-gray-400">
+                Enter sample log content and click <strong>Run Test</strong> to see which patterns match and why.
+              </p>
+            </div>
+          </section>
+
           {/* Sources Section */}
           <section id="sources" className="mb-16">
             <h1 className="text-3xl font-bold mb-6">Log Sources</h1>
@@ -1335,6 +1425,10 @@ curl -X POST http://localhost:8000/api/v1/semantic/runs/{source_id}/trigger \\
                 <li><strong>nginx</strong> - Nginx access and error logs</li>
                 <li><strong>endpoint</strong> - Endpoint agent events</li>
                 <li><strong>ollama</strong> - Ollama LLM interaction logs</li>
+                <li><strong>docker</strong> - Docker/Podman container logs with JSON format</li>
+                <li><strong>journald</strong> - systemd journal logs from services</li>
+                <li><strong>java_stacktrace</strong> - Java exception stack traces (Log4j, Logback)</li>
+                <li><strong>python_log</strong> - Python logging module and tracebacks</li>
               </ul>
             </div>
 

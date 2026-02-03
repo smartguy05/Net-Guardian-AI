@@ -4,6 +4,58 @@ Condensed summary of completed implementation work.
 
 ---
 
+## Application Log Analysis (February 2026)
+
+**Implemented application log analysis for Docker containers, systemd services, and application-specific logs (Java/Python) with configurable security pattern detection.**
+
+### Phase 1: Data Model Extensions
+- Added `CONTAINER`, `JOURNAL`, `APPLICATION` to `EventType` enum
+- Added `DOCKER`, `JOURNALD`, `JAVA_STACKTRACE`, `PYTHON_LOG` to `ParserType` enum
+- Added `ERROR_SPIKE`, `NEW_ERROR_PATTERN`, `CONTAINER_RESTART`, `SECURITY_PATTERN` to `AnomalyType` enum
+- Migration: `20260202_0015_015_add_app_log_enums.py`
+
+### Phase 2: Security Pattern Management System
+**New Files:**
+- `backend/app/models/security_pattern.py`: SecurityPattern, SecurityPatternFeed models with PatternCategory, PatternType, PatternSource enums
+- `backend/app/api/v1/security_patterns.py`: Full CRUD API for patterns and feeds (list, get, create, update, delete, enable/disable, test, match, fetch)
+- `backend/app/services/security_pattern_service.py`: Pattern matching with regex caching, feed fetching with auth support
+- `backend/app/parsers/security_patterns.py`: Parser integration wrapper
+- `backend/app/data/default_security_patterns.py`: 28+ built-in patterns (SQL injection, command injection, XSS, path traversal, deserialization, SSRF, etc.)
+- `docs/security-pattern-feeds.md`: Feed format documentation with field mapping examples
+- Migration: `20260202_0016_016_add_security_patterns.py`
+
+### Phase 3: New Parsers
+- `backend/app/parsers/docker_parser.py`: Docker JSON log parsing, container events (start/stop/restart/oom_killed), error detection
+- `backend/app/parsers/journald_parser.py`: systemd journal JSON parsing, priority mapping, service state detection
+- `backend/app/parsers/java_stacktrace_parser.py`: Multi-line stack trace parsing, exception chain extraction, security exception detection
+- `backend/app/parsers/python_log_parser.py`: Python logging/traceback parsing, structlog JSON support
+
+### Phase 4: Agent Collectors
+- `agent/collectors/docker_collector.py`: Docker/Podman socket connection, container log streaming, lifecycle events
+- `agent/collectors/journal_collector.py`: systemd journal reading (library + journalctl fallback), cursor-based resumption
+
+### Phase 5: Analysis Services
+- `backend/app/services/app_baseline_service.py`: Application baselines (error rate, container metrics, exception types)
+- `backend/app/services/security_analysis_service.py`: Security pattern analysis, finding correlation, attack detection
+- Extended `backend/app/services/anomaly_service.py` with `detect_application_anomalies()` method
+
+### Phase 6: Default Rules & Frontend
+- `backend/app/data/default_app_rules.py`: 19 pre-built detection rules (SQL injection, command injection, error spikes, container restart loops, OOM errors, Java/Python specific)
+- `frontend/src/pages/SecurityPatternsPage.tsx`: Pattern management with filters, pattern testing, text matching
+- `frontend/src/types/index.ts`: SecurityPattern, SecurityPatternFeed, PatternMatch types
+- `frontend/src/api/hooks.ts`: 15+ hooks for security patterns and feeds CRUD
+- Added route in `frontend/src/App.tsx` and navigation in `frontend/src/components/Layout.tsx`
+
+### Documentation Updates
+- `README.md`: Updated parser count (11→15), added new parser types to table
+- `docs/user-guide.md`: Added CONTAINER/JOURNAL/APPLICATION event types, new anomaly types, Docker/Journald sources, Security Patterns section
+- `docs/configuration.md`: Added Docker, Journald, Java Stacktrace, Python Log parser configurations, Security Pattern Detection section
+- `docs/deployment-guide.md`: Added Docker, Journald, Java, Python source examples, security pattern feed import instructions
+- `frontend/src/content/helpContent.ts`: Added `/dashboard/security-patterns` help content (5 sections)
+- `frontend/src/pages/DocsPage.tsx`: Added Security Patterns section with 4 subsections, updated parser list with new parsers
+
+---
+
 ## Phase 9: Semantic Log Analysis (January 2026)
 
 **Database**: 6 tables (LogPattern, SemanticAnalysisConfig, IrregularLog, SemanticAnalysisRun, SuggestedRule, SuggestedRuleHistory) with 4 enums - `backend/app/models/semantic_analysis.py`
@@ -520,6 +572,84 @@ User Message → classify_intent() [Haiku] → build_context(intent) → stream_
 - Intent-specific system prompts for each category
 - Conditional network context loading - only fetches database data when needed
 - Response includes detected intent for frontend debugging
+
+---
+
+## Application Anomaly Detection in "Run Detection" (February 2026)
+
+**Feature**: Integrated application log anomaly detection (ERROR_SPIKE, NEW_ERROR_PATTERN, CONTAINER_RESTART) into the main "Run Detection" flow on the Anomalies page.
+
+**Background**: Previously, `detect_application_anomalies(source_id)` existed but was not called from `run_detection_for_all_devices()`. Network anomaly detection (DNS, TRAFFIC, CONNECTION) worked per-device, but application anomalies required a source_id.
+
+**Implementation**:
+
+**Backend - App Baseline Service** (`backend/app/services/app_baseline_service.py`):
+- Updated `AppBaseline` class to accept optional `device_id` parameter
+- Added `calculate_error_rate_baseline_for_device(device_id)` - queries app events by device_id
+- Added `calculate_container_baseline_for_device(device_id)` - queries container events by device_id
+- Added `calculate_exception_baseline_for_device(device_id)` - queries exception events by device_id
+
+**Backend - Anomaly Service** (`backend/app/services/anomaly_service.py`):
+- Added `_detect_application_anomalies_for_device(device_id, time_window_hours)`:
+  - Early exit check: Skips expensive baseline calculation if device has no app events in last 7 days
+  - Calculates error rate, container, and exception baselines on-demand
+  - Returns list of detected anomalies (ERROR_SPIKE, CONTAINER_RESTART, NEW_ERROR_PATTERN)
+- Added `_detect_error_spike_for_device()` - z-score based error rate spike detection
+- Added `_detect_container_restart_for_device()` - restart count + OOM kill detection
+- Added `_detect_new_error_patterns_for_device()` - new exception type detection
+- Modified `detect_anomalies()` to call `_detect_application_anomalies_for_device()` after network anomaly detection
+
+**Tests** (`backend/tests/services/test_anomaly_service.py`):
+- Added `TestApplicationAnomalyDetectionForDevice` class with 11 new tests:
+  - `test_detect_app_anomalies_no_app_events` - early exit when device has no app events
+  - `test_detect_error_spike_for_device` - detects high error rates
+  - `test_detect_error_spike_for_device_normal` - no anomaly for normal rates
+  - `test_detect_container_restart_for_device` - detects excessive restarts
+  - `test_detect_container_oom_kill_for_device` - detects OOM kills
+  - `test_detect_new_error_patterns_for_device` - detects new exception types
+  - `test_detect_new_error_patterns_for_device_no_new` - no anomaly for known types
+  - `test_application_anomaly_types_exist` - validates enum values
+  - `test_application_anomaly_severity_calculation` - validates severity thresholds
+- Updated `test_detect_anomalies_learning_baselines` to account for new app anomaly detection call
+
+**Result**: 45 tests passing in test_anomaly_service.py
+
+**Performance Improvements** (from code review):
+1. **Consolidated event fetching**: Single query fetches all app events, then splits for metric calculations
+2. **Baseline caching**: 5-minute TTL cache for `DeviceAppBaselines` to avoid redundant calculations
+3. **Database index**: Added composite index `ix_raw_events_device_event_type_timestamp` for optimized queries
+4. **Debug logging**: Added structured logging for detection start, skip reasons, and anomaly counts
+
+**New files/migrations**:
+- `alembic/versions/20260202_0017_017_add_app_event_index.py`: Composite index migration
+
+**User Impact**: When clicking "Run Detection" on the Anomalies page, the system now also checks for:
+- Error rate spikes in application/container/journal logs
+- Excessive container restarts
+- Container OOM kills (always flagged as significant)
+- New exception types not seen in the 7-day baseline
+
+---
+
+## CI Fixes & Code Review Improvements (February 2026)
+
+**Lint Fixes** (`app/api/v1/chat.py`, `tests/services/test_chat_context_service.py`):
+- Fixed import block sorting (moved `import structlog` to third-party group)
+- Removed unused imports (`ChatIntent`, `AsyncMock`, `MagicMock`)
+
+**Type Check Fixes**:
+- `app/models/chat_intent.py`: Changed `dict | None` to `dict[str, Any] | None`
+- `app/services/integrations/c4000xg.py`:
+  - Added explicit type annotations for `response.json()` results
+  - Added type annotation for `rules: list[dict[str, Any]] = []`
+  - Added 6 `assert self._session_id is not None` before `cookies.set()` calls
+
+**Code Review Improvements** (PR #6):
+1. **Fixed typo in `_calculate_exception_metrics`**: `exc_messages` → `exception_messages`
+2. **Type consistency**: Changed `known_exception_types` from `set` to `list` for JSON serialization
+3. **Documented cache limitation**: Added note that `_device_baseline_cache` is process-local
+4. **Removed deprecated source-based methods**: Deleted `detect_application_anomalies()`, `_detect_error_spike()`, `_detect_container_restart_anomaly()`, `_detect_new_error_patterns()` - superseded by device-based methods
+5. **Added architecture docs**: New "Application Log Analysis" section in CLAUDE.md
 
 ---
 

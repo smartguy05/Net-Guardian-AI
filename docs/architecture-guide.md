@@ -492,6 +492,9 @@ class AnomalyDetector:
 | `TIME_ANOMALY` | Activity 3x expected for this hour | IoT device active at 3 AM |
 | `BLOCKED_SPIKE` | 2x normal blocked query ratio | Many blocked malware domains |
 | `NEW_CONNECTION` | Connection to unknown IP/port | Outbound connection to unusual port |
+| `ERROR_SPIKE` | Error rate z-score > 2.0 above normal | Application throwing 10x normal errors |
+| `NEW_ERROR_PATTERN` | Exception type not in 7-day baseline | New `SecurityException` appears in logs |
+| `CONTAINER_RESTART` | Restart count exceeds 3x expected or OOM kill | Container restart loop detected |
 
 ### 5.5 Z-Score Calculation
 

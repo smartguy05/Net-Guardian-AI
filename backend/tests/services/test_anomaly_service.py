@@ -445,25 +445,25 @@ class TestAnomalyDetectorAsyncMethods:
     async def test_detect_anomalies_learning_baselines(
         self, detector, sample_device_id, mock_session
     ):
-        """Test detection when baselines are still learning."""
-        learning_baseline = MagicMock(spec=DeviceBaseline)
-        learning_baseline.status = BaselineStatus.LEARNING
-        learning_baseline.baseline_type = BaselineType.DNS
-        learning_baseline.metrics = {}
+        """Test detection when baselines are still learning.
 
-        # First call returns baselines
+        The query filters for READY baselines, so LEARNING baselines
+        won't be returned. This effectively tests having no ready baselines.
+        """
+        # Query for READY baselines returns empty (all are still LEARNING)
         baselines_result = MagicMock()
-        baselines_result.scalars.return_value.all.return_value = [learning_baseline]
+        baselines_result.scalars.return_value.all.return_value = []
 
-        # Events query returns empty for learning baselines (they're skipped)
-        events_result = MagicMock()
-        events_result.scalars.return_value.all.return_value = []
+        # App anomaly detection count check returns 0 (no app events)
+        app_count_result = MagicMock()
+        app_count_result.scalar.return_value = 0
 
-        mock_session.execute.side_effect = [baselines_result, events_result]
+        mock_session.execute.side_effect = [baselines_result, app_count_result]
 
         anomalies = await detector.detect_anomalies(sample_device_id)
 
-        # Should not detect anomalies against learning baselines
+        # Should not detect anomalies when no READY baselines exist
+        # (and no app anomalies because no app events)
         assert len(anomalies) == 0
 
     def test_volume_spike_detection_math(self, dns_baseline_ready):
@@ -737,3 +737,250 @@ class TestZScoreCalculations:
         """Test extreme z-score (5.0+)."""
         severity = AnomalyDetection.calculate_severity(6.0, AnomalyType.VOLUME_SPIKE)
         assert severity == AlertSeverity.CRITICAL
+
+
+class TestApplicationAnomalyDetectionForDevice:
+    """Tests for device-based application anomaly detection."""
+
+    @pytest.fixture
+    def mock_session(self):
+        """Create a mock async session."""
+        session = AsyncMock()
+        return session
+
+    @pytest.fixture
+    def detector(self, mock_session):
+        """Create a detector with mock session."""
+        return AnomalyDetector(mock_session)
+
+    @pytest.fixture
+    def sample_device_id(self):
+        """Sample device ID for testing."""
+        return uuid4()
+
+    @pytest.mark.asyncio
+    async def test_detect_app_anomalies_no_app_events(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test that detection returns empty list when device has no app events."""
+        # Mock count query returning 0 (no app events)
+        count_result = MagicMock()
+        count_result.scalar.return_value = 0
+        mock_session.execute.return_value = count_result
+
+        anomalies = await detector._detect_application_anomalies_for_device(
+            sample_device_id, time_window_hours=1
+        )
+
+        assert len(anomalies) == 0
+        # Should have made only one query (the count check)
+        assert mock_session.execute.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_detect_error_spike_for_device(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test error spike detection for a device."""
+        cutoff = datetime.now(UTC)
+        baseline_metrics = {
+            "hourly_error_mean": 5.0,
+            "hourly_error_std": 2.0,
+        }
+
+        # Mock count query returning 25 errors (way above normal)
+        count_result = MagicMock()
+        count_result.scalar.return_value = 25
+        mock_session.execute.return_value = count_result
+
+        anomalies = await detector._detect_error_spike_for_device(
+            sample_device_id, baseline_metrics, cutoff, time_window_hours=1
+        )
+
+        # 25 errors/hour vs mean=5, std=2 -> z-score = (25-5)/2 = 10
+        assert len(anomalies) == 1
+        assert anomalies[0].anomaly_type == AnomalyType.ERROR_SPIKE
+        assert anomalies[0].device_id == sample_device_id
+
+    @pytest.mark.asyncio
+    async def test_detect_error_spike_for_device_normal(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test that normal error rate doesn't trigger anomaly."""
+        cutoff = datetime.now(UTC)
+        baseline_metrics = {
+            "hourly_error_mean": 5.0,
+            "hourly_error_std": 2.0,
+        }
+
+        # Mock count query returning 6 errors (slightly above normal but within threshold)
+        count_result = MagicMock()
+        count_result.scalar.return_value = 6
+        mock_session.execute.return_value = count_result
+
+        anomalies = await detector._detect_error_spike_for_device(
+            sample_device_id, baseline_metrics, cutoff, time_window_hours=1
+        )
+
+        # 6 errors/hour vs mean=5, std=2 -> z-score = (6-5)/2 = 0.5 (below threshold)
+        assert len(anomalies) == 0
+
+    @pytest.mark.asyncio
+    async def test_detect_container_restart_for_device(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test container restart anomaly detection for a device."""
+        cutoff = datetime.now(UTC)
+        baseline_metrics = {
+            "daily_restart_mean": 2.0,
+            "oom_kill_count": 0,
+        }
+
+        # Mock events with multiple restarts
+        restart_events = [
+            MagicMock(
+                parsed_fields={"container_event": "restart", "container_name": "app1"},
+            ),
+            MagicMock(
+                parsed_fields={"container_event": "restart", "container_name": "app1"},
+            ),
+            MagicMock(
+                parsed_fields={"container_event": "restart", "container_name": "app2"},
+            ),
+            MagicMock(
+                parsed_fields={"container_event": "restart", "container_name": "app2"},
+            ),
+        ]
+        events_result = MagicMock()
+        events_result.scalars.return_value.all.return_value = restart_events
+        mock_session.execute.return_value = events_result
+
+        anomalies = await detector._detect_container_restart_for_device(
+            sample_device_id, baseline_metrics, cutoff, time_window_hours=1
+        )
+
+        # 4 restarts when expected ~0.08/hour -> should trigger
+        assert len(anomalies) == 1
+        assert anomalies[0].anomaly_type == AnomalyType.CONTAINER_RESTART
+        assert anomalies[0].device_id == sample_device_id
+        assert anomalies[0].details["restart_count"] == 4
+
+    @pytest.mark.asyncio
+    async def test_detect_container_oom_kill_for_device(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test OOM kill detection for a device."""
+        cutoff = datetime.now(UTC)
+        baseline_metrics = {
+            "daily_restart_mean": 0.0,
+            "oom_kill_count": 0,
+        }
+
+        # Mock events with OOM kill
+        oom_events = [
+            MagicMock(
+                parsed_fields={"container_event": "oom_killed", "container_name": "memory-hog"},
+            ),
+        ]
+        events_result = MagicMock()
+        events_result.scalars.return_value.all.return_value = oom_events
+        mock_session.execute.return_value = events_result
+
+        anomalies = await detector._detect_container_restart_for_device(
+            sample_device_id, baseline_metrics, cutoff, time_window_hours=1
+        )
+
+        # OOM kills are always significant
+        assert len(anomalies) == 1
+        assert anomalies[0].anomaly_type == AnomalyType.CONTAINER_RESTART
+        assert anomalies[0].details["oom_count"] == 1
+
+    @pytest.mark.asyncio
+    async def test_detect_new_error_patterns_for_device(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test new exception type detection for a device."""
+        cutoff = datetime.now(UTC)
+        baseline_metrics = {
+            "known_exception_types": {"ValueError", "TypeError"},
+        }
+
+        # Mock events with a new exception type
+        new_exception_events = [
+            MagicMock(
+                parsed_fields={
+                    "exception_type": "SecurityException",
+                    "exception_message": "Access denied",
+                },
+            ),
+            MagicMock(
+                parsed_fields={
+                    "exception_type": "ValueError",  # Known type - should be ignored
+                    "exception_message": "Invalid value",
+                },
+            ),
+        ]
+        events_result = MagicMock()
+        events_result.scalars.return_value.all.return_value = new_exception_events
+        mock_session.execute.return_value = events_result
+
+        anomalies = await detector._detect_new_error_patterns_for_device(
+            sample_device_id, baseline_metrics, cutoff
+        )
+
+        # Should detect SecurityException as new
+        assert len(anomalies) == 1
+        assert anomalies[0].anomaly_type == AnomalyType.NEW_ERROR_PATTERN
+        assert anomalies[0].device_id == sample_device_id
+        assert "SecurityException" in anomalies[0].details["new_exception_types"]
+
+    @pytest.mark.asyncio
+    async def test_detect_new_error_patterns_for_device_no_new(
+        self, detector, sample_device_id, mock_session
+    ):
+        """Test no anomaly when all exceptions are known."""
+        cutoff = datetime.now(UTC)
+        baseline_metrics = {
+            "known_exception_types": {"ValueError", "TypeError"},
+        }
+
+        # Mock events with only known exception types
+        known_exception_events = [
+            MagicMock(
+                parsed_fields={
+                    "exception_type": "ValueError",
+                    "exception_message": "Invalid value",
+                },
+            ),
+        ]
+        events_result = MagicMock()
+        events_result.scalars.return_value.all.return_value = known_exception_events
+        mock_session.execute.return_value = events_result
+
+        anomalies = await detector._detect_new_error_patterns_for_device(
+            sample_device_id, baseline_metrics, cutoff
+        )
+
+        assert len(anomalies) == 0
+
+    def test_application_anomaly_types_exist(self):
+        """Test that application anomaly types exist in AnomalyType enum."""
+        assert AnomalyType.ERROR_SPIKE.value == "error_spike"
+        assert AnomalyType.NEW_ERROR_PATTERN.value == "new_error_pattern"
+        assert AnomalyType.CONTAINER_RESTART.value == "container_restart"
+
+    def test_application_anomaly_severity_calculation(self):
+        """Test severity calculation for application anomaly types."""
+        # ERROR_SPIKE severity
+        assert AnomalyDetection.calculate_severity(3.0, AnomalyType.ERROR_SPIKE) in [
+            AlertSeverity.MEDIUM, AlertSeverity.HIGH
+        ]
+
+        # NEW_ERROR_PATTERN severity
+        assert AnomalyDetection.calculate_severity(4.0, AnomalyType.NEW_ERROR_PATTERN) in [
+            AlertSeverity.HIGH, AlertSeverity.CRITICAL
+        ]
+
+        # CONTAINER_RESTART severity
+        assert AnomalyDetection.calculate_severity(6.0, AnomalyType.CONTAINER_RESTART) in [
+            AlertSeverity.HIGH, AlertSeverity.CRITICAL
+        ]

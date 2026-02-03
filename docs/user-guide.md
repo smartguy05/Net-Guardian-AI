@@ -121,7 +121,9 @@ View all normalized events from configured log sources:
 | LLM | AI/LLM interaction events |
 | Endpoint | Endpoint agent events (processes, connections) |
 | Flow | Network flow data (NetFlow/sFlow) |
-| HTTP | Web server access/error logs (e.g., from Loki) |
+| Container | Docker/Podman container logs and lifecycle events |
+| Journal | systemd journal entries |
+| Application | Application logs with stack traces (Java, Python) |
 
 ## Alerts
 
@@ -175,6 +177,10 @@ Anomalies are detected when behavior deviates significantly from baselines.
 | Blocked Spike | Sudden increase in blocked requests |
 | New Connection | Connection to new IP/port combination |
 | Pattern Change | Significant change in behavior patterns |
+| Error Spike | Unusual increase in application error rate |
+| New Error Pattern | Previously unseen exception or error type |
+| Container Restart | Container restart loop detected |
+| Security Pattern | Attack pattern detected in application logs |
 
 ### Managing Anomalies
 
@@ -197,15 +203,43 @@ After resolving false positives or expected behavior changes:
 
 ## AI Chat
 
+### Intelligent Intent Detection
+
+The AI Chat automatically detects what type of question you're asking and provides the most relevant context. It understands six types of queries:
+
+| Query Type | Example Questions | What It Does |
+|------------|-------------------|--------------|
+| **App Help** | "How do I quarantine a device?" | Provides step-by-step UI guidance from help docs |
+| **Setup & Config** | "How do I configure Authentik?" | References configuration.md with env vars and examples |
+| **Troubleshooting** | "My log source isn't working" | Diagnoses issues with relevant config and docs |
+| **Network Analysis** | "What devices have anomalies?" | Analyzes your actual network data (devices, alerts, events) |
+| **Vulnerability Research** | "What is CVE-2024-1234?" | Provides security research with official source references |
+| **General Chat** | "Hello", "Thanks" | Friendly conversation |
+
 ### Natural Language Queries
 
 Use the AI Chat to ask questions about your network:
 
-**Example Queries:**
+**Network Analysis Examples:**
 - "Show me devices with unusual DNS activity"
 - "What alerts were generated today?"
 - "Summarize network activity for the last hour"
 - "Which device has the most blocked requests?"
+
+**App Help Examples:**
+- "How do I create a detection rule?"
+- "Where can I see quarantined devices?"
+- "How do I export alerts to PDF?"
+
+**Setup & Config Examples:**
+- "How do I configure Authentik SSO?"
+- "What environment variables do I need for email notifications?"
+- "How do I set up AdGuard integration?"
+
+**Troubleshooting Examples:**
+- "Why aren't events appearing from my log source?"
+- "I'm getting authentication errors"
+- "My anomaly detection isn't working"
 
 ### Model Selection
 
@@ -424,6 +458,164 @@ Poll Interval: 60 seconds
 | impersonation_started | Warning | Yes |
 | suspicious_request | Error | Yes |
 | policy_exception | Warning | No |
+
+### Docker Container Log Sources
+
+Collect logs from Docker or Podman containers:
+
+1. Create an **API Pull** source
+2. Select parser type: **docker**
+3. Configure:
+   - URL: Docker socket path (e.g., `unix:///var/run/docker.sock`)
+   - Include Containers: Pattern to match container names (default: `*`)
+   - Exclude Containers: Patterns to exclude
+
+**Docker Parser Features:**
+- Parses Docker JSON log format with timestamps
+- Detects container lifecycle events (start, stop, restart, OOM killed)
+- Extracts container metadata (ID, name, image)
+- Identifies error patterns in container output
+- Detects container restart loops
+
+**Detected Events:**
+| Event | Severity | Description |
+|-------|----------|-------------|
+| container_start | Info | Container started |
+| container_stop | Info | Container stopped normally |
+| container_restart | Warning | Container restarted |
+| oom_killed | Error | Container killed due to out-of-memory |
+| exit_error | Warning | Container exited with non-zero code |
+
+**Agent Configuration:**
+
+For Docker log collection via the NetGuardian agent, add to agent config:
+```yaml
+docker:
+  enabled: true
+  socket_path: /var/run/docker.sock
+  include_containers: ["*"]
+  exclude_containers: []
+```
+
+### Systemd Journal Sources
+
+Collect logs from systemd journal (Linux services):
+
+1. Create an **API Pull** source
+2. Select parser type: **journald**
+3. Configure:
+   - Units: List of systemd units to monitor (empty = all)
+   - Priority Min: Minimum priority level (0=emergency, 7=debug)
+   - Include Kernel: Whether to include kernel messages
+
+**Journald Parser Features:**
+- Parses journalctl JSON export format
+- Maps syslog priority levels to severity
+- Extracts unit name, PID, and boot ID
+- Detects service state changes (starting, running, failed)
+- Supports cursor-based log resumption
+
+**Priority to Severity Mapping:**
+| Priority | Name | Severity |
+|----------|------|----------|
+| 0-2 | Emergency/Alert/Critical | Critical |
+| 3 | Error | Error |
+| 4 | Warning | Warning |
+| 5 | Notice | Info |
+| 6-7 | Info/Debug | Debug |
+
+**Agent Configuration:**
+
+For journal collection via the NetGuardian agent, add to agent config:
+```yaml
+journald:
+  enabled: true
+  units: ["nginx.service", "sshd.service"]
+  priority_min: 4  # warning and above
+  include_kernel: false
+```
+
+### Application Log Sources (Java/Python)
+
+Parse stack traces and structured logs from applications:
+
+**Java Stack Trace Parser:**
+- Select parser type: **java_stacktrace**
+- Detects Java exception patterns with full stack traces
+- Extracts exception type, message, and root cause
+- Identifies security exceptions (SQL errors, deserialization gadgets)
+- Supports multi-line stack trace reassembly
+
+**Python Log Parser:**
+- Select parser type: **python_log**
+- Parses Python logging module format and tracebacks
+- Supports structlog JSON format
+- Extracts exception type, message, and stack frames
+- Detects security-related exceptions
+
+## Security Patterns
+
+### Overview
+
+Security Patterns detect attack signatures in application logs. NetGuardian includes 28+ built-in patterns for common attacks and supports custom patterns.
+
+**Access Security Patterns:**
+1. Navigate to **Security Patterns** in the sidebar
+2. View all patterns with their category, severity, and hit count
+3. Enable/disable patterns as needed
+4. Test patterns against sample text
+
+### Built-in Pattern Categories
+
+| Category | Description | Examples |
+|----------|-------------|----------|
+| SQL Injection | Database attack patterns | UNION SELECT, OR 1=1, comment injection |
+| Command Injection | Shell command patterns | Pipe operators, backticks, $() |
+| Path Traversal | Directory escape patterns | ../, URL-encoded variants |
+| XSS | Cross-site scripting | Script tags, event handlers |
+| Deserialization | Unsafe object patterns | Java gadget classes |
+| SSRF | Server-side request forgery | Internal IPs, cloud metadata URLs |
+| Auth Bypass | Authentication bypass | admin' --, password reset abuse |
+| Log Injection | Log manipulation | CRLF injection, log forging |
+
+### Creating Custom Patterns
+
+1. Navigate to **Security Patterns > Test** tab
+2. Enter your pattern (regex, literal, or keyword)
+3. Test against sample text to verify matches
+4. If satisfied, contact admin to add the pattern
+
+**Pattern Types:**
+- **Regex:** Regular expression (most flexible)
+- **Literal:** Exact string match (fastest)
+- **Keyword:** Case-insensitive substring match
+
+### Pattern Feeds
+
+Import patterns from external sources:
+
+1. Navigate to **Security Patterns > Feeds** tab
+2. Click **Add Feed** (Admin only)
+3. Configure feed URL and authentication
+4. Set update interval
+
+**Feed Format:**
+Feeds should provide JSON with this structure:
+```json
+{
+  "patterns": [
+    {
+      "name": "Pattern Name",
+      "description": "What it detects",
+      "category": "sql_injection",
+      "pattern_type": "regex",
+      "pattern": "(?i)union\\s+select",
+      "severity": "high",
+      "tags": ["owasp", "database"]
+    }
+  ]
+}
+```
 
 ## User Management
 

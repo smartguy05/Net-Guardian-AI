@@ -30,6 +30,11 @@ class AnomalyType(str, Enum):
     NEW_PORT = "new_port"
     BLOCKED_SPIKE = "blocked_spike"
     PATTERN_CHANGE = "pattern_change"
+    # Application log anomalies
+    ERROR_SPIKE = "error_spike"  # Sudden increase in error rate
+    NEW_ERROR_PATTERN = "new_error_pattern"  # First-time exception type
+    CONTAINER_RESTART = "container_restart"  # Abnormal container restart
+    SECURITY_PATTERN = "security_pattern"  # Security pattern match detected
 
 
 class AnomalyStatus(str, Enum):
@@ -162,7 +167,12 @@ class AnomalyDetection(Base, TimestampMixin):
             Appropriate AlertSeverity level.
         """
         # Higher scores for certain anomaly types warrant higher severity
-        high_risk_types = {AnomalyType.NEW_CONNECTION, AnomalyType.BLOCKED_SPIKE}
+        high_risk_types = {
+            AnomalyType.NEW_CONNECTION,
+            AnomalyType.BLOCKED_SPIKE,
+            AnomalyType.SECURITY_PATTERN,
+            AnomalyType.CONTAINER_RESTART,
+        }
 
         if anomaly_type in high_risk_types:
             # More aggressive severity for risky anomaly types

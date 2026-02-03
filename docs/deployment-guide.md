@@ -77,7 +77,7 @@ The seed script creates a comprehensive dataset:
 |-----------|-------|-------------|
 | Users | 3 | Admin, operator, and viewer accounts |
 | Devices | 17 | PCs, mobiles, IoT, servers, network equipment |
-| Log Sources | 7 | AdGuard, firewall, endpoint, NetFlow, syslog, Ollama, Loki |
+| Log Sources | 11 | AdGuard, firewall, endpoint, NetFlow, syslog, Ollama, Loki, Docker, Journald, Java, Python |
 | Events | 390+ | DNS, firewall, flow, endpoint, LLM, and Loki events |
 | Alerts | 6 | Various severities (critical to low) and statuses |
 | Anomalies | 5 | Different anomaly types linked to devices |
@@ -670,6 +670,142 @@ curl -X POST http://localhost:8000/api/v1/sources \
       "poll_interval_seconds": 60
     }
   }'
+```
+
+### Docker Container Log Collection
+
+To collect logs from Docker/Podman containers, use the NetGuardian agent or configure a Docker source:
+
+**Using the Agent (Recommended):**
+
+Configure the agent's `config.yaml`:
+```yaml
+docker:
+  enabled: true
+  socket_path: /var/run/docker.sock
+  include_containers: ["*"]
+  exclude_containers: ["netguardian-*"]  # Exclude NetGuardian's own containers
+```
+
+Ensure the agent has access to the Docker socket:
+```yaml
+# docker-compose.yml
+agent:
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+```
+
+**Via API Source:**
+```bash
+curl -X POST http://localhost:8000/api/v1/sources \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "docker-containers",
+    "name": "Docker Containers",
+    "source_type": "api_pull",
+    "parser_type": "docker",
+    "enabled": true,
+    "config": {
+      "detect_errors": true
+    }
+  }'
+```
+
+### Systemd Journal Collection
+
+To collect logs from systemd journal:
+
+**Using the Agent (Recommended):**
+
+Configure the agent's `config.yaml`:
+```yaml
+journald:
+  enabled: true
+  units: ["nginx.service", "sshd.service", "docker.service"]
+  priority_min: 4  # warning and above
+  include_kernel: false
+```
+
+**Via API Source:**
+```bash
+curl -X POST http://localhost:8000/api/v1/sources \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "systemd-journal",
+    "name": "Systemd Journal",
+    "source_type": "api_pull",
+    "parser_type": "journald",
+    "enabled": true,
+    "config": {
+      "units": ["nginx.service", "sshd.service"],
+      "priority_min": 4
+    }
+  }'
+```
+
+### Application Log Sources (Java/Python)
+
+For Java and Python applications with stack traces:
+
+```bash
+# Java application logs
+curl -X POST http://localhost:8000/api/v1/sources \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "java-backend",
+    "name": "Java Backend Logs",
+    "source_type": "file_watch",
+    "parser_type": "java_stacktrace",
+    "enabled": true,
+    "config": {
+      "path": "/logs/java-app/*.log",
+      "detect_security_exceptions": true
+    }
+  }'
+
+# Python application logs
+curl -X POST http://localhost:8000/api/v1/sources \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "python-api",
+    "name": "Python API Logs",
+    "source_type": "file_watch",
+    "parser_type": "python_log",
+    "enabled": true,
+    "config": {
+      "path": "/logs/python-app/*.log",
+      "structlog_enabled": true
+    }
+  }'
+```
+
+### Security Pattern Feed Import
+
+Import security patterns from an external feed:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/security-patterns/feeds \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Custom Security Patterns",
+    "description": "Organization-specific patterns",
+    "url": "https://patterns.example.com/feed.json",
+    "enabled": true,
+    "update_interval_hours": 24,
+    "auth_type": "bearer",
+    "auth_config": {
+      "token": "your-api-token"
+    }
+  }'
+
+# Trigger immediate fetch
+curl -X POST http://localhost:8000/api/v1/security-patterns/feeds/{feed_id}/fetch \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ## Monitoring and Troubleshooting

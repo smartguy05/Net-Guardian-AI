@@ -17,6 +17,13 @@ from app.models.playbook import (
     PlaybookTriggerType,
 )
 from app.models.raw_event import EventSeverity, EventType, RawEvent
+from app.models.security_pattern import (
+    PatternCategory,
+    PatternSource,
+    PatternType,
+    SecurityPattern,
+    SecurityPatternFeed,
+)
 from app.models.semantic_analysis import (
     AnalysisRunStatus,
     IrregularLog,
@@ -73,4 +80,10 @@ __all__ = [
     "AnalysisRunStatus",
     "SuggestedRuleStatus",
     "SuggestedRuleType",
+    # Security Patterns
+    "SecurityPattern",
+    "SecurityPatternFeed",
+    "PatternCategory",
+    "PatternType",
+    "PatternSource",
 ]

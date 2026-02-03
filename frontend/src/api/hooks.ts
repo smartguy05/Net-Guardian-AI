@@ -2287,3 +2287,274 @@ export function useRuleHistory(params?: {
     },
   });
 }
+
+// Security Pattern hooks
+import type {
+  SecurityPattern,
+  SecurityPatternListResponse,
+  CreateSecurityPatternRequest,
+  UpdateSecurityPatternRequest,
+  TestPatternRequest,
+  TestPatternResponse,
+  MatchTextRequest,
+  PatternMatch,
+  PatternCategory,
+  SecurityPatternFeed,
+  SecurityPatternFeedListResponse,
+  CreateSecurityPatternFeedRequest,
+  UpdateSecurityPatternFeedRequest,
+  SecurityPatternStats,
+} from '../types';
+
+export function useSecurityPatterns(params?: {
+  category?: PatternCategory;
+  enabled?: boolean;
+  source?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['security-patterns', 'patterns', params],
+    queryFn: async (): Promise<SecurityPatternListResponse> => {
+      const response = await apiClient.get('/security-patterns', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useSecurityPattern(patternId: string) {
+  return useQuery({
+    queryKey: ['security-patterns', 'patterns', patternId],
+    queryFn: async (): Promise<SecurityPattern> => {
+      const response = await apiClient.get(`/security-patterns/${patternId}`);
+      return response.data;
+    },
+    enabled: !!patternId,
+  });
+}
+
+export function useCreateSecurityPattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateSecurityPatternRequest): Promise<SecurityPattern> => {
+      const response = await apiClient.post('/security-patterns', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns'] });
+    },
+  });
+}
+
+export function useUpdateSecurityPattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      patternId,
+      ...data
+    }: UpdateSecurityPatternRequest & { patternId: string }): Promise<SecurityPattern> => {
+      const response = await apiClient.patch(`/security-patterns/${patternId}`, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns', variables.patternId] });
+    },
+  });
+}
+
+export function useDeleteSecurityPattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (patternId: string): Promise<void> => {
+      await apiClient.delete(`/security-patterns/${patternId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns'] });
+    },
+  });
+}
+
+export function useEnableSecurityPattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (patternId: string): Promise<SecurityPattern> => {
+      const response = await apiClient.post(`/security-patterns/${patternId}/enable`);
+      return response.data;
+    },
+    onSuccess: (_, patternId) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns', patternId] });
+    },
+  });
+}
+
+export function useDisableSecurityPattern() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (patternId: string): Promise<SecurityPattern> => {
+      const response = await apiClient.post(`/security-patterns/${patternId}/disable`);
+      return response.data;
+    },
+    onSuccess: (_, patternId) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns', patternId] });
+    },
+  });
+}
+
+export function useTestSecurityPattern() {
+  return useMutation({
+    mutationFn: async (data: TestPatternRequest): Promise<TestPatternResponse> => {
+      const response = await apiClient.post('/security-patterns/test', data);
+      return response.data;
+    },
+  });
+}
+
+export function useMatchText() {
+  return useMutation({
+    mutationFn: async (data: MatchTextRequest): Promise<PatternMatch[]> => {
+      const response = await apiClient.post('/security-patterns/match', data);
+      return response.data;
+    },
+  });
+}
+
+export function useSecurityPatternStats() {
+  return useQuery({
+    queryKey: ['security-patterns', 'stats'],
+    queryFn: async (): Promise<SecurityPatternStats> => {
+      const response = await apiClient.get('/security-patterns/stats');
+      return response.data;
+    },
+  });
+}
+
+// Security Pattern Feed hooks
+export function useSecurityPatternFeeds(params?: {
+  enabled?: boolean;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['security-patterns', 'feeds', params],
+    queryFn: async (): Promise<SecurityPatternFeedListResponse> => {
+      const response = await apiClient.get('/security-patterns/feeds', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useSecurityPatternFeed(feedId: string) {
+  return useQuery({
+    queryKey: ['security-patterns', 'feeds', feedId],
+    queryFn: async (): Promise<SecurityPatternFeed> => {
+      const response = await apiClient.get(`/security-patterns/feeds/${feedId}`);
+      return response.data;
+    },
+    enabled: !!feedId,
+  });
+}
+
+export function useCreateSecurityPatternFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateSecurityPatternFeedRequest): Promise<SecurityPatternFeed> => {
+      const response = await apiClient.post('/security-patterns/feeds', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'stats'] });
+    },
+  });
+}
+
+export function useUpdateSecurityPatternFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      feedId,
+      ...data
+    }: UpdateSecurityPatternFeedRequest & { feedId: string }): Promise<SecurityPatternFeed> => {
+      const response = await apiClient.patch(`/security-patterns/feeds/${feedId}`, data);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds', variables.feedId] });
+    },
+  });
+}
+
+export function useDeleteSecurityPatternFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<void> => {
+      await apiClient.delete(`/security-patterns/feeds/${feedId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'stats'] });
+    },
+  });
+}
+
+export function useFetchSecurityPatternFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<{ message: string; feed_id: string; patterns_imported: number }> => {
+      const response = await apiClient.post(`/security-patterns/feeds/${feedId}/fetch`);
+      return response.data;
+    },
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds', feedId] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'patterns'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'stats'] });
+    },
+  });
+}
+
+export function useEnableSecurityPatternFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<SecurityPatternFeed> => {
+      const response = await apiClient.post(`/security-patterns/feeds/${feedId}/enable`);
+      return response.data;
+    },
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds', feedId] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'stats'] });
+    },
+  });
+}
+
+export function useDisableSecurityPatternFeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (feedId: string): Promise<SecurityPatternFeed> => {
+      const response = await apiClient.post(`/security-patterns/feeds/${feedId}/disable`);
+      return response.data;
+    },
+    onSuccess: (_, feedId) => {
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds'] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'feeds', feedId] });
+      queryClient.invalidateQueries({ queryKey: ['security-patterns', 'stats'] });
+    },
+  });
+}

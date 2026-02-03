@@ -35,6 +35,12 @@ class ParserType(str, Enum):
     SFLOW = "sflow"  # sFlow v5 parser
     LOKI = "loki"  # Grafana Loki log aggregation
 
+    # Application log parsers
+    DOCKER = "docker"  # Docker/Podman container logs
+    JOURNALD = "journald"  # systemd journal parser
+    JAVA_STACKTRACE = "java_stacktrace"  # Java exception/stack trace parser
+    PYTHON_LOG = "python_log"  # Python logging module parser
+
     # Generic parsers
     JSON = "json"
     SYSLOG = "syslog"

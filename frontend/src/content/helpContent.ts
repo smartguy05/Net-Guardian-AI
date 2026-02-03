@@ -282,7 +282,8 @@ export const helpContent: Record<string, HelpContent> = {
           'Filter anomalies by status, type, and severity.',
         tips: [
           'Status options: Active, Reviewed, Confirmed, False Positive',
-          'Types: New Domain, Volume Spike, Time Anomaly, New Connection, New Port, Blocked Spike, Pattern Change',
+          'Network types: New Domain, Volume Spike, Time Anomaly, New Connection, New Port, Blocked Spike, Pattern Change',
+          'Application types: Error Spike, New Error Pattern, Container Restart',
           'Severity levels: Critical, High, Medium, Low, Info',
         ],
       },
@@ -303,7 +304,7 @@ export const helpContent: Record<string, HelpContent> = {
           'Admins can manually trigger anomaly detection for all devices.',
         tips: [
           'Click "Run Detection" to analyze all devices with ready baselines',
-          'Detection compares current behavior to learned patterns',
+          'Detection checks network behavior (DNS, traffic, connections) and application logs (errors, container restarts)',
           'New anomalies will appear after detection completes',
         ],
       },
@@ -500,8 +501,20 @@ export const helpContent: Record<string, HelpContent> = {
   '/dashboard/chat': {
     title: 'AI Assistant',
     overview:
-      'Chat with Claude AI about your network security. Ask questions in plain English and get intelligent analysis.',
+      'Chat with Claude AI about your network security. The AI automatically detects your intent and provides relevant context - whether you need help using the app, configuring settings, troubleshooting issues, or analyzing network data.',
     sections: [
+      {
+        title: 'What You Can Ask',
+        description:
+          'The AI understands different types of questions and responds with appropriate context.',
+        tips: [
+          'Network Analysis: "What devices have anomalies?" - analyzes your actual data',
+          'App Help: "How do I quarantine a device?" - provides UI guidance',
+          'Setup & Config: "How do I configure Authentik?" - references documentation',
+          'Troubleshooting: "My log source isn\'t working" - helps diagnose issues',
+          'Vulnerability Research: "What is CVE-2024-1234?" - security information',
+        ],
+      },
       {
         title: 'Model Selection',
         description:
@@ -521,17 +534,6 @@ export const helpContent: Record<string, HelpContent> = {
           'Suggested queries appear when chat is empty',
           'Click any suggestion to use it as your query',
           'Questions cover devices, security, domains, and activity',
-        ],
-      },
-      {
-        title: 'Asking Questions',
-        description:
-          'Type natural language questions about your network.',
-        tips: [
-          'Ask "What devices are most active right now?"',
-          'Ask "Are there any security concerns I should know about?"',
-          'Ask "Which devices have anomalies?"',
-          'The AI has access to your current network state',
         ],
       },
       {
@@ -917,6 +919,72 @@ export const helpContent: Record<string, HelpContent> = {
         tips: [
           'Filter by source to see rules from specific log sources',
           'Filter by status to see Pending, Approved, Implemented, or Rejected',
+        ],
+      },
+    ],
+  },
+
+  '/dashboard/security-patterns': {
+    title: 'Security Patterns',
+    overview:
+      'Manage security detection patterns for identifying attacks in application logs. View, enable/disable, and test patterns against sample text.',
+    sections: [
+      {
+        title: 'Pattern Library',
+        description:
+          'Browse all security patterns organized by category and severity.',
+        tips: [
+          'Filter by category (SQL Injection, XSS, Command Injection, etc.)',
+          'Filter by source (Built-in, User, Feed)',
+          'Click a pattern card to expand and view the regex/pattern',
+          'Hit count shows how often the pattern has matched',
+        ],
+      },
+      {
+        title: 'Pattern Categories',
+        description:
+          'Patterns are organized into categories based on attack type.',
+        tips: [
+          'SQL Injection: Database manipulation attacks (UNION, OR 1=1)',
+          'Command Injection: Shell command execution attempts',
+          'Path Traversal: Directory escape (../) attempts',
+          'XSS: Cross-site scripting attacks',
+          'Deserialization: Java/Python object injection',
+          'SSRF: Server-side request forgery',
+        ],
+      },
+      {
+        title: 'Pattern Testing',
+        description:
+          'Test patterns against sample text before deploying.',
+        tips: [
+          'Go to the Test tab to test individual patterns',
+          'Enter a regex, literal, or keyword pattern',
+          'Paste sample log text to check for matches',
+          'Use "Check All Patterns" to test against all enabled patterns',
+        ],
+      },
+      {
+        title: 'Pattern Feeds',
+        description:
+          'Import patterns from external security feeds.',
+        tips: [
+          'Go to the Feeds tab to manage external pattern sources',
+          'Add feeds with URLs that return pattern JSON',
+          'Configure authentication (none, basic, bearer, API key)',
+          'Set update intervals for automatic refresh',
+          'Use "Fetch Now" to immediately import patterns',
+        ],
+      },
+      {
+        title: 'Managing Patterns',
+        description:
+          'Enable, disable, or delete patterns as needed.',
+        tips: [
+          'Built-in patterns can be disabled but not deleted',
+          'User patterns can be edited or deleted',
+          'Feed patterns are managed by the feed (delete the feed to remove)',
+          'Disabled patterns are not checked during log analysis',
         ],
       },
     ],

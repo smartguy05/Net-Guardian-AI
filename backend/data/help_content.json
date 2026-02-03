@@ -422,8 +422,19 @@
   },
   "/dashboard/chat": {
     "title": "AI Assistant",
-    "overview": "Chat with Claude AI about your network security. Ask questions in plain English and get intelligent analysis.",
+    "overview": "Chat with Claude AI about your network security. The AI automatically detects your intent and provides relevant context - whether you need help using the app, configuring settings, troubleshooting issues, or analyzing network data.",
     "sections": [
+      {
+        "title": "What You Can Ask",
+        "description": "The AI understands different types of questions and responds with appropriate context.",
+        "tips": [
+          "Network Analysis: \"What devices have anomalies?\" - analyzes your actual data",
+          "App Help: \"How do I quarantine a device?\" - provides UI guidance",
+          "Setup & Config: \"How do I configure Authentik?\" - references documentation",
+          "Troubleshooting: \"My log source isn't working\" - helps diagnose issues",
+          "Vulnerability Research: \"What is CVE-2024-1234?\" - security information"
+        ]
+      },
       {
         "title": "Model Selection",
         "description": "Choose the AI model based on your needs.",
@@ -441,16 +452,6 @@
           "Suggested queries appear when chat is empty",
           "Click any suggestion to use it as your query",
           "Questions cover devices, security, domains, and activity"
-        ]
-      },
-      {
-        "title": "Asking Questions",
-        "description": "Type natural language questions about your network.",
-        "tips": [
-          "Ask \"What devices are most active right now?\"",
-          "Ask \"Are there any security concerns I should know about?\"",
-          "Ask \"Which devices have anomalies?\"",
-          "The AI has access to your current network state"
         ]
       },
       {

@@ -19,6 +19,7 @@ from app.api.v1 import (
     ollama,
     playbooks,
     rules,
+    security_patterns,
     semantic,
     sources,
     stats,
@@ -89,6 +90,9 @@ api_router.include_router(rules.router, prefix="/rules", tags=["Detection Rules"
 
 # Threat intelligence endpoints
 api_router.include_router(threat_intel.router, tags=["Threat Intelligence"])
+
+# Security pattern endpoints
+api_router.include_router(security_patterns.router, tags=["Security Patterns"])
 
 # Prometheus metrics endpoint (no auth required for scraping)
 api_router.include_router(metrics.router, tags=["Metrics"])

@@ -2,10 +2,10 @@
 
 AI-powered home network security monitoring system with multi-source log collection, device inventory, anomaly detection, LLM-assisted threat analysis, and automated response capabilities.
 
-## Current Status: Phase 9 (Semantic Log Analysis) - COMPLETE
+## Current Status: Application Log Analysis - COMPLETE
 
 All phases complete! The system provides comprehensive network security monitoring with:
-- Multi-source log collection (API, file, push, UDP flow data, Grafana Loki)
+- Multi-source log collection (API, file, push, UDP flow data, Grafana Loki, Docker, systemd journal)
 - Device inventory with auto-discovery and network topology visualization
 - Anomaly detection with behavioral baselines
 - LLM-powered threat analysis (Claude integration)
@@ -20,7 +20,7 @@ All phases complete! The system provides comprehensive network security monitori
 ## Features
 
 ### Core Features
-- **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow), Grafana Loki, Authentik
+- **Multi-Source Log Collection** - API polling, file watching, HTTP push, UDP (NetFlow/sFlow), Grafana Loki, Docker/Podman, systemd journal, Authentik
 - **Device Inventory** - Auto-discovery, AdGuard name sync, network topology visualization
 - **Real-time Event Processing** - Redis Streams event bus with WebSocket updates
 - **Authentication & RBAC** - JWT tokens, 2FA (TOTP), Authentik SSO, admin/operator/viewer roles
@@ -31,6 +31,8 @@ All phases complete! The system provides comprehensive network security monitori
 
 ### Detection & Analysis
 - **Anomaly Detection** - Behavioral baselines with statistical detection
+- **Security Pattern Detection** - Configurable patterns for SQL injection, XSS, command injection, and more
+- **Application Log Analysis** - Error rate spikes, container restart loops, new error patterns
 - **LLM Integration** - Claude-powered alert analysis and natural language queries
 - **Semantic Log Analysis** - Pattern learning, irregular log detection, AI-suggested rules
 - **Threat Intelligence** - Feed integration for IP/domain/URL indicators
@@ -38,7 +40,7 @@ All phases complete! The system provides comprehensive network security monitori
 - **Ollama LLM Monitoring** - Detect prompt injection, jailbreaks, LLM-malware
 
 ### AI Features
-- **AI Chat Assistant** - Natural language queries about your network with model selection (Fast/Balanced/Deep)
+- **AI Chat Assistant** - Intent-aware natural language queries with automatic context injection for network analysis, app help, setup/config, troubleshooting, and vulnerability research
 - **AI Alert Analysis** - Automated threat assessment with context-aware recommendations
 - **AI Research Queries** - LLM-generated Google search queries for investigating security issues
 - **AI Rule Suggestions** - Automatically suggest detection rules from learned patterns
@@ -162,7 +164,7 @@ net-guardian-ai/
 │   ├── app/
 │   │   ├── api/v1/          # REST endpoints (25+ routers)
 │   │   ├── collectors/      # Log collectors (API, file, UDP)
-│   │   ├── parsers/         # Log format parsers (11 types)
+│   │   ├── parsers/         # Log format parsers (15 types)
 │   │   ├── models/          # SQLAlchemy models
 │   │   ├── events/          # Redis event bus
 │   │   ├── services/        # Business logic services
@@ -326,6 +328,10 @@ curl -X POST http://localhost:8000/api/v1/sources \
 |--------|-------------|
 | adguard | AdGuard Home DNS query logs |
 | authentik | Authentik identity provider events (logins, SSO, etc.) |
+| docker | Docker/Podman container logs (JSON format, lifecycle events) |
+| journald | systemd journal logs with priority mapping |
+| java_stacktrace | Java exception stack traces with multi-line support |
+| python_log | Python logging and structlog JSON format |
 | unifi | UniFi Controller logs |
 | pfsense | pfSense/OPNsense firewall logs |
 | loki | Grafana Loki log aggregation |

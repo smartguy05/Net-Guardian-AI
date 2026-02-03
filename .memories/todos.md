@@ -156,6 +156,54 @@ Remaining tasks organized by priority.
 
 ---
 
+## Application Log Analysis (February 2026) - COMPLETE
+
+### Phase 1: Data Model Extensions - COMPLETE
+- [x] Added CONTAINER, JOURNAL, APPLICATION EventTypes
+- [x] Added DOCKER, JOURNALD, JAVA_STACKTRACE, PYTHON_LOG ParserTypes
+- [x] Added ERROR_SPIKE, NEW_ERROR_PATTERN, CONTAINER_RESTART, SECURITY_PATTERN AnomalyTypes
+- [x] Migration 015 for new enum values
+
+### Phase 2: Security Pattern Management - COMPLETE
+- [x] SecurityPattern and SecurityPatternFeed database models
+- [x] Migration 016 for security pattern tables
+- [x] SecurityPatternService with pattern matching and feed fetching
+- [x] Full CRUD API endpoints for patterns and feeds
+- [x] 28+ built-in default security patterns
+- [x] Feed format documentation
+
+### Phase 3: New Parsers - COMPLETE
+- [x] Docker parser (JSON log format, container events)
+- [x] Journald parser (systemd journal, priority mapping)
+- [x] Java stacktrace parser (multi-line, exception chains)
+- [x] Python log parser (logging module, structlog)
+
+### Phase 4: Agent Collectors - COMPLETE
+- [x] Docker/Podman collector (socket connection, log streaming)
+- [x] Journal collector (systemd journal, cursor-based resume)
+
+### Phase 5: Analysis Services - COMPLETE
+- [x] Application baseline service (error rates, container metrics)
+- [x] Security analysis service (pattern detection, attack correlation)
+- [x] Extended anomaly service with application anomaly detection
+
+### Phase 6: Frontend & Default Rules - COMPLETE
+- [x] SecurityPatternsPage.tsx (pattern management, testing, text matching)
+- [x] API hooks for security patterns and feeds
+- [x] TypeScript types for security patterns
+- [x] Navigation link and route in App.tsx
+- [x] 19 default detection rules for application logs
+
+### Documentation Updates - COMPLETE
+- [x] README.md (parser count, new parser types)
+- [x] docs/user-guide.md (new event types, anomaly types, Security Patterns)
+- [x] docs/configuration.md (Docker, Journald, Java, Python parsers, Security Pattern Detection)
+- [x] docs/deployment-guide.md (source examples, feed import)
+- [x] frontend/src/content/helpContent.ts (Security Patterns help)
+- [x] frontend/src/pages/DocsPage.tsx (Security Patterns section, updated parser list)
+
+---
+
 ## Recent Additions (January 2026)
 
 ### AdGuard Device Name Sync - COMPLETE

@@ -159,7 +159,8 @@ class C4000XGService(IntegrationService):
             )
 
             if response.status_code == 200:
-                return response.json()
+                result: dict[str, Any] = response.json()
+                return result
 
             logger.warning(
                 "C4000XG GET request failed",
@@ -201,7 +202,8 @@ class C4000XGService(IntegrationService):
 
             if response.status_code == 200:
                 try:
-                    return response.json()
+                    result: dict[str, Any] = response.json()
+                    return result
                 except Exception:
                     # Some responses aren't JSON
                     return {"success": True, "raw": response.text}
@@ -261,7 +263,7 @@ class C4000XGService(IntegrationService):
         Returns:
             List of rule dictionaries with index, MAC, and other fields.
         """
-        rules = []
+        rules: list[dict[str, Any]] = []
 
         # First get the number of rules
         data = await self._get_request(
@@ -343,6 +345,7 @@ class C4000XGService(IntegrationService):
                     )
 
                 # Get device info
+                assert self._session_id is not None  # Set by successful _login
                 client.cookies.set("Session-Id", self._session_id)
                 device_info = await self._get_request(client, "Device.DeviceInfo.")
 
@@ -435,6 +438,7 @@ class C4000XGService(IntegrationService):
                         error="Login failed",
                     )
 
+                assert self._session_id is not None  # Set by successful _ensure_session
                 client.cookies.set("Session-Id", self._session_id)
 
                 # Check if device is already blocked
@@ -569,6 +573,7 @@ class C4000XGService(IntegrationService):
                         error="Login failed",
                     )
 
+                assert self._session_id is not None  # Set by successful _ensure_session
                 client.cookies.set("Session-Id", self._session_id)
 
                 # Find the rule for this MAC
@@ -666,6 +671,7 @@ class C4000XGService(IntegrationService):
                 if not await self._ensure_session(client):
                     return False
 
+                assert self._session_id is not None  # Set by successful _ensure_session
                 client.cookies.set("Session-Id", self._session_id)
 
                 rule = await self._find_rule_for_mac(client, normalized_mac)
@@ -692,6 +698,7 @@ class C4000XGService(IntegrationService):
                 if not await self._ensure_session(client):
                     return []
 
+                assert self._session_id is not None  # Set by successful _ensure_session
                 client.cookies.set("Session-Id", self._session_id)
 
                 rules = await self._get_parental_control_rules(client)
@@ -737,6 +744,7 @@ class C4000XGService(IntegrationService):
                 if not await self._ensure_session(client):
                     return []
 
+                assert self._session_id is not None  # Set by successful _ensure_session
                 client.cookies.set("Session-Id", self._session_id)
 
                 # Get host list
