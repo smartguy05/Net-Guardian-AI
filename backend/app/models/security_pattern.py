@@ -169,7 +169,7 @@ class SecurityPattern(Base, TimestampMixin):
     )
 
     # Relationships
-    feed: Mapped["SecurityPatternFeed | None"] = relationship(
+    feed: Mapped[SecurityPatternFeed | None] = relationship(
         "SecurityPatternFeed",
         back_populates="patterns",
     )
@@ -260,7 +260,7 @@ class SecurityPatternFeed(Base, TimestampMixin):
     )
 
     # Relationships
-    patterns: Mapped[list["SecurityPattern"]] = relationship(
+    patterns: Mapped[list[SecurityPattern]] = relationship(
         "SecurityPattern",
         back_populates="feed",
         cascade="all, delete-orphan",

@@ -1,9 +1,5 @@
 """Tests for the Python logging module parser."""
 
-from datetime import UTC, datetime
-
-import pytest
-
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.python_log_parser import PythonLogParser
 

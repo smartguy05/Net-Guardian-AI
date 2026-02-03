@@ -2,8 +2,6 @@
 
 from datetime import UTC, datetime
 
-import pytest
-
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.journald_parser import JournaldParser
 

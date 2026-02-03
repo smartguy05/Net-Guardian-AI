@@ -4,6 +4,8 @@ These patterns are loaded into the database on first startup if they don't exist
 Users can disable them but cannot delete them.
 """
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.alert import AlertSeverity
 from app.models.security_pattern import PatternCategory, PatternType
 

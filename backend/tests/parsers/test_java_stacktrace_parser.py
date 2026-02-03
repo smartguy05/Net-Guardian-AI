@@ -1,9 +1,5 @@
 """Tests for the Java stack trace parser."""
 
-from datetime import UTC, datetime
-
-import pytest
-
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.java_stacktrace_parser import JavaStacktraceParser
 

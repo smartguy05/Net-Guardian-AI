@@ -13,8 +13,8 @@ from app.db.session import AsyncSessionLocal
 from app.models.alert import Alert, AlertSeverity, AlertStatus
 from app.models.anomaly import AnomalyDetection, AnomalyStatus, AnomalyType
 from app.models.raw_event import EventType, RawEvent
-from app.models.security_pattern import PatternCategory, SecurityPattern
-from app.services.security_pattern_service import PatternMatch, SecurityPatternService
+from app.models.security_pattern import PatternCategory
+from app.services.security_pattern_service import SecurityPatternService
 
 logger = structlog.get_logger()
 
