@@ -175,6 +175,8 @@ class RawEvent(Base):
         # Composite index for common queries
         Index("ix_raw_events_device_timestamp", "device_id", "timestamp"),
         Index("ix_raw_events_source_timestamp", "source_id", "timestamp"),
+        # Composite index for app anomaly detection queries
+        Index("ix_raw_events_device_event_type_timestamp", "device_id", "event_type", "timestamp"),
         # Note: TimescaleDB hypertable creation is done in migration
     )
 

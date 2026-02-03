@@ -575,6 +575,62 @@ User Message → classify_intent() [Haiku] → build_context(intent) → stream_
 
 ---
 
+## Application Anomaly Detection in "Run Detection" (February 2026)
+
+**Feature**: Integrated application log anomaly detection (ERROR_SPIKE, NEW_ERROR_PATTERN, CONTAINER_RESTART) into the main "Run Detection" flow on the Anomalies page.
+
+**Background**: Previously, `detect_application_anomalies(source_id)` existed but was not called from `run_detection_for_all_devices()`. Network anomaly detection (DNS, TRAFFIC, CONNECTION) worked per-device, but application anomalies required a source_id.
+
+**Implementation**:
+
+**Backend - App Baseline Service** (`backend/app/services/app_baseline_service.py`):
+- Updated `AppBaseline` class to accept optional `device_id` parameter
+- Added `calculate_error_rate_baseline_for_device(device_id)` - queries app events by device_id
+- Added `calculate_container_baseline_for_device(device_id)` - queries container events by device_id
+- Added `calculate_exception_baseline_for_device(device_id)` - queries exception events by device_id
+
+**Backend - Anomaly Service** (`backend/app/services/anomaly_service.py`):
+- Added `_detect_application_anomalies_for_device(device_id, time_window_hours)`:
+  - Early exit check: Skips expensive baseline calculation if device has no app events in last 7 days
+  - Calculates error rate, container, and exception baselines on-demand
+  - Returns list of detected anomalies (ERROR_SPIKE, CONTAINER_RESTART, NEW_ERROR_PATTERN)
+- Added `_detect_error_spike_for_device()` - z-score based error rate spike detection
+- Added `_detect_container_restart_for_device()` - restart count + OOM kill detection
+- Added `_detect_new_error_patterns_for_device()` - new exception type detection
+- Modified `detect_anomalies()` to call `_detect_application_anomalies_for_device()` after network anomaly detection
+
+**Tests** (`backend/tests/services/test_anomaly_service.py`):
+- Added `TestApplicationAnomalyDetectionForDevice` class with 11 new tests:
+  - `test_detect_app_anomalies_no_app_events` - early exit when device has no app events
+  - `test_detect_error_spike_for_device` - detects high error rates
+  - `test_detect_error_spike_for_device_normal` - no anomaly for normal rates
+  - `test_detect_container_restart_for_device` - detects excessive restarts
+  - `test_detect_container_oom_kill_for_device` - detects OOM kills
+  - `test_detect_new_error_patterns_for_device` - detects new exception types
+  - `test_detect_new_error_patterns_for_device_no_new` - no anomaly for known types
+  - `test_application_anomaly_types_exist` - validates enum values
+  - `test_application_anomaly_severity_calculation` - validates severity thresholds
+- Updated `test_detect_anomalies_learning_baselines` to account for new app anomaly detection call
+
+**Result**: 45 tests passing in test_anomaly_service.py
+
+**Performance Improvements** (from code review):
+1. **Consolidated event fetching**: Single query fetches all app events, then splits for metric calculations
+2. **Baseline caching**: 5-minute TTL cache for `DeviceAppBaselines` to avoid redundant calculations
+3. **Database index**: Added composite index `ix_raw_events_device_event_type_timestamp` for optimized queries
+4. **Debug logging**: Added structured logging for detection start, skip reasons, and anomaly counts
+
+**New files/migrations**:
+- `alembic/versions/20260202_0017_017_add_app_event_index.py`: Composite index migration
+
+**User Impact**: When clicking "Run Detection" on the Anomalies page, the system now also checks for:
+- Error rate spikes in application/container/journal logs
+- Excessive container restarts
+- Container OOM kills (always flagged as significant)
+- New exception types not seen in the 7-day baseline
+
+---
+
 ## CenturyLink C4000XG Router Integration (February 2026)
 
 **Feature**: Device blocking via C4000XG modem/router's parental control (Access Scheduler) feature

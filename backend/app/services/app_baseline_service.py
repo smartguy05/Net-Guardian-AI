@@ -3,9 +3,10 @@
 import statistics
 from collections import Counter, defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 import structlog
 from sqlalchemy import func, select
@@ -16,18 +17,43 @@ from app.models.raw_event import EventSeverity, EventType, RawEvent
 
 logger = structlog.get_logger()
 
+# Cache TTL for app baselines (5 minutes)
+APP_BASELINE_CACHE_TTL_SECONDS = 300
+
+# In-memory cache for device app baselines
+_device_baseline_cache: dict[UUID, tuple[datetime, "DeviceAppBaselines"]] = {}
+
+
+@dataclass
+class DeviceAppBaselines:
+    """Combined baselines for a device's application logs.
+
+    Calculated from a single event fetch for efficiency.
+    """
+
+    device_id: UUID
+    error_metrics: dict[str, Any] = field(default_factory=dict)
+    container_metrics: dict[str, Any] = field(default_factory=dict)
+    exception_metrics: dict[str, Any] = field(default_factory=dict)
+    total_events: int = 0
+    container_event_count: int = 0
+    application_event_count: int = 0
+    last_calculated: datetime = field(default_factory=lambda: datetime.now(UTC))
+
 
 class AppBaseline:
     """Container for application baseline data (in-memory, not persisted)."""
 
     def __init__(
         self,
-        source_id: str,
+        source_id: str | None,
         metrics: dict[str, Any],
         sample_count: int,
         last_calculated: datetime,
+        device_id: UUID | None = None,
     ):
         self.source_id = source_id
+        self.device_id = device_id
         self.metrics = metrics
         self.sample_count = sample_count
         self.last_calculated = last_calculated
@@ -309,6 +335,237 @@ class AppBaselineCalculator:
             "security_issue_count": has_security_issues,
             "total_exceptions": sum(exception_types.values()),
         }
+
+    # Device-based calculation methods (query by device_id instead of source_id)
+
+    async def calculate_error_rate_baseline_for_device(
+        self,
+        device_id: UUID,
+        window_days: int = 7,
+    ) -> AppBaseline:
+        """Calculate error rate baseline for a device.
+
+        Tracks:
+        - Hourly error counts
+        - Error rate (errors per total events)
+        - Error types and frequencies
+        - Daily error patterns
+
+        Args:
+            device_id: Device UUID to analyze.
+            window_days: Number of days to analyze.
+
+        Returns:
+            AppBaseline with error rate metrics.
+        """
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
+
+        # Fetch application events for this device
+        result = await self._session.execute(
+            select(RawEvent)
+            .where(RawEvent.device_id == device_id)
+            .where(RawEvent.event_type.in_([
+                EventType.CONTAINER,
+                EventType.JOURNAL,
+                EventType.APPLICATION,
+            ]))
+            .where(RawEvent.timestamp >= cutoff)
+            .order_by(RawEvent.timestamp)
+        )
+        events = list(result.scalars().all())
+
+        metrics = self._calculate_error_metrics(events)
+
+        return AppBaseline(
+            source_id=None,
+            device_id=device_id,
+            metrics=metrics,
+            sample_count=len(events),
+            last_calculated=datetime.now(UTC),
+        )
+
+    async def calculate_container_baseline_for_device(
+        self,
+        device_id: UUID,
+        window_days: int = 7,
+    ) -> AppBaseline:
+        """Calculate container-specific baseline for a device.
+
+        Tracks:
+        - Container restart counts
+        - OOM kill events
+        - Exit codes distribution
+        - Container event patterns
+
+        Args:
+            device_id: Device UUID to analyze.
+            window_days: Number of days to analyze.
+
+        Returns:
+            AppBaseline with container metrics.
+        """
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
+
+        # Fetch container events for this device
+        result = await self._session.execute(
+            select(RawEvent)
+            .where(RawEvent.device_id == device_id)
+            .where(RawEvent.event_type == EventType.CONTAINER)
+            .where(RawEvent.timestamp >= cutoff)
+            .order_by(RawEvent.timestamp)
+        )
+        events = list(result.scalars().all())
+
+        metrics = self._calculate_container_metrics(events)
+
+        return AppBaseline(
+            source_id=None,
+            device_id=device_id,
+            metrics=metrics,
+            sample_count=len(events),
+            last_calculated=datetime.now(UTC),
+        )
+
+    async def calculate_exception_baseline_for_device(
+        self,
+        device_id: UUID,
+        window_days: int = 7,
+    ) -> AppBaseline:
+        """Calculate exception/stack trace baseline for a device.
+
+        Tracks:
+        - Known exception types
+        - Exception frequencies
+        - New vs known exceptions
+
+        Args:
+            device_id: Device UUID to analyze.
+            window_days: Number of days to analyze.
+
+        Returns:
+            AppBaseline with exception metrics.
+        """
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
+
+        # Fetch application events with exceptions for this device
+        result = await self._session.execute(
+            select(RawEvent)
+            .where(RawEvent.device_id == device_id)
+            .where(RawEvent.event_type == EventType.APPLICATION)
+            .where(RawEvent.timestamp >= cutoff)
+            .order_by(RawEvent.timestamp)
+        )
+        events = list(result.scalars().all())
+
+        metrics = self._calculate_exception_metrics(events)
+
+        return AppBaseline(
+            source_id=None,
+            device_id=device_id,
+            metrics=metrics,
+            sample_count=len(events),
+            last_calculated=datetime.now(UTC),
+        )
+
+    async def calculate_all_baselines_for_device(
+        self,
+        device_id: UUID,
+        window_days: int = 7,
+        use_cache: bool = True,
+    ) -> DeviceAppBaselines:
+        """Calculate all application baselines for a device in a single query.
+
+        This is more efficient than calling the individual methods separately
+        as it fetches all events once and calculates all metrics from that data.
+
+        Args:
+            device_id: Device UUID to analyze.
+            window_days: Number of days to analyze.
+            use_cache: Whether to use cached results if available.
+
+        Returns:
+            DeviceAppBaselines with all metrics.
+        """
+        # Check cache first
+        if use_cache and device_id in _device_baseline_cache:
+            cached_time, cached_baselines = _device_baseline_cache[device_id]
+            age_seconds = (datetime.now(UTC) - cached_time).total_seconds()
+            if age_seconds < APP_BASELINE_CACHE_TTL_SECONDS:
+                logger.debug(
+                    "app_baseline_cache_hit",
+                    device_id=str(device_id),
+                    age_seconds=age_seconds,
+                )
+                return cached_baselines
+
+        cutoff = datetime.now(UTC) - timedelta(days=window_days)
+
+        # Fetch ALL application events for this device in one query
+        result = await self._session.execute(
+            select(RawEvent)
+            .where(RawEvent.device_id == device_id)
+            .where(RawEvent.event_type.in_([
+                EventType.CONTAINER,
+                EventType.JOURNAL,
+                EventType.APPLICATION,
+            ]))
+            .where(RawEvent.timestamp >= cutoff)
+            .order_by(RawEvent.timestamp)
+        )
+        all_events = list(result.scalars().all())
+
+        # Split events by type for specialized calculations
+        container_events = [e for e in all_events if e.event_type == EventType.CONTAINER]
+        application_events = [e for e in all_events if e.event_type == EventType.APPLICATION]
+
+        # Calculate all metrics from the fetched events
+        error_metrics = self._calculate_error_metrics(all_events)
+        container_metrics = self._calculate_container_metrics(container_events)
+        exception_metrics = self._calculate_exception_metrics(application_events)
+
+        baselines = DeviceAppBaselines(
+            device_id=device_id,
+            error_metrics=error_metrics,
+            container_metrics=container_metrics,
+            exception_metrics=exception_metrics,
+            total_events=len(all_events),
+            container_event_count=len(container_events),
+            application_event_count=len(application_events),
+            last_calculated=datetime.now(UTC),
+        )
+
+        # Cache the result
+        _device_baseline_cache[device_id] = (datetime.now(UTC), baselines)
+        logger.debug(
+            "app_baseline_calculated",
+            device_id=str(device_id),
+            total_events=len(all_events),
+            container_events=len(container_events),
+            application_events=len(application_events),
+        )
+
+        return baselines
+
+
+def clear_device_baseline_cache(device_id: UUID | None = None) -> int:
+    """Clear the app baseline cache.
+
+    Args:
+        device_id: If provided, only clear cache for this device.
+                   If None, clear all cached baselines.
+
+    Returns:
+        Number of cache entries cleared.
+    """
+    if device_id is not None:
+        if device_id in _device_baseline_cache:
+            del _device_baseline_cache[device_id]
+            return 1
+        return 0
+    else:
+        count = len(_device_baseline_cache)
+        _device_baseline_cache.clear()
+        return count
 
 
 class AppBaselineService:
