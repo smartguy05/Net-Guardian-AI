@@ -435,10 +435,7 @@ class ChatContextService:
             # Include configuration documentation
             context_text = self._doc_loader.get_configuration_doc()
             # Also include deployment guide if relevant
-            if any(
-                kw in message.lower()
-                for kw in ["docker", "deploy", "install", "production"]
-            ):
+            if any(kw in message.lower() for kw in ["docker", "deploy", "install", "production"]):
                 context_text += "\n\n" + self._doc_loader.get_deployment_guide()
 
         elif intent == ChatIntent.TROUBLESHOOTING:
@@ -512,9 +509,7 @@ Provide educational information based on your training, but recommend official s
             parts.append(f"- Total events (24h): {stats.get('total_events_24h', 'Unknown')}")
             parts.append(f"- Active alerts: {stats.get('active_alerts', 'Unknown')}")
             parts.append(f"- DNS queries (24h): {stats.get('dns_queries_24h', 'Unknown')}")
-            parts.append(
-                f"- Blocked queries (24h): {stats.get('blocked_queries_24h', 'Unknown')}"
-            )
+            parts.append(f"- Blocked queries (24h): {stats.get('blocked_queries_24h', 'Unknown')}")
             parts.append("")
 
         if "devices" in context:

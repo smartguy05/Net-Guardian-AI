@@ -258,9 +258,7 @@ class DocLoader:
                 # Find relevant section
                 lines = doc_content.split("\n")
                 for i, line in enumerate(lines):
-                    if line.startswith("#") and any(
-                        word in line.lower() for word in query_words
-                    ):
+                    if line.startswith("#") and any(word in line.lower() for word in query_words):
                         # Extract section
                         section_lines = [line]
                         for j in range(i + 1, min(i + 20, len(lines))):

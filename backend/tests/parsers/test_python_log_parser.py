@@ -289,7 +289,11 @@ sqlite3.OperationalError: near "DROP": syntax error"""
         # Check for security issues or exception type detection
         security_issues = results[0].parsed_fields.get("security_issues", [])
         exception_type = results[0].parsed_fields.get("exception_type", "")
-        assert len(security_issues) > 0 or "OperationalError" in exception_type or "sqlite3" in results[0].raw_message
+        assert (
+            len(security_issues) > 0
+            or "OperationalError" in exception_type
+            or "sqlite3" in results[0].raw_message
+        )
 
     def test_detect_permission_error(self):
         """Test permission error detection."""
@@ -329,7 +333,9 @@ FileNotFoundError: [Errno 2] No such file or directory: '../../../etc/passwd'"""
 
         assert len(results) >= 1
         # Check for exception in results
-        assert any("FileNotFoundError" in r.raw_message or "etc/passwd" in r.raw_message for r in results)
+        assert any(
+            "FileNotFoundError" in r.raw_message or "etc/passwd" in r.raw_message for r in results
+        )
 
     # --- Logger/Module Extraction Tests ---
 

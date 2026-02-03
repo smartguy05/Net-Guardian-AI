@@ -224,18 +224,14 @@ class C4000XGService(IntegrationService):
             )
             return None
 
-    async def _ensure_parental_control_enabled(
-        self, client: httpx.AsyncClient
-    ) -> bool:
+    async def _ensure_parental_control_enabled(self, client: httpx.AsyncClient) -> bool:
         """Ensure parental control is enabled.
 
         Returns:
             True if enabled or successfully enabled, False on error.
         """
         # Check current status
-        data = await self._get_request(
-            client, "Device.Firewall.X_LANTIQ_COM_ParentalControl."
-        )
+        data = await self._get_request(client, "Device.Firewall.X_LANTIQ_COM_ParentalControl.")
 
         if data:
             # Check if already enabled
@@ -255,9 +251,7 @@ class C4000XGService(IntegrationService):
 
         return result is not None
 
-    async def _get_parental_control_rules(
-        self, client: httpx.AsyncClient
-    ) -> list[dict[str, Any]]:
+    async def _get_parental_control_rules(self, client: httpx.AsyncClient) -> list[dict[str, Any]]:
         """Get all parental control rules.
 
         Returns:
@@ -266,9 +260,7 @@ class C4000XGService(IntegrationService):
         rules: list[dict[str, Any]] = []
 
         # First get the number of rules
-        data = await self._get_request(
-            client, "Device.Firewall.X_LANTIQ_COM_ParentalControl."
-        )
+        data = await self._get_request(client, "Device.Firewall.X_LANTIQ_COM_ParentalControl.")
 
         if not data:
             return rules
@@ -766,9 +758,7 @@ class C4000XGService(IntegrationService):
                     num_hosts = int(data.get("HostNumberOfEntries", 0))
 
                     for i in range(1, num_hosts + 1):
-                        host_data = await self._get_request(
-                            client, f"Device.Hosts.Host.{i}."
-                        )
+                        host_data = await self._get_request(client, f"Device.Hosts.Host.{i}.")
                         if host_data:
                             devices.append(self._parse_host_entry(host_data))
 

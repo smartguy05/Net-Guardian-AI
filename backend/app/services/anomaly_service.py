@@ -483,9 +483,11 @@ class AnomalyDetector:
         result = await self._session.execute(
             select(func.count())
             .where(RawEvent.device_id == device_id)
-            .where(RawEvent.event_type.in_([
-                EventType.APPLICATION, EventType.CONTAINER, EventType.JOURNAL
-            ]))
+            .where(
+                RawEvent.event_type.in_(
+                    [EventType.APPLICATION, EventType.CONTAINER, EventType.JOURNAL]
+                )
+            )
             .where(RawEvent.timestamp >= baseline_cutoff)
         )
         if result.scalar() == 0:
@@ -552,16 +554,24 @@ class AnomalyDetector:
         result = await self._session.execute(
             select(func.count())
             .where(RawEvent.device_id == device_id)
-            .where(RawEvent.event_type.in_([
-                EventType.CONTAINER,
-                EventType.JOURNAL,
-                EventType.APPLICATION,
-            ]))
-            .where(RawEvent.severity.in_([
-                EventSeverity.WARNING,
-                EventSeverity.ERROR,
-                EventSeverity.CRITICAL,
-            ]))
+            .where(
+                RawEvent.event_type.in_(
+                    [
+                        EventType.CONTAINER,
+                        EventType.JOURNAL,
+                        EventType.APPLICATION,
+                    ]
+                )
+            )
+            .where(
+                RawEvent.severity.in_(
+                    [
+                        EventSeverity.WARNING,
+                        EventSeverity.ERROR,
+                        EventSeverity.CRITICAL,
+                    ]
+                )
+            )
             .where(RawEvent.timestamp >= cutoff)
         )
         recent_errors = result.scalar() or 0
@@ -718,9 +728,7 @@ class AnomalyDetector:
                 details={
                     "new_exception_types": list(new_exceptions.keys()),
                     "new_exception_count": total_new,
-                    "sample_messages": {
-                        k: v[:3] for k, v in new_exceptions.items()
-                    },
+                    "sample_messages": {k: v[:3] for k, v in new_exceptions.items()},
                 },
                 baseline_comparison={
                     "known_exception_count": len(known_types),

@@ -454,18 +454,20 @@ class SecurityPatternService:
             elif ptype_str.lower() == "keyword":
                 pattern_type = PatternType.KEYWORD
 
-            patterns.append({
-                "source_id": item.get(id_field),
-                "name": name,
-                "description": item.get(description_field),
-                "category": category,
-                "pattern_type": pattern_type,
-                "pattern": pattern,
-                "severity": severity,
-                "tags": item.get(tags_field, []),
-                "examples": item.get(examples_field, []),
-                "references": item.get(references_field, []),
-            })
+            patterns.append(
+                {
+                    "source_id": item.get(id_field),
+                    "name": name,
+                    "description": item.get(description_field),
+                    "category": category,
+                    "pattern_type": pattern_type,
+                    "pattern": pattern,
+                    "severity": severity,
+                    "tags": item.get(tags_field, []),
+                    "examples": item.get(examples_field, []),
+                    "references": item.get(references_field, []),
+                }
+            )
 
         return patterns
 
@@ -594,16 +596,18 @@ class SecurityPatternService:
                 regex = self._compiled_patterns[pattern.id]
 
                 for match in regex.finditer(text):
-                    matches.append(PatternMatch(
-                        pattern_id=pattern.id,
-                        pattern_name=pattern.name,
-                        category=pattern.category,
-                        severity=pattern.severity,
-                        matched_text=match.group(),
-                        match_start=match.start(),
-                        match_end=match.end(),
-                        context={"groups": match.groups()},
-                    ))
+                    matches.append(
+                        PatternMatch(
+                            pattern_id=pattern.id,
+                            pattern_name=pattern.name,
+                            category=pattern.category,
+                            severity=pattern.severity,
+                            matched_text=match.group(),
+                            match_start=match.start(),
+                            match_end=match.end(),
+                            context={"groups": match.groups()},
+                        )
+                    )
 
             elif pattern.pattern_type == PatternType.LITERAL:
                 # Exact string match (case-insensitive)
@@ -614,16 +618,18 @@ class SecurityPatternService:
                     pos = lower_text.find(lower_pattern, start)
                     if pos == -1:
                         break
-                    matches.append(PatternMatch(
-                        pattern_id=pattern.id,
-                        pattern_name=pattern.name,
-                        category=pattern.category,
-                        severity=pattern.severity,
-                        matched_text=text[pos:pos + len(pattern.pattern)],
-                        match_start=pos,
-                        match_end=pos + len(pattern.pattern),
-                        context={},
-                    ))
+                    matches.append(
+                        PatternMatch(
+                            pattern_id=pattern.id,
+                            pattern_name=pattern.name,
+                            category=pattern.category,
+                            severity=pattern.severity,
+                            matched_text=text[pos : pos + len(pattern.pattern)],
+                            match_start=pos,
+                            match_end=pos + len(pattern.pattern),
+                            context={},
+                        )
+                    )
                     start = pos + 1
 
             elif pattern.pattern_type == PatternType.KEYWORD:
@@ -637,16 +643,18 @@ class SecurityPatternService:
                         pos = lower_text.find(lower_kw, start)
                         if pos == -1:
                             break
-                        matches.append(PatternMatch(
-                            pattern_id=pattern.id,
-                            pattern_name=pattern.name,
-                            category=pattern.category,
-                            severity=pattern.severity,
-                            matched_text=text[pos:pos + len(keyword)],
-                            match_start=pos,
-                            match_end=pos + len(keyword),
-                            context={"keyword": keyword},
-                        ))
+                        matches.append(
+                            PatternMatch(
+                                pattern_id=pattern.id,
+                                pattern_name=pattern.name,
+                                category=pattern.category,
+                                severity=pattern.severity,
+                                matched_text=text[pos : pos + len(keyword)],
+                                match_start=pos,
+                                match_end=pos + len(keyword),
+                                context={"keyword": keyword},
+                            )
+                        )
                         start = pos + 1
 
         except Exception as e:
@@ -679,12 +687,14 @@ class SecurityPatternService:
 
                 matches = []
                 for match in regex.finditer(test_text):
-                    matches.append({
-                        "matched_text": match.group(),
-                        "start": match.start(),
-                        "end": match.end(),
-                        "groups": match.groups(),
-                    })
+                    matches.append(
+                        {
+                            "matched_text": match.group(),
+                            "start": match.start(),
+                            "end": match.end(),
+                            "groups": match.groups(),
+                        }
+                    )
 
                 return {
                     "success": True,
@@ -701,11 +711,13 @@ class SecurityPatternService:
                     pos = lower_text.find(lower_pattern, start)
                     if pos == -1:
                         break
-                    matches.append({
-                        "matched_text": test_text[pos:pos + len(pattern)],
-                        "start": pos,
-                        "end": pos + len(pattern),
-                    })
+                    matches.append(
+                        {
+                            "matched_text": test_text[pos : pos + len(pattern)],
+                            "start": pos,
+                            "end": pos + len(pattern),
+                        }
+                    )
                     start = pos + 1
 
                 return {
@@ -725,12 +737,14 @@ class SecurityPatternService:
                         pos = lower_text.find(lower_kw, start)
                         if pos == -1:
                             break
-                        matches.append({
-                            "matched_text": test_text[pos:pos + len(keyword)],
-                            "start": pos,
-                            "end": pos + len(keyword),
-                            "keyword": keyword,
-                        })
+                        matches.append(
+                            {
+                                "matched_text": test_text[pos : pos + len(keyword)],
+                                "start": pos,
+                                "end": pos + len(keyword),
+                                "keyword": keyword,
+                            }
+                        )
                         start = pos + 1
 
                 return {
@@ -787,9 +801,7 @@ class SecurityPatternService:
             source_counts[source.value] = count_result.scalar() or 0
 
         # Total hits
-        hits_result = await self.session.execute(
-            select(func.sum(SecurityPattern.hit_count))
-        )
+        hits_result = await self.session.execute(select(func.sum(SecurityPattern.hit_count)))
         total_hits = hits_result.scalar() or 0
 
         return {

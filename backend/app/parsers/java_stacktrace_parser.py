@@ -113,9 +113,7 @@ class JavaStacktraceParser(BaseParser):
                 ts_str = match.group(1)
                 if self.timestamp_format:
                     try:
-                        return datetime.strptime(ts_str, self.timestamp_format).replace(
-                            tzinfo=UTC
-                        )
+                        return datetime.strptime(ts_str, self.timestamp_format).replace(tzinfo=UTC)
                     except ValueError:
                         pass
 
@@ -238,31 +236,37 @@ class JavaStacktraceParser(BaseParser):
         exc_type = stack_trace.get("exception_type", "")
         for exc_class, issue_type in self.SECURITY_EXCEPTIONS.items():
             if exc_class in exc_type:
-                issues.append({
-                    "type": issue_type,
-                    "indicator": f"Security exception: {exc_type}",
-                    "severity": "high",
-                })
+                issues.append(
+                    {
+                        "type": issue_type,
+                        "indicator": f"Security exception: {exc_type}",
+                        "severity": "high",
+                    }
+                )
 
         # Check caused by exceptions
         for caused_by in stack_trace.get("caused_by", []):
             exc_type = caused_by.get("exception_type", "")
             for exc_class, issue_type in self.SECURITY_EXCEPTIONS.items():
                 if exc_class in exc_type:
-                    issues.append({
-                        "type": issue_type,
-                        "indicator": f"Root cause exception: {exc_type}",
-                        "severity": "high",
-                    })
+                    issues.append(
+                        {
+                            "type": issue_type,
+                            "indicator": f"Root cause exception: {exc_type}",
+                            "severity": "high",
+                        }
+                    )
 
         # Check for deserialization gadgets
         for gadget in self.GADGET_PATTERNS:
             if gadget in content:
-                issues.append({
-                    "type": "deserialization_attack",
-                    "indicator": f"Gadget chain detected: {gadget}",
-                    "severity": "critical",
-                })
+                issues.append(
+                    {
+                        "type": "deserialization_attack",
+                        "indicator": f"Gadget chain detected: {gadget}",
+                        "severity": "critical",
+                    }
+                )
 
         # Check for SQL injection patterns in message
         exc_message = stack_trace.get("exception_message", "")
@@ -274,11 +278,13 @@ class JavaStacktraceParser(BaseParser):
         ]
         for pattern in sql_patterns:
             if re.search(pattern, exc_message):
-                issues.append({
-                    "type": "sql_injection",
-                    "indicator": f"SQL error in message: {exc_message[:100]}",
-                    "severity": "high",
-                })
+                issues.append(
+                    {
+                        "type": "sql_injection",
+                        "indicator": f"SQL error in message: {exc_message[:100]}",
+                        "severity": "high",
+                    }
+                )
                 break
 
         return issues

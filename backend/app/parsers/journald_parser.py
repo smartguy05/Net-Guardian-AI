@@ -39,11 +39,11 @@ class JournaldParser(BaseParser):
         "0": EventSeverity.CRITICAL,  # emerg
         "1": EventSeverity.CRITICAL,  # alert
         "2": EventSeverity.CRITICAL,  # crit
-        "3": EventSeverity.ERROR,     # err
-        "4": EventSeverity.WARNING,   # warning
-        "5": EventSeverity.INFO,      # notice
-        "6": EventSeverity.INFO,      # info
-        "7": EventSeverity.DEBUG,     # debug
+        "3": EventSeverity.ERROR,  # err
+        "4": EventSeverity.WARNING,  # warning
+        "5": EventSeverity.INFO,  # notice
+        "6": EventSeverity.INFO,  # info
+        "7": EventSeverity.DEBUG,  # debug
     }
 
     # Common service failure patterns

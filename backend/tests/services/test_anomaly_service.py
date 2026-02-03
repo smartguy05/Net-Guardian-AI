@@ -777,9 +777,7 @@ class TestApplicationAnomalyDetectionForDevice:
         assert mock_session.execute.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_detect_error_spike_for_device(
-        self, detector, sample_device_id, mock_session
-    ):
+    async def test_detect_error_spike_for_device(self, detector, sample_device_id, mock_session):
         """Test error spike detection for a device."""
         cutoff = datetime.now(UTC)
         baseline_metrics = {
@@ -972,15 +970,18 @@ class TestApplicationAnomalyDetectionForDevice:
         """Test severity calculation for application anomaly types."""
         # ERROR_SPIKE severity
         assert AnomalyDetection.calculate_severity(3.0, AnomalyType.ERROR_SPIKE) in [
-            AlertSeverity.MEDIUM, AlertSeverity.HIGH
+            AlertSeverity.MEDIUM,
+            AlertSeverity.HIGH,
         ]
 
         # NEW_ERROR_PATTERN severity
         assert AnomalyDetection.calculate_severity(4.0, AnomalyType.NEW_ERROR_PATTERN) in [
-            AlertSeverity.HIGH, AlertSeverity.CRITICAL
+            AlertSeverity.HIGH,
+            AlertSeverity.CRITICAL,
         ]
 
         # CONTAINER_RESTART severity
         assert AnomalyDetection.calculate_severity(6.0, AnomalyType.CONTAINER_RESTART) in [
-            AlertSeverity.HIGH, AlertSeverity.CRITICAL
+            AlertSeverity.HIGH,
+            AlertSeverity.CRITICAL,
         ]

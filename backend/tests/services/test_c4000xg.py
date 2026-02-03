@@ -250,9 +250,7 @@ class TestTestConnection:
         """Should handle connection errors."""
         with patch.object(c4000xg_service, "_create_client") as mock_create:
             mock_client = AsyncMock()
-            mock_client.__aenter__ = AsyncMock(
-                side_effect=httpx.ConnectError("Connection refused")
-            )
+            mock_client.__aenter__ = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
             mock_client.__aexit__ = AsyncMock(return_value=None)
             mock_create.return_value = mock_client
 
@@ -317,9 +315,7 @@ class TestBlockDevice:
         existing_rule = {"_index": 1, "MACAddress": "AA:BB:CC:DD:EE:FF", "Target": "Drop"}
 
         with patch.object(c4000xg_service, "_ensure_session", return_value=True):
-            with patch.object(
-                c4000xg_service, "_find_rule_for_mac", return_value=existing_rule
-            ):
+            with patch.object(c4000xg_service, "_find_rule_for_mac", return_value=existing_rule):
                 with patch.object(c4000xg_service, "_create_client") as mock_create:
                     mock_client = AsyncMock()
                     mock_client.cookies = MagicMock()
@@ -394,12 +390,8 @@ class TestUnblockDevice:
         existing_rule = {"_index": 1, "MACAddress": "AA:BB:CC:DD:EE:FF", "Target": "Drop"}
 
         with patch.object(c4000xg_service, "_ensure_session", return_value=True):
-            with patch.object(
-                c4000xg_service, "_find_rule_for_mac", return_value=existing_rule
-            ):
-                with patch.object(
-                    c4000xg_service, "_post_request", return_value={"success": True}
-                ):
+            with patch.object(c4000xg_service, "_find_rule_for_mac", return_value=existing_rule):
+                with patch.object(c4000xg_service, "_post_request", return_value={"success": True}):
                     with patch.object(c4000xg_service, "_create_client") as mock_create:
                         mock_client = AsyncMock()
                         mock_client.cookies = MagicMock()
@@ -445,9 +437,7 @@ class TestUnblockDevice:
         existing_rule = {"_index": 1, "MACAddress": "AA:BB:CC:DD:EE:FF", "Target": "Drop"}
 
         with patch.object(c4000xg_service, "_ensure_session", return_value=True):
-            with patch.object(
-                c4000xg_service, "_find_rule_for_mac", return_value=existing_rule
-            ):
+            with patch.object(c4000xg_service, "_find_rule_for_mac", return_value=existing_rule):
                 with patch.object(c4000xg_service, "_post_request", return_value=None):
                     with patch.object(c4000xg_service, "_create_client") as mock_create:
                         mock_client = AsyncMock()
@@ -484,9 +474,7 @@ class TestIsDeviceBlocked:
         existing_rule = {"_index": 1, "MACAddress": "AA:BB:CC:DD:EE:FF", "Target": "Drop"}
 
         with patch.object(c4000xg_service, "_ensure_session", return_value=True):
-            with patch.object(
-                c4000xg_service, "_find_rule_for_mac", return_value=existing_rule
-            ):
+            with patch.object(c4000xg_service, "_find_rule_for_mac", return_value=existing_rule):
                 with patch.object(c4000xg_service, "_create_client") as mock_create:
                     mock_client = AsyncMock()
                     mock_client.cookies = MagicMock()
@@ -573,9 +561,7 @@ class TestGetBlockedDevices:
         ]
 
         with patch.object(c4000xg_service, "_ensure_session", return_value=True):
-            with patch.object(
-                c4000xg_service, "_get_parental_control_rules", return_value=rules
-            ):
+            with patch.object(c4000xg_service, "_get_parental_control_rules", return_value=rules):
                 with patch.object(c4000xg_service, "_create_client") as mock_create:
                     mock_client = AsyncMock()
                     mock_client.cookies = MagicMock()
@@ -601,9 +587,7 @@ class TestGetBlockedDevices:
         ]
 
         with patch.object(c4000xg_service, "_ensure_session", return_value=True):
-            with patch.object(
-                c4000xg_service, "_get_parental_control_rules", return_value=rules
-            ):
+            with patch.object(c4000xg_service, "_get_parental_control_rules", return_value=rules):
                 with patch.object(c4000xg_service, "_create_client") as mock_create:
                     mock_client = AsyncMock()
                     mock_client.cookies = MagicMock()

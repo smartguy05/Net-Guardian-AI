@@ -190,7 +190,7 @@ DEFAULT_SECURITY_PATTERNS: list[dict] = [
         "pattern": r"(?i)(on(load|click|error|mouseover|submit|focus|blur|change|keyup|keydown))\s*=",
         "severity": AlertSeverity.HIGH,
         "tags": ["owasp-top-10", "xss", "dom-xss"],
-        "examples": ['<img src=x onerror=alert(1)>', '<body onload="malicious()">'],
+        "examples": ["<img src=x onerror=alert(1)>", '<body onload="malicious()">'],
         "references": ["https://owasp.org/www-community/attacks/xss/"],
     },
     {
@@ -201,7 +201,10 @@ DEFAULT_SECURITY_PATTERNS: list[dict] = [
         "pattern": r"(?i)javascript\s*:",
         "severity": AlertSeverity.HIGH,
         "tags": ["owasp-top-10", "xss"],
-        "examples": ['<a href="javascript:alert(1)">', "javascript:document.location='http://evil.com'"],
+        "examples": [
+            '<a href="javascript:alert(1)">',
+            "javascript:document.location='http://evil.com'",
+        ],
         "references": ["https://owasp.org/www-community/attacks/xss/"],
     },
     {
@@ -281,7 +284,9 @@ DEFAULT_SECURITY_PATTERNS: list[dict] = [
             "http://169.254.169.254/latest/meta-data/",
             "http://metadata.google.internal/computeMetadata/v1/",
         ],
-        "references": ["https://blog.appsecco.com/an-ssrf-privileged-aws-keys-and-the-capital-one-breach-4c3c2cded3af"],
+        "references": [
+            "https://blog.appsecco.com/an-ssrf-privileged-aws-keys-and-the-capital-one-breach-4c3c2cded3af"
+        ],
     },
     # ============================================
     # Authentication Bypass Patterns
@@ -295,7 +300,9 @@ DEFAULT_SECURITY_PATTERNS: list[dict] = [
         "severity": AlertSeverity.CRITICAL,
         "tags": ["jwt", "authentication-bypass"],
         "examples": ['{"alg":"none","typ":"JWT"}'],
-        "references": ["https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/"],
+        "references": [
+            "https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/"
+        ],
     },
     {
         "name": "Default Credentials",
@@ -362,7 +369,9 @@ DEFAULT_SECURITY_PATTERNS: list[dict] = [
         "severity": AlertSeverity.HIGH,
         "tags": ["xxe", "xml", "injection"],
         "examples": ['<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>'],
-        "references": ["https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"],
+        "references": [
+            "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+        ],
     },
     {
         "name": "XXE - SYSTEM Entity",
@@ -373,7 +382,9 @@ DEFAULT_SECURITY_PATTERNS: list[dict] = [
         "severity": AlertSeverity.HIGH,
         "tags": ["xxe", "xml", "injection"],
         "examples": ['<!ENTITY xxe SYSTEM "file:///etc/passwd">'],
-        "references": ["https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"],
+        "references": [
+            "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing"
+        ],
     },
 ]
 

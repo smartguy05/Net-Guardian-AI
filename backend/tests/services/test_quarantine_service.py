@@ -173,7 +173,13 @@ class TestQuarantineDeviceOperation:
 
     @pytest.mark.asyncio
     async def test_quarantine_device_success(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        sample_device,
+        sample_user,
     ):
         """Should successfully quarantine a device."""
         # Setup mocks
@@ -249,7 +255,13 @@ class TestQuarantineDeviceOperation:
 
     @pytest.mark.asyncio
     async def test_quarantine_adguard_failure(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        sample_device,
+        sample_user,
     ):
         """Should succeed with warning when AdGuard fails."""
         mock_result = MagicMock()
@@ -287,7 +299,13 @@ class TestQuarantineDeviceOperation:
 
     @pytest.mark.asyncio
     async def test_quarantine_without_ip(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        sample_device,
+        sample_user,
     ):
         """Should quarantine device without IP addresses."""
         sample_device.ip_addresses = []
@@ -348,7 +366,13 @@ class TestQuarantineDeviceOperation:
 
     @pytest.mark.asyncio
     async def test_quarantine_adguard_disabled(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        sample_device,
+        sample_user,
     ):
         """Should skip AdGuard when disabled."""
         mock_adguard.is_enabled = False
@@ -380,7 +404,13 @@ class TestReleaseDeviceOperation:
 
     @pytest.mark.asyncio
     async def test_release_device_success(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        sample_device,
+        sample_user,
     ):
         """Should successfully release a device."""
         sample_device.status = DeviceStatus.QUARANTINED
@@ -454,7 +484,13 @@ class TestReleaseDeviceOperation:
 
     @pytest.mark.asyncio
     async def test_release_device_integration_failure(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        sample_device,
+        sample_user,
     ):
         """Should succeed with warning when integration fails."""
         sample_device.status = DeviceStatus.QUARANTINED
@@ -688,7 +724,14 @@ class TestAuditLogging:
 
     @pytest.mark.asyncio
     async def test_quarantine_creates_audit_log(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, mock_audit, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        mock_audit,
+        sample_device,
+        sample_user,
     ):
         """Should create audit log when quarantining."""
         mock_result = MagicMock()
@@ -725,7 +768,14 @@ class TestAuditLogging:
 
     @pytest.mark.asyncio
     async def test_release_creates_audit_log(
-        self, quarantine_service, mock_session, mock_adguard, mock_router, mock_audit, sample_device, sample_user
+        self,
+        quarantine_service,
+        mock_session,
+        mock_adguard,
+        mock_router,
+        mock_audit,
+        sample_device,
+        sample_user,
     ):
         """Should create audit log when releasing."""
         sample_device.status = DeviceStatus.QUARANTINED

@@ -74,7 +74,9 @@ class TestNginxCombinedPattern:
 
     def test_matches_with_remote_user(self):
         """Should capture remote user when present."""
-        line = '10.0.0.1 - admin [01/Feb/2026:00:00:00 +0000] "POST /api HTTP/1.1" 201 100 "-" "curl"'
+        line = (
+            '10.0.0.1 - admin [01/Feb/2026:00:00:00 +0000] "POST /api HTTP/1.1" 201 100 "-" "curl"'
+        )
         match = NGINX_COMBINED_PATTERN.match(line)
 
         assert match is not None
@@ -95,7 +97,7 @@ class TestNginxErrorPattern:
 
     def test_matches_standard_error_log(self):
         """Should match standard error log format."""
-        line = '2026/01/28 12:34:56 [error] 1234#5678: *999 test error message'
+        line = "2026/01/28 12:34:56 [error] 1234#5678: *999 test error message"
         match = NGINX_ERROR_PATTERN.match(line)
 
         assert match is not None
@@ -108,7 +110,7 @@ class TestNginxErrorPattern:
 
     def test_matches_without_connection_id(self):
         """Should match error log without connection ID."""
-        line = '2026/01/28 12:34:56 [warn] 1234#5678: some warning message'
+        line = "2026/01/28 12:34:56 [warn] 1234#5678: some warning message"
         match = NGINX_ERROR_PATTERN.match(line)
 
         assert match is not None
@@ -120,7 +122,7 @@ class TestNginxErrorPattern:
         levels = ["debug", "info", "notice", "warn", "error", "crit", "alert", "emerg"]
 
         for level in levels:
-            line = f'2026/01/28 12:00:00 [{level}] 1#1: test'
+            line = f"2026/01/28 12:00:00 [{level}] 1#1: test"
             match = NGINX_ERROR_PATTERN.match(line)
             assert match is not None, f"Failed to match level: {level}"
             assert match.group("level") == level
@@ -283,7 +285,7 @@ class TestNginxParserErrorLogs:
     def test_parse_basic_error_log(self):
         """Should parse a basic error log line."""
         parser = NginxParser()
-        line = '2026/01/28 12:34:56 [error] 1234#5678: *999 upstream timed out'
+        line = "2026/01/28 12:34:56 [error] 1234#5678: *999 upstream timed out"
 
         results = parser.parse(line)
 
@@ -313,7 +315,7 @@ class TestNginxParserErrorLogs:
         ]
 
         for level, expected_severity in test_cases:
-            line = f'2026/01/28 12:00:00 [{level}] 1#1: test message'
+            line = f"2026/01/28 12:00:00 [{level}] 1#1: test message"
             results = parser.parse(line)
             assert len(results) == 1, f"Failed for level: {level}"
             assert results[0].severity == expected_severity, f"Wrong severity for {level}"
@@ -321,7 +323,7 @@ class TestNginxParserErrorLogs:
     def test_parse_error_log_timestamp(self):
         """Should correctly parse error log timestamp."""
         parser = NginxParser({"log_type": "error"})
-        line = '2025/06/15 14:30:00 [error] 1#1: test'
+        line = "2025/06/15 14:30:00 [error] 1#1: test"
 
         results = parser.parse(line)
 
@@ -335,7 +337,7 @@ class TestNginxParserErrorLogs:
     def test_parse_error_log_extracts_client_ip(self):
         """Should extract client IP from error message."""
         parser = NginxParser({"log_type": "error"})
-        line = '2026/01/28 12:00:00 [error] 1#1: *1 client: 192.168.1.100, server: example.com'
+        line = "2026/01/28 12:00:00 [error] 1#1: *1 client: 192.168.1.100, server: example.com"
 
         results = parser.parse(line)
 
@@ -345,7 +347,7 @@ class TestNginxParserErrorLogs:
     def test_parse_error_log_without_client_ip(self):
         """Should handle error log without client IP."""
         parser = NginxParser({"log_type": "error"})
-        line = '2026/01/28 12:00:00 [error] 1#1: some error without client'
+        line = "2026/01/28 12:00:00 [error] 1#1: some error without client"
 
         results = parser.parse(line)
 
@@ -355,7 +357,7 @@ class TestNginxParserErrorLogs:
     def test_parse_explicit_error_type(self):
         """Should use explicit error type without auto-detection."""
         parser = NginxParser({"log_type": "error"})
-        line = '2026/01/28 12:00:00 [error] 1#1: test'
+        line = "2026/01/28 12:00:00 [error] 1#1: test"
 
         results = parser.parse(line)
 
@@ -390,7 +392,7 @@ class TestNginxParserAutoDetection:
     def test_auto_detect_error_log(self):
         """Should auto-detect error log format."""
         parser = NginxParser()
-        line = '2026/01/28 12:00:00 [error] 1#1: some error'
+        line = "2026/01/28 12:00:00 [error] 1#1: some error"
 
         results = parser.parse(line)
 
@@ -402,7 +404,7 @@ class TestNginxParserAutoDetection:
         parser = NginxParser()
         lines = [
             '192.168.1.1 - - [01/Jan/2026:00:00:00 +0000] "GET / HTTP/1.1" 200 0 "-" "-"',
-            '2026/01/28 12:00:00 [error] 1#1: some error',
+            "2026/01/28 12:00:00 [error] 1#1: some error",
         ]
 
         results = parser.parse(lines)
@@ -495,7 +497,7 @@ class TestNginxParserEdgeCases:
         # Test error log with malformed timestamp
         before = datetime.now(UTC)
         # Create a line that matches the error pattern but has invalid timestamp
-        line = '2026/99/99 99:99:99 [error] 1#1: test'
+        line = "2026/99/99 99:99:99 [error] 1#1: test"
         results = parser.parse(line)
         after = datetime.now(UTC)
 

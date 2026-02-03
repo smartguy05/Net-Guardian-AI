@@ -94,11 +94,15 @@ class AppBaselineCalculator:
         result = await self._session.execute(
             select(RawEvent)
             .where(RawEvent.source_id == source_id)
-            .where(RawEvent.event_type.in_([
-                EventType.CONTAINER,
-                EventType.JOURNAL,
-                EventType.APPLICATION,
-            ]))
+            .where(
+                RawEvent.event_type.in_(
+                    [
+                        EventType.CONTAINER,
+                        EventType.JOURNAL,
+                        EventType.APPLICATION,
+                    ]
+                )
+            )
             .where(RawEvent.timestamp >= cutoff)
             .order_by(RawEvent.timestamp)
         )
@@ -138,7 +142,11 @@ class AppBaselineCalculator:
             severity_dist[event.severity.value] += 1
 
             # Count errors (WARNING and above)
-            if event.severity in (EventSeverity.WARNING, EventSeverity.ERROR, EventSeverity.CRITICAL):
+            if event.severity in (
+                EventSeverity.WARNING,
+                EventSeverity.ERROR,
+                EventSeverity.CRITICAL,
+            ):
                 error_count += 1
                 hour_key = event.timestamp.strftime("%Y-%m-%d-%H")
                 day_key = event.timestamp.strftime("%Y-%m-%d")
@@ -257,10 +265,7 @@ class AppBaselineCalculator:
             "restart_count": restart_count,
             "oom_kill_count": oom_count,
             "exit_codes": dict(exit_codes),
-            "containers": {
-                name: dict(events)
-                for name, events in container_events.items()
-            },
+            "containers": {name: dict(events) for name, events in container_events.items()},
             "daily_restart_counts": list(daily_restarts.values())[-30:],
             "daily_restart_mean": restart_mean,
             "daily_restart_std": restart_std,
@@ -367,11 +372,15 @@ class AppBaselineCalculator:
         result = await self._session.execute(
             select(RawEvent)
             .where(RawEvent.device_id == device_id)
-            .where(RawEvent.event_type.in_([
-                EventType.CONTAINER,
-                EventType.JOURNAL,
-                EventType.APPLICATION,
-            ]))
+            .where(
+                RawEvent.event_type.in_(
+                    [
+                        EventType.CONTAINER,
+                        EventType.JOURNAL,
+                        EventType.APPLICATION,
+                    ]
+                )
+            )
             .where(RawEvent.timestamp >= cutoff)
             .order_by(RawEvent.timestamp)
         )
@@ -507,11 +516,15 @@ class AppBaselineCalculator:
         result = await self._session.execute(
             select(RawEvent)
             .where(RawEvent.device_id == device_id)
-            .where(RawEvent.event_type.in_([
-                EventType.CONTAINER,
-                EventType.JOURNAL,
-                EventType.APPLICATION,
-            ]))
+            .where(
+                RawEvent.event_type.in_(
+                    [
+                        EventType.CONTAINER,
+                        EventType.JOURNAL,
+                        EventType.APPLICATION,
+                    ]
+                )
+            )
             .where(RawEvent.timestamp >= cutoff)
             .order_by(RawEvent.timestamp)
         )
@@ -630,16 +643,24 @@ class AppBaselineService:
             result = await session.execute(
                 select(func.count())
                 .where(RawEvent.source_id == source_id)
-                .where(RawEvent.event_type.in_([
-                    EventType.CONTAINER,
-                    EventType.JOURNAL,
-                    EventType.APPLICATION,
-                ]))
-                .where(RawEvent.severity.in_([
-                    EventSeverity.WARNING,
-                    EventSeverity.ERROR,
-                    EventSeverity.CRITICAL,
-                ]))
+                .where(
+                    RawEvent.event_type.in_(
+                        [
+                            EventType.CONTAINER,
+                            EventType.JOURNAL,
+                            EventType.APPLICATION,
+                        ]
+                    )
+                )
+                .where(
+                    RawEvent.severity.in_(
+                        [
+                            EventSeverity.WARNING,
+                            EventSeverity.ERROR,
+                            EventSeverity.CRITICAL,
+                        ]
+                    )
+                )
                 .where(RawEvent.timestamp >= cutoff)
             )
             recent_errors = result.scalar() or 0
@@ -704,11 +725,13 @@ class AppBaselineService:
             for event in recent_events:
                 exc_type = event.parsed_fields.get("exception_type")
                 if exc_type and exc_type not in known_types:
-                    new_exceptions.append({
-                        "exception_type": exc_type,
-                        "message": event.parsed_fields.get("exception_message", "")[:200],
-                        "timestamp": event.timestamp.isoformat(),
-                    })
+                    new_exceptions.append(
+                        {
+                            "exception_type": exc_type,
+                            "message": event.parsed_fields.get("exception_message", "")[:200],
+                            "timestamp": event.timestamp.isoformat(),
+                        }
+                    )
 
             return {
                 "has_new_exceptions": len(new_exceptions) > 0,

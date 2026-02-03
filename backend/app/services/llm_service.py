@@ -709,7 +709,9 @@ Please provide an incident summary:
 
         # Build the user message with context
         if context_text:
-            user_content = f"## Reference Documentation\n{context_text}\n\n## User Question\n{query}"
+            user_content = (
+                f"## Reference Documentation\n{context_text}\n\n## User Question\n{query}"
+            )
         else:
             user_content = query
 

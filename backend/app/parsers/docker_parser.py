@@ -58,12 +58,8 @@ class DockerParser(BaseParser):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(config)
         self.detect_errors = self.config.get("detect_errors", True)
-        self.error_keywords = set(
-            self.config.get("error_keywords", []) + self.ERROR_PATTERNS
-        )
-        self.warning_keywords = set(
-            self.config.get("warning_keywords", []) + self.WARNING_PATTERNS
-        )
+        self.error_keywords = set(self.config.get("error_keywords", []) + self.ERROR_PATTERNS)
+        self.warning_keywords = set(self.config.get("warning_keywords", []) + self.WARNING_PATTERNS)
 
     def _parse_timestamp(self, time_str: str) -> datetime:
         """Parse Docker timestamp format (RFC 3339 nano)."""
@@ -171,11 +167,13 @@ class DockerParser(BaseParser):
                         entries.append(json.loads(line))
                     except json.JSONDecodeError:
                         # Treat as plain text log
-                        entries.append({
-                            "log": line,
-                            "stream": "stdout",
-                            "time": datetime.now(UTC).isoformat(),
-                        })
+                        entries.append(
+                            {
+                                "log": line,
+                                "stream": "stdout",
+                                "time": datetime.now(UTC).isoformat(),
+                            }
+                        )
         else:
             logger.warning("docker_invalid_data", data_type=type(raw_data).__name__)
             return []

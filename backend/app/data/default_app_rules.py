@@ -281,7 +281,11 @@ DEFAULT_APP_RULES: list[dict[str, Any]] = [
             "logic": "and",
             "conditions": [
                 {"field": "event_type", "operator": "eq", "value": "journal"},
-                {"field": "parsed_fields.service_state", "operator": "in", "value": ["starting", "reloading"]},
+                {
+                    "field": "parsed_fields.service_state",
+                    "operator": "in",
+                    "value": ["starting", "reloading"],
+                },
                 {"field": "parsed_fields.restart_count", "operator": "gte", "value": 3},
             ],
         },
@@ -359,7 +363,10 @@ DEFAULT_APP_RULES: list[dict[str, Any]] = [
         "response_actions": [
             {"type": "create_alert", "config": {"notify": True, "priority": "critical"}},
             {"type": "send_notification", "config": {"channels": ["email", "ntfy"]}},
-            {"type": "quarantine_device", "config": {"reason": "Java deserialization attack detected"}},
+            {
+                "type": "quarantine_device",
+                "config": {"reason": "Java deserialization attack detected"},
+            },
         ],
         "cooldown_minutes": 1,
     },

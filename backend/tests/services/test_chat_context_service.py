@@ -223,7 +223,9 @@ class TestBuildContext:
 
         assert context.intent == ChatIntent.LOG_ANALYSIS
         assert context.network_data == network_context
-        assert "Network Overview" in context.context_text or "active_devices" in context.context_text
+        assert (
+            "Network Overview" in context.context_text or "active_devices" in context.context_text
+        )
 
     def test_build_context_vulnerability_research(self):
         """Should build minimal context for vulnerability research."""
