@@ -282,7 +282,8 @@ export const helpContent: Record<string, HelpContent> = {
           'Filter anomalies by status, type, and severity.',
         tips: [
           'Status options: Active, Reviewed, Confirmed, False Positive',
-          'Types: New Domain, Volume Spike, Time Anomaly, New Connection, New Port, Blocked Spike, Pattern Change',
+          'Network types: New Domain, Volume Spike, Time Anomaly, New Connection, New Port, Blocked Spike, Pattern Change',
+          'Application types: Error Spike, New Error Pattern, Container Restart',
           'Severity levels: Critical, High, Medium, Low, Info',
         ],
       },
@@ -303,7 +304,7 @@ export const helpContent: Record<string, HelpContent> = {
           'Admins can manually trigger anomaly detection for all devices.',
         tips: [
           'Click "Run Detection" to analyze all devices with ready baselines',
-          'Detection compares current behavior to learned patterns',
+          'Detection checks network behavior (DNS, traffic, connections) and application logs (errors, container restarts)',
           'New anomalies will appear after detection completes',
         ],
       },
