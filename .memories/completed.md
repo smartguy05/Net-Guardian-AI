@@ -631,6 +631,28 @@ User Message → classify_intent() [Haiku] → build_context(intent) → stream_
 
 ---
 
+## CI Fixes & Code Review Improvements (February 2026)
+
+**Lint Fixes** (`app/api/v1/chat.py`, `tests/services/test_chat_context_service.py`):
+- Fixed import block sorting (moved `import structlog` to third-party group)
+- Removed unused imports (`ChatIntent`, `AsyncMock`, `MagicMock`)
+
+**Type Check Fixes**:
+- `app/models/chat_intent.py`: Changed `dict | None` to `dict[str, Any] | None`
+- `app/services/integrations/c4000xg.py`:
+  - Added explicit type annotations for `response.json()` results
+  - Added type annotation for `rules: list[dict[str, Any]] = []`
+  - Added 6 `assert self._session_id is not None` before `cookies.set()` calls
+
+**Code Review Improvements** (PR #6):
+1. **Fixed typo in `_calculate_exception_metrics`**: `exc_messages` → `exception_messages`
+2. **Type consistency**: Changed `known_exception_types` from `set` to `list` for JSON serialization
+3. **Documented cache limitation**: Added note that `_device_baseline_cache` is process-local
+4. **Removed deprecated source-based methods**: Deleted `detect_application_anomalies()`, `_detect_error_spike()`, `_detect_container_restart_anomaly()`, `_detect_new_error_patterns()` - superseded by device-based methods
+5. **Added architecture docs**: New "Application Log Analysis" section in CLAUDE.md
+
+---
+
 ## CenturyLink C4000XG Router Integration (February 2026)
 
 **Feature**: Device blocking via C4000XG modem/router's parental control (Access Scheduler) feature

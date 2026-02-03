@@ -21,6 +21,9 @@ logger = structlog.get_logger()
 APP_BASELINE_CACHE_TTL_SECONDS = 300
 
 # In-memory cache for device app baselines
+# NOTE: This cache is process-local and not shared across workers.
+# For multi-worker deployments, consider using Redis caching instead.
+# See clear_device_baseline_cache() to manually invalidate entries.
 _device_baseline_cache: dict[UUID, tuple[datetime, "DeviceAppBaselines"]] = {}
 
 
@@ -318,7 +321,7 @@ class AppBaselineCalculator:
             exc_msg = event.parsed_fields.get("exception_message", "")
             if exc_msg:
                 # Normalize message (first 100 chars)
-                exc_messages[exc_msg[:100]] += 1
+                exception_messages[exc_msg[:100]] += 1
 
             root_cause = event.parsed_fields.get("root_cause", {})
             if isinstance(root_cause, dict) and root_cause.get("exception_type"):
@@ -328,7 +331,7 @@ class AppBaselineCalculator:
                 has_security_issues += 1
 
         return {
-            "known_exception_types": set(exception_types.keys()),
+            "known_exception_types": list(exception_types.keys()),
             "exception_type_counts": dict(exception_types.most_common(50)),
             "exception_message_counts": dict(exception_messages.most_common(20)),
             "root_cause_counts": dict(root_causes.most_common(20)),
