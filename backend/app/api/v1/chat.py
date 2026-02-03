@@ -5,19 +5,17 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-import structlog
-
 from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
 from app.models.alert import Alert, AlertStatus
 from app.models.anomaly import AnomalyDetection, AnomalyStatus
-from app.models.chat_intent import ChatIntent
 from app.models.device import Device, DeviceStatus
 from app.models.raw_event import EventType, RawEvent
 from app.models.user import User

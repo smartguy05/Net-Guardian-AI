@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any
 
 
 class ChatIntent(str, Enum):
@@ -44,6 +45,6 @@ class ChatContext:
 
     system_prompt: str
     context_text: str = ""
-    network_data: dict | None = None
+    network_data: dict[str, Any] | None = None
     intent: ChatIntent | None = None
     classification: IntentClassification | None = None
