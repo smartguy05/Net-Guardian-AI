@@ -38,7 +38,7 @@ class EventBus:
     async def connect(self) -> None:
         """Connect to Redis."""
         if self._redis is None:
-            self._redis = redis.from_url(  # type: ignore[no-untyped-call]
+            self._redis = redis.from_url(
                 self.redis_url,
                 encoding="utf-8",
                 decode_responses=True,

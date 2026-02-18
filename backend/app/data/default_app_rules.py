@@ -6,6 +6,8 @@ Users can disable them but cannot delete them.
 
 from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.alert import AlertSeverity
 
 # Default application detection rules
@@ -281,7 +283,11 @@ DEFAULT_APP_RULES: list[dict[str, Any]] = [
             "logic": "and",
             "conditions": [
                 {"field": "event_type", "operator": "eq", "value": "journal"},
-                {"field": "parsed_fields.service_state", "operator": "in", "value": ["starting", "reloading"]},
+                {
+                    "field": "parsed_fields.service_state",
+                    "operator": "in",
+                    "value": ["starting", "reloading"],
+                },
                 {"field": "parsed_fields.restart_count", "operator": "gte", "value": 3},
             ],
         },
@@ -359,7 +365,10 @@ DEFAULT_APP_RULES: list[dict[str, Any]] = [
         "response_actions": [
             {"type": "create_alert", "config": {"notify": True, "priority": "critical"}},
             {"type": "send_notification", "config": {"channels": ["email", "ntfy"]}},
-            {"type": "quarantine_device", "config": {"reason": "Java deserialization attack detected"}},
+            {
+                "type": "quarantine_device",
+                "config": {"reason": "Java deserialization attack detected"},
+            },
         ],
         "cooldown_minutes": 1,
     },
@@ -414,7 +423,7 @@ DEFAULT_APP_RULES: list[dict[str, Any]] = [
 ]
 
 
-async def load_default_app_rules(session) -> int:
+async def load_default_app_rules(session: AsyncSession) -> int:
     """Load default application rules into the database.
 
     Only loads rules that don't already exist (by ID).

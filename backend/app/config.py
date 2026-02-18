@@ -145,6 +145,32 @@ class Settings(BaseSettings):
     authentik_auto_create_users: bool = True
     authentik_default_role: str = "viewer"
 
+    # Investigation Agent Configuration
+    investigation_enabled: bool = True
+    investigation_auto_trigger_severity: str = "high"  # high, critical
+    investigation_max_concurrent: int = 3
+    investigation_require_approval_risk: str = "high"  # Actions >= this risk need approval
+    investigation_timeout_minutes: int = 30
+    investigation_llm_model: str = ""  # Empty = use llm_model_default
+
+    # Gamification Configuration
+    gamification_enabled: bool = True
+    gamification_leaderboard_enabled: bool = True
+    gamification_points_multiplier: float = 1.0  # For special events
+    gamification_streak_reset_hour: int = 0  # UTC hour to reset streak check
+
+    # Honeypot Configuration
+    honeypot_enabled: bool = False  # Disabled by default (requires Docker/Podman)
+    honeypot_container_runtime: str = "docker"  # docker or podman
+    honeypot_max_concurrent: int = 10
+    honeypot_default_timeout_minutes: int = 60
+    honeypot_auto_spawn_on_threat: bool = True
+    honeypot_llm_analysis_enabled: bool = True
+    honeypot_network: str = "netguardian-honeypot"
+    honeypot_host_ip: str = "0.0.0.0"  # noqa: S104  # nosec B104 - configurable default for honeypots
+    honeypot_port_range_start: int = 10000  # Start of port range for honeypots
+    honeypot_port_range_end: int = 20000  # End of port range for honeypots
+
     @property
     def async_database_url(self) -> str:
         """Ensure database URL uses asyncpg driver."""

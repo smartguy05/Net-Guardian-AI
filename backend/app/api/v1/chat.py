@@ -16,11 +16,13 @@ from app.api.v1.auth import get_current_user
 from app.db.session import get_async_session
 from app.models.alert import Alert, AlertStatus
 from app.models.anomaly import AnomalyDetection, AnomalyStatus
+from app.models.chat_intent import ChatIntent
 from app.models.device import Device, DeviceStatus
 from app.models.raw_event import EventType, RawEvent
 from app.models.user import User
 from app.services.chat_context_service import get_chat_context_service
 from app.services.llm_service import LLMModel, get_llm_service
+from app.services.log_query_service import LogQueryService
 
 logger = structlog.get_logger()
 
@@ -251,11 +253,23 @@ async def query_network(
     if classification.needs_network_context:
         network_context = await _build_network_context(session)
 
+    # Fetch log data for log analysis queries
+    log_query_result = None
+    if classification.intent == ChatIntent.LOG_ANALYSIS:
+        log_service = LogQueryService()
+        try:
+            devices_list = network_context.get("devices", []) if network_context else []
+            params = await log_service.extract_query_parameters(request.query, devices_list)
+            log_query_result = await log_service.query_events(session, params)
+        except Exception:
+            logger.warning("log_query_failed", exc_info=True)
+
     # Build context based on intent
     chat_context = context_service.build_context(
         classification=classification,
         network_context=network_context,
         message=request.query,
+        log_query_result=log_query_result,
     )
 
     # Query with intent-specific context
@@ -333,11 +347,28 @@ async def chat(
     if classification.needs_network_context:
         network_context = await _build_network_context(session)
 
+    # Fetch log data for log analysis queries
+    log_query_result = None
+    if classification.intent == ChatIntent.LOG_ANALYSIS:
+        log_service = LogQueryService()
+        try:
+            devices_list = network_context.get("devices", []) if network_context else []
+            conversation_context = [
+                {"role": m.role, "content": m.content} for m in request.messages[-4:]
+            ]
+            params = await log_service.extract_query_parameters(
+                latest_user_message, devices_list, conversation_context
+            )
+            log_query_result = await log_service.query_events(session, params)
+        except Exception:
+            logger.warning("log_query_failed", exc_info=True)
+
     # Build context based on intent
     chat_context = context_service.build_context(
         classification=classification,
         network_context=network_context,
         message=latest_user_message,
+        log_query_result=log_query_result,
     )
 
     if request.stream:

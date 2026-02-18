@@ -22,6 +22,12 @@ def downgrade() -> None:
 
 **Important:** Always create a migration when adding new enum values. Check `app/models/log_source.py` for `SourceType` and `ParserType` enums.
 
+### Python-only enums vs PostgreSQL enums
+
+**Problem:** Migration 018 tried to `ALTER TYPE playbookactiontype ADD VALUE 'start_investigation'` but `playbookactiontype` was never created as a PostgreSQL enum. The `PlaybookActionType` Python enum is only used in application code — the `actions` column in the playbooks table is a JSON field.
+
+**Lesson:** Before writing `ALTER TYPE ... ADD VALUE` in a migration, verify the enum actually exists as a PostgreSQL type. Check the original migration that created the table. If the column is JSON/JSONB, the Python enum is application-level only and has no corresponding PostgreSQL type to alter.
+
 ---
 
 ## Test Suite Gotchas (January 2026)

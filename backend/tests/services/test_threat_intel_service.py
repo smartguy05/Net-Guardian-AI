@@ -606,7 +606,9 @@ class TestThreatIntelServiceFeedFetching:
         assert result["success"] is True
 
     @pytest.mark.asyncio
-    async def test_fetch_feed_with_bearer_auth(self, threat_intel_service, mock_session, sample_feed):
+    async def test_fetch_feed_with_bearer_auth(
+        self, threat_intel_service, mock_session, sample_feed
+    ):
         """Should fetch feed with bearer authentication."""
         sample_feed.auth_type = "bearer"
         sample_feed.auth_config = {"token": "secret_token"}
@@ -784,7 +786,12 @@ class TestThreatIntelServiceUpdateIndicators:
         mock_session.execute.return_value = mock_result
 
         indicators = [
-            {"indicator_type": IndicatorType.IP, "value": "192.168.1.1", "severity": "high", "confidence": 90}
+            {
+                "indicator_type": IndicatorType.IP,
+                "value": "192.168.1.1",
+                "severity": "high",
+                "confidence": 90,
+            }
         ]
 
         added, updated = await threat_intel_service._update_indicators(sample_feed, indicators)
@@ -794,7 +801,9 @@ class TestThreatIntelServiceUpdateIndicators:
         mock_session.add.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_indicators_update_existing(self, threat_intel_service, mock_session, sample_feed):
+    async def test_update_indicators_update_existing(
+        self, threat_intel_service, mock_session, sample_feed
+    ):
         """Should update existing indicators."""
         existing_indicator = MagicMock(spec=ThreatIndicator)
         existing_indicator.value = "192.168.1.1"
@@ -804,7 +813,12 @@ class TestThreatIntelServiceUpdateIndicators:
         mock_session.execute.return_value = mock_result
 
         indicators = [
-            {"indicator_type": IndicatorType.IP, "value": "192.168.1.1", "severity": "critical", "confidence": 95}
+            {
+                "indicator_type": IndicatorType.IP,
+                "value": "192.168.1.1",
+                "severity": "critical",
+                "confidence": 95,
+            }
         ]
 
         added, updated = await threat_intel_service._update_indicators(sample_feed, indicators)
@@ -815,7 +829,9 @@ class TestThreatIntelServiceUpdateIndicators:
         assert existing_indicator.confidence == 95
 
     @pytest.mark.asyncio
-    async def test_update_indicators_remove_old(self, threat_intel_service, mock_session, sample_feed):
+    async def test_update_indicators_remove_old(
+        self, threat_intel_service, mock_session, sample_feed
+    ):
         """Should remove indicators not in latest feed."""
         old_indicator = MagicMock(spec=ThreatIndicator)
         old_indicator.value = "old_value"
@@ -825,7 +841,12 @@ class TestThreatIntelServiceUpdateIndicators:
         mock_session.execute.return_value = mock_result
 
         indicators = [
-            {"indicator_type": IndicatorType.IP, "value": "new_value", "severity": "high", "confidence": 90}
+            {
+                "indicator_type": IndicatorType.IP,
+                "value": "new_value",
+                "severity": "high",
+                "confidence": 90,
+            }
         ]
 
         await threat_intel_service._update_indicators(sample_feed, indicators)

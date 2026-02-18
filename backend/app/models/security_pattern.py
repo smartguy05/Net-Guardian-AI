@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -17,7 +17,7 @@ from app.models.alert import AlertSeverity
 from app.models.base import Base, TimestampMixin
 
 
-class PatternCategory(str, Enum):
+class PatternCategory(StrEnum):
     """Category of security pattern."""
 
     SQL_INJECTION = "sql_injection"
@@ -33,7 +33,7 @@ class PatternCategory(str, Enum):
     CUSTOM = "custom"
 
 
-class PatternType(str, Enum):
+class PatternType(StrEnum):
     """Type of pattern matching."""
 
     REGEX = "regex"  # Regular expression pattern
@@ -41,7 +41,7 @@ class PatternType(str, Enum):
     KEYWORD = "keyword"  # Keyword/substring match
 
 
-class PatternSource(str, Enum):
+class PatternSource(StrEnum):
     """Source of the security pattern."""
 
     BUILTIN = "builtin"  # Built-in default patterns

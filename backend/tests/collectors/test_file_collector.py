@@ -766,9 +766,7 @@ class TestFileWatchCollectorMultiline:
 
     def test_multiline_buffers_initialized(self):
         """Test that line buffers are initialized."""
-        source = create_mock_source(
-            config={"path": "/test", "multiline_start_pattern": r"^\d{4}"}
-        )
+        source = create_mock_source(config={"path": "/test", "multiline_start_pattern": r"^\d{4}"})
         collector = FileWatchCollector(source, MagicMock())
 
         assert hasattr(collector, "_line_buffers")
@@ -919,7 +917,9 @@ class TestFileWatchCollectorMultiline:
         with tempfile.TemporaryDirectory() as temp_dir:
             file1 = Path(temp_dir) / "app1.log"
             # Add trigger entry to flush the second entry from buffer
-            file1.write_text("2024-01-01 Entry in file 1\n  Continuation\n2024-01-02 Second\n2024-01-03 Trigger\n")
+            file1.write_text(
+                "2024-01-01 Entry in file 1\n  Continuation\n2024-01-02 Second\n2024-01-03 Trigger\n"
+            )
 
             source = create_mock_source(
                 config={

@@ -232,7 +232,10 @@ java.sql.SQLException: You have an error in your SQL syntax
         assert len(results) >= 1
         # Parser stores security issues in 'security_issues' field
         security_issues = results[0].parsed_fields.get("security_issues", [])
-        assert len(security_issues) > 0 or results[0].parsed_fields.get("exception_type") == "java.sql.SQLException"
+        assert (
+            len(security_issues) > 0
+            or results[0].parsed_fields.get("exception_type") == "java.sql.SQLException"
+        )
 
     def test_detect_security_exception(self):
         """Test generic security exception detection."""
@@ -270,7 +273,9 @@ java.io.InvalidClassException: Object stream class desc
         # Check for security_issues or exception detection
         security_issues = results[0].parsed_fields.get("security_issues", [])
         has_gadget = any("deserialization" in str(issue).lower() for issue in security_issues)
-        assert has_gadget or "InvalidClassException" in results[0].parsed_fields.get("exception_type", "")
+        assert has_gadget or "InvalidClassException" in results[0].parsed_fields.get(
+            "exception_type", ""
+        )
 
     def test_disable_security_detection(self):
         """Test disabling security exception detection."""

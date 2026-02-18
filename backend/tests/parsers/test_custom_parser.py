@@ -762,7 +762,7 @@ class TestMultilineContentField:
         }
         parser = CustomParser(config)
 
-        entry = "2024-06-15 10:30:45.123456 ERROR (MainThread) [homeassistant.components.sensor] Error fetching data\nTraceback (most recent call last):\n  File \"/config/custom_components/test.py\", line 42\n    return await self.fetch()\nConnectionError: Failed to connect"
+        entry = '2024-06-15 10:30:45.123456 ERROR (MainThread) [homeassistant.components.sensor] Error fetching data\nTraceback (most recent call last):\n  File "/config/custom_components/test.py", line 42\n    return await self.fetch()\nConnectionError: Failed to connect'
 
         results = parser.parse([entry])  # Pass as list item
 
@@ -786,7 +786,10 @@ class TestMultilineContentField:
         results = parser.parse([entry])  # Pass as list item
 
         assert len(results) == 1
-        assert results[0].parsed_fields["message"] == "Error: Something went wrong\nDetails: More info here"
+        assert (
+            results[0].parsed_fields["message"]
+            == "Error: Something went wrong\nDetails: More info here"
+        )
 
     def test_multiline_field_creates_when_empty(self):
         """Should create field with continuation if first line match is empty."""

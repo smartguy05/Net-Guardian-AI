@@ -2,7 +2,7 @@
 
 import secrets
 from datetime import UTC, datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 import bcrypt
@@ -12,7 +12,7 @@ from app.config import settings
 from app.core.exceptions import AuthenticationError, AuthorizationError
 
 
-class UserRole(str, Enum):
+class UserRole(StrEnum):
     """User roles for RBAC."""
 
     ADMIN = "admin"

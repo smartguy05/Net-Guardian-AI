@@ -72,12 +72,16 @@ class SecurityAnalyzer:
             query = query.where(RawEvent.event_type.in_(event_types))
         else:
             # Default to application log types
-            query = query.where(RawEvent.event_type.in_([
-                EventType.CONTAINER,
-                EventType.JOURNAL,
-                EventType.APPLICATION,
-                EventType.HTTP,
-            ]))
+            query = query.where(
+                RawEvent.event_type.in_(
+                    [
+                        EventType.CONTAINER,
+                        EventType.JOURNAL,
+                        EventType.APPLICATION,
+                        EventType.HTTP,
+                    ]
+                )
+            )
 
         query = query.order_by(RawEvent.timestamp.desc()).limit(10000)
 
@@ -114,24 +118,26 @@ class SecurityAnalyzer:
         )
 
         for match in matches:
-            findings.append(SecurityFinding(
-                timestamp=event.timestamp,
-                source_id=event.source_id,
-                event_id=event.id,
-                pattern_id=match.pattern_id,
-                pattern_name=match.pattern_name,
-                category=match.category,
-                severity=match.severity,
-                matched_text=match.matched_text,
-                log_message=event.raw_message[:500],
-                context={
-                    "match_start": match.match_start,
-                    "match_end": match.match_end,
-                    "event_type": event.event_type.value,
-                    "severity": event.severity.value,
-                    **match.context,
-                },
-            ))
+            findings.append(
+                SecurityFinding(
+                    timestamp=event.timestamp,
+                    source_id=event.source_id,
+                    event_id=event.id,
+                    pattern_id=match.pattern_id,
+                    pattern_name=match.pattern_name,
+                    category=match.category,
+                    severity=match.severity,
+                    matched_text=match.matched_text,
+                    log_message=event.raw_message[:500],
+                    context={
+                        "match_start": match.match_start,
+                        "match_end": match.match_end,
+                        "event_type": event.event_type.value,
+                        "severity": event.severity.value,
+                        **match.context,
+                    },
+                )
+            )
 
         # Also check exception messages if present
         exc_message = event.parsed_fields.get("exception_message", "")
@@ -141,22 +147,24 @@ class SecurityAnalyzer:
                 categories=categories,
             )
             for match in exc_matches:
-                findings.append(SecurityFinding(
-                    timestamp=event.timestamp,
-                    source_id=event.source_id,
-                    event_id=event.id,
-                    pattern_id=match.pattern_id,
-                    pattern_name=match.pattern_name,
-                    category=match.category,
-                    severity=match.severity,
-                    matched_text=match.matched_text,
-                    log_message=exc_message[:500],
-                    context={
-                        "source": "exception_message",
-                        "exception_type": event.parsed_fields.get("exception_type"),
-                        **match.context,
-                    },
-                ))
+                findings.append(
+                    SecurityFinding(
+                        timestamp=event.timestamp,
+                        source_id=event.source_id,
+                        event_id=event.id,
+                        pattern_id=match.pattern_id,
+                        pattern_name=match.pattern_name,
+                        category=match.category,
+                        severity=match.severity,
+                        matched_text=match.matched_text,
+                        log_message=exc_message[:500],
+                        context={
+                            "source": "exception_message",
+                            "exception_type": event.parsed_fields.get("exception_type"),
+                            **match.context,
+                        },
+                    )
+                )
 
         return findings
 
@@ -210,28 +218,33 @@ class SecurityAnalyzer:
                 # Find highest severity
                 max_severity = max(group_findings, key=lambda f: self._severity_order(f.severity))
 
-                attacks.append({
-                    "pattern_id": str(group_findings[0].pattern_id),
-                    "pattern_name": group_findings[0].pattern_name,
-                    "category": group_findings[0].category.value,
-                    "severity": max_severity.severity.value,
-                    "source_id": group_findings[0].source_id,
-                    "occurrence_count": len(group_findings),
-                    "first_seen": first_ts.isoformat(),
-                    "last_seen": last_ts.isoformat(),
-                    "duration_minutes": duration,
-                    "sample_matches": [
-                        {
-                            "matched_text": f.matched_text[:100],
-                            "timestamp": f.timestamp.isoformat(),
-                        }
-                        for f in group_findings[:5]
-                    ],
-                })
+                attacks.append(
+                    {
+                        "pattern_id": str(group_findings[0].pattern_id),
+                        "pattern_name": group_findings[0].pattern_name,
+                        "category": group_findings[0].category.value,
+                        "severity": max_severity.severity.value,
+                        "source_id": group_findings[0].source_id,
+                        "occurrence_count": len(group_findings),
+                        "first_seen": first_ts.isoformat(),
+                        "last_seen": last_ts.isoformat(),
+                        "duration_minutes": duration,
+                        "sample_matches": [
+                            {
+                                "matched_text": f.matched_text[:100],
+                                "timestamp": f.timestamp.isoformat(),
+                            }
+                            for f in group_findings[:5]
+                        ],
+                    }
+                )
 
         # Sort by severity then occurrence count
         attacks.sort(
-            key=lambda a: (-self._severity_order(AlertSeverity(a["severity"])), -a["occurrence_count"])
+            key=lambda a: (
+                -self._severity_order(AlertSeverity(a["severity"])),
+                -a["occurrence_count"],
+            )
         )
 
         return attacks

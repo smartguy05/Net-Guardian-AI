@@ -354,6 +354,12 @@ class PlaybookEngine:
         elif action_type == PlaybookActionType.EXECUTE_WEBHOOK.value:
             return await self._action_execute_webhook(params, trigger_event, device_id)
 
+        elif action_type == PlaybookActionType.START_INVESTIGATION.value:
+            return await self._action_start_investigation(device_id, params, trigger_event)
+
+        elif action_type == PlaybookActionType.SPAWN_HONEYPOT.value:
+            return await self._action_spawn_honeypot(device_id, params, trigger_event)
+
         else:
             return {
                 "success": False,
@@ -665,6 +671,96 @@ class PlaybookEngine:
                 }
 
         except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    async def _action_start_investigation(
+        self,
+        device_id: UUID | None,
+        params: dict[str, Any],
+        trigger_event: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Start an autonomous investigation."""
+        from app.config import settings
+        from app.models.investigation import InvestigationTriggerSource
+        from app.services.investigation import get_investigation_service
+
+        if not settings.investigation_enabled:
+            return {"success": False, "error": "Investigation feature is disabled"}
+
+        try:
+            service = get_investigation_service()
+
+            # Determine priority from severity
+            severity = trigger_event.get("severity", "medium")
+            priority_map = {"low": 2, "medium": 3, "high": 4, "critical": 5}
+            priority = priority_map.get(severity, 3)
+
+            investigation = await service.create_investigation(
+                trigger_source=InvestigationTriggerSource.PLAYBOOK,
+                alert_id=trigger_event.get("alert_id"),
+                anomaly_id=trigger_event.get("anomaly_id"),
+                device_id=device_id,
+                priority=params.get("priority", priority),
+                auto_run=params.get("auto_run", True),
+            )
+
+            return {
+                "success": True,
+                "investigation_id": str(investigation.id),
+                "status": investigation.status.value,
+            }
+
+        except Exception as e:
+            logger.error("start_investigation_failed", error=str(e))
+            return {"success": False, "error": str(e)}
+
+    async def _action_spawn_honeypot(
+        self,
+        device_id: UUID | None,
+        params: dict[str, Any],
+        trigger_event: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Spawn a honeypot container."""
+        from app.config import settings
+        from app.services.honeypot import get_honeypot_service
+
+        if not settings.honeypot_enabled:
+            return {"success": False, "error": "Honeypot feature is disabled"}
+
+        try:
+            service = get_honeypot_service()
+
+            template_id = params.get("template_id", "ssh-cowrie")
+            timeout_minutes = params.get(
+                "timeout_minutes", settings.honeypot_default_timeout_minutes
+            )
+
+            reason = params.get(
+                "trigger_reason",
+                f"Playbook triggered: {trigger_event.get('description', 'suspicious activity detected')}",
+            )
+
+            instance = await service.spawn_honeypot(
+                template_id=template_id,
+                trigger_alert_id=trigger_event.get("alert_id"),
+                trigger_device_id=device_id,
+                trigger_reason=reason,
+                timeout_minutes=timeout_minutes,
+            )
+
+            if not instance:
+                return {"success": False, "error": "Failed to spawn honeypot"}
+
+            return {
+                "success": True,
+                "honeypot_id": str(instance.id),
+                "container_name": instance.container_name,
+                "status": instance.status.value,
+                "port_mappings": instance.port_mappings,
+            }
+
+        except Exception as e:
+            logger.error("spawn_honeypot_failed", error=str(e))
             return {"success": False, "error": str(e)}
 
     async def get_playbook(self, playbook_id: UUID) -> Playbook | None:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ from app.models.alert import AlertSeverity
 from app.models.base import Base, TimestampMixin
 
 
-class AnomalyType(str, Enum):
+class AnomalyType(StrEnum):
     """Type of detected anomaly."""
 
     NEW_DOMAIN = "new_domain"
@@ -37,7 +37,7 @@ class AnomalyType(str, Enum):
     SECURITY_PATTERN = "security_pattern"  # Security pattern match detected
 
 
-class AnomalyStatus(str, Enum):
+class AnomalyStatus(StrEnum):
     """Status of anomaly detection."""
 
     ACTIVE = "active"

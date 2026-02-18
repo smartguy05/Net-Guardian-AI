@@ -1,11 +1,11 @@
 """Chat intent classification models for AI chat feature."""
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ChatIntent(str, Enum):
+class ChatIntent(StrEnum):
     """Types of user intents in the AI chat."""
 
     APP_HELP = "app_help"  # Questions about how to use the application
@@ -48,3 +48,4 @@ class ChatContext:
     network_data: dict[str, Any] | None = None
     intent: ChatIntent | None = None
     classification: IntentClassification | None = None
+    log_query_result: Any | None = None

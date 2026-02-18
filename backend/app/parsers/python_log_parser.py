@@ -92,9 +92,9 @@ class PythonLogParser(BaseParser):
                 match = re.search(pattern, text)
                 if match:
                     try:
-                        return datetime.strptime(
-                            match.group(1), self.timestamp_format
-                        ).replace(tzinfo=UTC)
+                        return datetime.strptime(match.group(1), self.timestamp_format).replace(
+                            tzinfo=UTC
+                        )
                     except ValueError:
                         continue
 
@@ -174,11 +174,13 @@ class PythonLogParser(BaseParser):
             exc_type = traceback["exception_type"]
             for exc_class, issue_type in self.SECURITY_EXCEPTIONS.items():
                 if exc_class in exc_type:
-                    issues.append({
-                        "type": issue_type,
-                        "indicator": f"Security exception: {exc_type}",
-                        "severity": "high",
-                    })
+                    issues.append(
+                        {
+                            "type": issue_type,
+                            "indicator": f"Security exception: {exc_type}",
+                            "severity": "high",
+                        }
+                    )
 
         # Check for SQL patterns in error messages
         sql_indicators = [
@@ -189,11 +191,13 @@ class PythonLogParser(BaseParser):
         ]
         for pattern in sql_indicators:
             if re.search(pattern, content):
-                issues.append({
-                    "type": "sql_injection",
-                    "indicator": "SQL syntax error in logs",
-                    "severity": "high",
-                })
+                issues.append(
+                    {
+                        "type": "sql_injection",
+                        "indicator": "SQL syntax error in logs",
+                        "severity": "high",
+                    }
+                )
                 break
 
         # Check for command injection indicators
@@ -204,11 +208,13 @@ class PythonLogParser(BaseParser):
         ]
         for pattern in cmd_indicators:
             if re.search(pattern, content):
-                issues.append({
-                    "type": "command_injection",
-                    "indicator": "Command execution error",
-                    "severity": "medium",
-                })
+                issues.append(
+                    {
+                        "type": "command_injection",
+                        "indicator": "Command execution error",
+                        "severity": "medium",
+                    }
+                )
                 break
 
         return issues
@@ -235,9 +241,7 @@ class PythonLogParser(BaseParser):
             timestamp = self._parse_timestamp(timestamp_raw)
             if not timestamp:
                 try:
-                    timestamp = datetime.fromisoformat(
-                        timestamp_raw.replace("Z", "+00:00")
-                    )
+                    timestamp = datetime.fromisoformat(timestamp_raw.replace("Z", "+00:00"))
                 except ValueError:
                     timestamp = datetime.now(UTC)
         elif isinstance(timestamp_raw, (int, float)):
@@ -284,9 +288,22 @@ class PythonLogParser(BaseParser):
 
         # Copy additional context fields
         skip_keys = {
-            "event", "message", "msg", "timestamp", "time", "ts",
-            "level", "severity", "levelname", "logger", "logger_name",
-            "exc_info", "exception", "module", "func_name", "lineno",
+            "event",
+            "message",
+            "msg",
+            "timestamp",
+            "time",
+            "ts",
+            "level",
+            "severity",
+            "levelname",
+            "logger",
+            "logger_name",
+            "exc_info",
+            "exception",
+            "module",
+            "func_name",
+            "lineno",
         }
         for key, value in data.items():
             if key not in skip_keys and not key.startswith("_"):
@@ -453,9 +470,7 @@ class PythonLogParser(BaseParser):
 
         # Build raw message
         if traceback and traceback.get("exception_type"):
-            raw_message = (
-                f"{traceback['exception_type']}: {traceback.get('exception_message', '')}"
-            )
+            raw_message = f"{traceback['exception_type']}: {traceback.get('exception_message', '')}"
         else:
             raw_message = first_line
 

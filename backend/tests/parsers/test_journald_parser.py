@@ -225,9 +225,24 @@ class TestJournaldParser:
         """Test filtering by unit name."""
         parser = JournaldParser({"units": ["nginx.service"]})
         entries = [
-            {"MESSAGE": "nginx message", "PRIORITY": "6", "_SYSTEMD_UNIT": "nginx.service", "__REALTIME_TIMESTAMP": "1705320645000000"},
-            {"MESSAGE": "sshd message", "PRIORITY": "6", "_SYSTEMD_UNIT": "sshd.service", "__REALTIME_TIMESTAMP": "1705320646000000"},
-            {"MESSAGE": "another nginx", "PRIORITY": "6", "_SYSTEMD_UNIT": "nginx.service", "__REALTIME_TIMESTAMP": "1705320647000000"},
+            {
+                "MESSAGE": "nginx message",
+                "PRIORITY": "6",
+                "_SYSTEMD_UNIT": "nginx.service",
+                "__REALTIME_TIMESTAMP": "1705320645000000",
+            },
+            {
+                "MESSAGE": "sshd message",
+                "PRIORITY": "6",
+                "_SYSTEMD_UNIT": "sshd.service",
+                "__REALTIME_TIMESTAMP": "1705320646000000",
+            },
+            {
+                "MESSAGE": "another nginx",
+                "PRIORITY": "6",
+                "_SYSTEMD_UNIT": "nginx.service",
+                "__REALTIME_TIMESTAMP": "1705320647000000",
+            },
         ]
 
         results = parser.parse(entries)
@@ -255,8 +270,18 @@ class TestJournaldParser:
         """Test that kernel messages are excluded by default."""
         parser = JournaldParser({})
         entries = [
-            {"MESSAGE": "User message", "PRIORITY": "6", "_TRANSPORT": "journal", "__REALTIME_TIMESTAMP": "1705320645000000"},
-            {"MESSAGE": "Kernel message", "PRIORITY": "6", "_TRANSPORT": "kernel", "__REALTIME_TIMESTAMP": "1705320646000000"},
+            {
+                "MESSAGE": "User message",
+                "PRIORITY": "6",
+                "_TRANSPORT": "journal",
+                "__REALTIME_TIMESTAMP": "1705320645000000",
+            },
+            {
+                "MESSAGE": "Kernel message",
+                "PRIORITY": "6",
+                "_TRANSPORT": "kernel",
+                "__REALTIME_TIMESTAMP": "1705320646000000",
+            },
         ]
 
         results = parser.parse(entries)
@@ -268,8 +293,18 @@ class TestJournaldParser:
         """Test including kernel messages with config."""
         parser = JournaldParser({"include_kernel": True})
         entries = [
-            {"MESSAGE": "User message", "PRIORITY": "6", "_TRANSPORT": "journal", "__REALTIME_TIMESTAMP": "1705320645000000"},
-            {"MESSAGE": "Kernel message", "PRIORITY": "6", "_TRANSPORT": "kernel", "__REALTIME_TIMESTAMP": "1705320646000000"},
+            {
+                "MESSAGE": "User message",
+                "PRIORITY": "6",
+                "_TRANSPORT": "journal",
+                "__REALTIME_TIMESTAMP": "1705320645000000",
+            },
+            {
+                "MESSAGE": "Kernel message",
+                "PRIORITY": "6",
+                "_TRANSPORT": "kernel",
+                "__REALTIME_TIMESTAMP": "1705320646000000",
+            },
         ]
 
         results = parser.parse(entries)

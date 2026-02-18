@@ -11,7 +11,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from enum import Enum
+from enum import StrEnum
 from functools import wraps
 from typing import Any, TypeVar
 
@@ -28,7 +28,7 @@ logger = structlog.get_logger()
 T = TypeVar("T")
 
 
-class ErrorCategory(str, Enum):
+class ErrorCategory(StrEnum):
     """Categories of collector errors."""
 
     NETWORK = "network"  # Connection errors, timeouts
@@ -137,7 +137,7 @@ class CircuitBreaker:
     - HALF_OPEN: Testing if service has recovered
     """
 
-    class State(str, Enum):
+    class State(StrEnum):
         CLOSED = "closed"
         OPEN = "open"
         HALF_OPEN = "half_open"

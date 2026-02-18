@@ -22,6 +22,11 @@ import {
   Hash,
   Eye,
   Lightbulb,
+  Trophy,
+  Medal,
+  Search,
+  Target,
+  Skull,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/auth';
 import { useLogout } from '../api/hooks';
@@ -45,6 +50,11 @@ const navigation = [
   { name: 'Security Patterns', href: '/dashboard/security-patterns', icon: ShieldAlert, adminOnly: false },
   { name: 'Quarantine', href: '/dashboard/quarantine', icon: ShieldOff, adminOnly: false },
   { name: 'AI Chat', href: '/dashboard/chat', icon: MessageSquare, adminOnly: false },
+  { name: 'Investigations', href: '/dashboard/investigations', icon: Search, adminOnly: false },
+  { name: 'Honeypots', href: '/dashboard/honeypots', icon: Target, adminOnly: false },
+  { name: 'Attackers', href: '/dashboard/attackers', icon: Skull, adminOnly: false },
+  { name: 'Achievements', href: '/dashboard/achievements', icon: Trophy, adminOnly: false },
+  { name: 'Leaderboard', href: '/dashboard/leaderboard', icon: Medal, adminOnly: false },
   { name: 'Sources', href: '/dashboard/sources', icon: Database, adminOnly: false },
   { name: 'Users', href: '/dashboard/users', icon: Users, adminOnly: true },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings, adminOnly: false },

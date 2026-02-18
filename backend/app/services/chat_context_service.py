@@ -114,6 +114,15 @@ Always provide structured, actionable analysis:
 - Consider that some "anomalies" may be legitimate new behavior
 - Be helpful and educational, not alarmist
 
+## Log Data Instructions
+When log query results are provided in the context:
+- Reference specific events by timestamp and details
+- Cite exact counts and patterns you observe
+- If the query returned fewer events than the total, note you're analyzing a sample
+- If no events matched, explain what was searched and suggest broadening the search
+- Summarize patterns (e.g., "15 DNS queries to ring.com, 3 to amazonaws.com")
+- Highlight anything unusual or noteworthy
+
 ## Context
 You have access to the current network state below.""",
     ChatIntent.VULNERABILITY_RESEARCH: """You are a security researcher helping users understand vulnerabilities and threats. Your role is to provide accurate, educational information about security vulnerabilities.
@@ -406,6 +415,7 @@ class ChatContextService:
         classification: IntentClassification,
         network_context: dict[str, Any] | None = None,
         message: str = "",
+        log_query_result: Any | None = None,
     ) -> ChatContext:
         """Build the full context for a chat response.
 
@@ -413,6 +423,7 @@ class ChatContextService:
             classification: The classified intent.
             network_context: Network data (devices, alerts, etc.) if available.
             message: The user's original message for keyword extraction.
+            log_query_result: LogQueryResult when log data was fetched.
 
         Returns:
             ChatContext with system prompt and relevant documentation.
@@ -435,10 +446,7 @@ class ChatContextService:
             # Include configuration documentation
             context_text = self._doc_loader.get_configuration_doc()
             # Also include deployment guide if relevant
-            if any(
-                kw in message.lower()
-                for kw in ["docker", "deploy", "install", "production"]
-            ):
+            if any(kw in message.lower() for kw in ["docker", "deploy", "install", "production"]):
                 context_text += "\n\n" + self._doc_loader.get_deployment_guide()
 
         elif intent == ChatIntent.TROUBLESHOOTING:
@@ -453,6 +461,10 @@ class ChatContextService:
             # Network context is provided separately
             if network_context:
                 context_text = self._format_network_context(network_context)
+            if log_query_result:
+                from app.services.log_query_service import LogQueryService
+
+                context_text += "\n\n" + LogQueryService.format_events_for_context(log_query_result)
 
         elif intent == ChatIntent.VULNERABILITY_RESEARCH:
             # Minimal context - the LLM should use its training knowledge
@@ -472,6 +484,7 @@ Provide educational information based on your training, but recommend official s
             network_data=network_context if classification.needs_network_context else None,
             intent=intent,
             classification=classification,
+            log_query_result=log_query_result,
         )
 
     def _infer_pages_from_message(self, message: str) -> list[str]:
@@ -512,9 +525,7 @@ Provide educational information based on your training, but recommend official s
             parts.append(f"- Total events (24h): {stats.get('total_events_24h', 'Unknown')}")
             parts.append(f"- Active alerts: {stats.get('active_alerts', 'Unknown')}")
             parts.append(f"- DNS queries (24h): {stats.get('dns_queries_24h', 'Unknown')}")
-            parts.append(
-                f"- Blocked queries (24h): {stats.get('blocked_queries_24h', 'Unknown')}"
-            )
+            parts.append(f"- Blocked queries (24h): {stats.get('blocked_queries_24h', 'Unknown')}")
             parts.append("")
 
         if "devices" in context:

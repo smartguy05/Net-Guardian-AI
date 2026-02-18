@@ -1,7 +1,7 @@
 """Log source model for configuring data collection sources."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from sqlalchemy import Boolean, DateTime, String, Text
@@ -12,7 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin
 
 
-class SourceType(str, Enum):
+class SourceType(StrEnum):
     """Type of log source."""
 
     API_PULL = "api_pull"  # Pull logs from external API
@@ -21,7 +21,7 @@ class SourceType(str, Enum):
     UDP_LISTEN = "udp_listen"  # Listen for UDP packets (NetFlow/sFlow)
 
 
-class ParserType(str, Enum):
+class ParserType(StrEnum):
     """Type of log parser."""
 
     # Built-in parsers
