@@ -2558,3 +2558,405 @@ export function useDisableSecurityPatternFeed() {
     },
   });
 }
+
+// ==================== GAMIFICATION HOOKS ====================
+
+import type {
+  UserStats,
+  Achievement,
+  AchievementListResponse,
+  LeaderboardResponse,
+  ChallengeListResponse,
+  LevelInfoResponse,
+  AchievementCategory,
+} from '../types';
+
+export function useGamificationStats() {
+  return useQuery({
+    queryKey: ['gamification', 'stats'],
+    queryFn: async (): Promise<UserStats> => {
+      const response = await apiClient.get('/gamification/stats');
+      return response.data;
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useAchievements(params?: {
+  category?: AchievementCategory;
+  include_hidden?: boolean;
+}) {
+  return useQuery({
+    queryKey: ['gamification', 'achievements', params],
+    queryFn: async (): Promise<AchievementListResponse> => {
+      const response = await apiClient.get('/gamification/achievements', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useRecentAchievements(limit = 5) {
+  return useQuery({
+    queryKey: ['gamification', 'achievements', 'recent', limit],
+    queryFn: async (): Promise<Achievement[]> => {
+      const response = await apiClient.get('/gamification/achievements/recent', { params: { limit } });
+      return response.data;
+    },
+  });
+}
+
+export function useLeaderboard(period = 'all_time', limit = 10) {
+  return useQuery({
+    queryKey: ['gamification', 'leaderboard', period, limit],
+    queryFn: async (): Promise<LeaderboardResponse> => {
+      const response = await apiClient.get('/gamification/leaderboard', { params: { period, limit } });
+      return response.data;
+    },
+  });
+}
+
+export function useToggleLeaderboardOptIn() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<{ leaderboard_opt_in: boolean }> => {
+      const response = await apiClient.post('/gamification/leaderboard/opt-in');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gamification', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['gamification', 'leaderboard'] });
+    },
+  });
+}
+
+export function useChallenges() {
+  return useQuery({
+    queryKey: ['gamification', 'challenges'],
+    queryFn: async (): Promise<ChallengeListResponse> => {
+      const response = await apiClient.get('/gamification/challenges');
+      return response.data;
+    },
+  });
+}
+
+export function useLevelsInfo() {
+  return useQuery({
+    queryKey: ['gamification', 'levels'],
+    queryFn: async (): Promise<LevelInfoResponse> => {
+      const response = await apiClient.get('/gamification/levels');
+      return response.data;
+    },
+  });
+}
+
+export function useSyncAchievements() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<{ synced: number; message: string }> => {
+      const response = await apiClient.post('/gamification/sync-achievements');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gamification', 'achievements'] });
+    },
+  });
+}
+
+// ==================== INVESTIGATION HOOKS ====================
+
+import type {
+  Investigation,
+  InvestigationListResponse,
+  InvestigationAction,
+  InvestigationStatus as InvStatus,
+  InvestigationTriggerSource,
+  CreateInvestigationRequest,
+} from '../types';
+
+export function useInvestigations(params?: {
+  status?: InvStatus;
+  device_id?: string;
+  trigger_source?: InvestigationTriggerSource;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['investigations', params],
+    queryFn: async (): Promise<InvestigationListResponse> => {
+      const response = await apiClient.get('/investigations', { params });
+      return response.data;
+    },
+    refetchInterval: 15000,
+  });
+}
+
+export function useInvestigation(id: string, options?: { include_steps?: boolean; include_actions?: boolean }) {
+  return useQuery({
+    queryKey: ['investigations', id, options],
+    queryFn: async (): Promise<Investigation> => {
+      const response = await apiClient.get(`/investigations/${id}`, { params: options });
+      return response.data;
+    },
+    enabled: !!id,
+    refetchInterval: 10000,
+  });
+}
+
+export function useCreateInvestigation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: CreateInvestigationRequest): Promise<Investigation> => {
+      const response = await apiClient.post('/investigations', request);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['investigations'] });
+    },
+  });
+}
+
+export function useCancelInvestigation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<Investigation> => {
+      const response = await apiClient.delete(`/investigations/${id}`);
+      return response.data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['investigations'] });
+      queryClient.invalidateQueries({ queryKey: ['investigations', id] });
+    },
+  });
+}
+
+export function useRunInvestigation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<Investigation> => {
+      const response = await apiClient.post(`/investigations/${id}/run`);
+      return response.data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['investigations'] });
+      queryClient.invalidateQueries({ queryKey: ['investigations', id] });
+    },
+  });
+}
+
+export function useApproveInvestigationAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ investigationId, actionId }: { investigationId: string; actionId: string }): Promise<InvestigationAction> => {
+      const response = await apiClient.post(`/investigations/${investigationId}/approve/${actionId}`);
+      return response.data;
+    },
+    onSuccess: (_, { investigationId }) => {
+      queryClient.invalidateQueries({ queryKey: ['investigations', investigationId] });
+    },
+  });
+}
+
+export function useRejectInvestigationAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ investigationId, actionId, reason }: { investigationId: string; actionId: string; reason?: string }): Promise<InvestigationAction> => {
+      const response = await apiClient.post(`/investigations/${investigationId}/reject/${actionId}`, { reason });
+      return response.data;
+    },
+    onSuccess: (_, { investigationId }) => {
+      queryClient.invalidateQueries({ queryKey: ['investigations', investigationId] });
+    },
+  });
+}
+
+export function useExecuteInvestigationActions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (investigationId: string): Promise<{ results: Record<string, unknown>[] }> => {
+      const response = await apiClient.post(`/investigations/${investigationId}/execute`);
+      return response.data;
+    },
+    onSuccess: (_, investigationId) => {
+      queryClient.invalidateQueries({ queryKey: ['investigations', investigationId] });
+    },
+  });
+}
+
+// ==================== HONEYPOT HOOKS ====================
+
+import type {
+  HoneypotTemplate,
+  HoneypotInstance,
+  HoneypotListResponse,
+  HoneypotInteraction,
+  AttackerProfile,
+  AttackerListResponse,
+  SpawnHoneypotRequest,
+  HoneypotStats,
+  HoneypotStatus as HPStatus,
+  HoneypotType as HPType,
+} from '../types';
+
+export function useHoneypotTemplates(params?: { honeypot_type?: HPType; enabled_only?: boolean }) {
+  return useQuery({
+    queryKey: ['honeypots', 'templates', params],
+    queryFn: async (): Promise<HoneypotTemplate[]> => {
+      const response = await apiClient.get('/honeypots/templates', { params });
+      return response.data;
+    },
+  });
+}
+
+export function useSyncHoneypotTemplates() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (): Promise<{ synced: number; message: string }> => {
+      const response = await apiClient.post('/honeypots/templates/sync');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'templates'] });
+    },
+  });
+}
+
+export function useHoneypots(params?: {
+  status?: HPStatus;
+  template_id?: string;
+  limit?: number;
+  offset?: number;
+}) {
+  return useQuery({
+    queryKey: ['honeypots', 'instances', params],
+    queryFn: async (): Promise<HoneypotListResponse> => {
+      const response = await apiClient.get('/honeypots', { params });
+      return response.data;
+    },
+    refetchInterval: 15000,
+  });
+}
+
+export function useHoneypot(id: string) {
+  return useQuery({
+    queryKey: ['honeypots', 'instances', id],
+    queryFn: async (): Promise<HoneypotInstance> => {
+      const response = await apiClient.get(`/honeypots/${id}`);
+      return response.data;
+    },
+    enabled: !!id,
+    refetchInterval: 10000,
+  });
+}
+
+export function useHoneypotStats() {
+  return useQuery({
+    queryKey: ['honeypots', 'stats'],
+    queryFn: async (): Promise<HoneypotStats> => {
+      const response = await apiClient.get('/honeypots/stats');
+      return response.data;
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useSpawnHoneypot() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (request: SpawnHoneypotRequest): Promise<HoneypotInstance> => {
+      const response = await apiClient.post('/honeypots', request);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'instances'] });
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'stats'] });
+    },
+  });
+}
+
+export function useStopHoneypot() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string): Promise<HoneypotInstance> => {
+      const response = await apiClient.delete(`/honeypots/${id}`);
+      return response.data;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'instances'] });
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'instances', id] });
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'stats'] });
+    },
+  });
+}
+
+export function useHoneypotInteractions(honeypotId: string, params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ['honeypots', 'interactions', honeypotId, params],
+    queryFn: async (): Promise<HoneypotInteraction[]> => {
+      const response = await apiClient.get(`/honeypots/${honeypotId}/interactions`, { params });
+      return response.data;
+    },
+    enabled: !!honeypotId,
+    refetchInterval: 10000,
+  });
+}
+
+export function useTriggerHoneypotAnalysis() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (honeypotId: string): Promise<{ analyzed: number; total_ips: number; message: string }> => {
+      const response = await apiClient.post(`/honeypots/${honeypotId}/analyze`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'attackers'] });
+    },
+  });
+}
+
+export function useAttackers(params?: { limit?: number; offset?: number }) {
+  return useQuery({
+    queryKey: ['honeypots', 'attackers', params],
+    queryFn: async (): Promise<AttackerListResponse> => {
+      const response = await apiClient.get('/honeypots/attackers', { params });
+      return response.data;
+    },
+    refetchInterval: 30000,
+  });
+}
+
+export function useAttacker(sourceIp: string) {
+  return useQuery({
+    queryKey: ['honeypots', 'attackers', sourceIp],
+    queryFn: async (): Promise<AttackerProfile> => {
+      const response = await apiClient.get(`/honeypots/attackers/${sourceIp}`);
+      return response.data;
+    },
+    enabled: !!sourceIp,
+  });
+}
+
+export function useAnalyzeAttacker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ honeypotId, sourceIp }: { honeypotId: string; sourceIp: string }) => {
+      const response = await apiClient.post(`/honeypots/${honeypotId}/analyze`, { source_ip: sourceIp });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['honeypots', 'attackers'] });
+    },
+  });
+}

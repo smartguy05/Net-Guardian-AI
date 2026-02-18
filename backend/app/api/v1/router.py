@@ -12,7 +12,10 @@ from app.api.v1 import (
     chat,
     devices,
     events,
+    gamification,
+    honeypots,
     integrations,
+    investigations,
     logs,
     metrics,
     notifications,
@@ -102,3 +105,12 @@ api_router.include_router(topology.router, tags=["Network Topology"])
 
 # Semantic analysis endpoints
 api_router.include_router(semantic.router, prefix="/semantic", tags=["Semantic Analysis"])
+
+# Gamification endpoints
+api_router.include_router(gamification.router, prefix="/gamification", tags=["Gamification"])
+
+# Investigation endpoints
+api_router.include_router(investigations.router, prefix="/investigations", tags=["Investigations"])
+
+# Honeypot endpoints
+api_router.include_router(honeypots.router, prefix="/honeypots", tags=["Honeypots"])

@@ -7,6 +7,37 @@ from app.models.base import Base, TimestampMixin
 from app.models.detection_rule import DetectionRule
 from app.models.device import Device, DeviceStatus, DeviceType
 from app.models.device_baseline import BaselineStatus, BaselineType, DeviceBaseline
+from app.models.gamification import (
+    Achievement,
+    AchievementCategory,
+    AchievementRarity,
+    Challenge,
+    ChallengeStatus,
+    ChallengeType,
+    UserAchievement,
+    UserChallenge,
+    UserStats,
+)
+from app.models.honeypot import (
+    AttackerProfile,
+    HoneypotInstance,
+    HoneypotInteraction,
+    HoneypotStatus,
+    HoneypotTemplate,
+    HoneypotType,
+    SophisticationLevel,
+)
+from app.models.investigation import (
+    Investigation,
+    InvestigationAction,
+    InvestigationActionRiskLevel,
+    InvestigationActionStatus,
+    InvestigationStatus,
+    InvestigationStep,
+    InvestigationStepStatus,
+    InvestigationStepType,
+    InvestigationTriggerSource,
+)
 from app.models.log_source import LogSource, ParserType, SourceType
 from app.models.playbook import (
     ExecutionStatus,
@@ -86,4 +117,32 @@ __all__ = [
     "PatternCategory",
     "PatternType",
     "PatternSource",
+    # Investigation
+    "Investigation",
+    "InvestigationStep",
+    "InvestigationAction",
+    "InvestigationStatus",
+    "InvestigationStepType",
+    "InvestigationStepStatus",
+    "InvestigationActionStatus",
+    "InvestigationActionRiskLevel",
+    "InvestigationTriggerSource",
+    # Gamification
+    "Achievement",
+    "UserAchievement",
+    "UserStats",
+    "Challenge",
+    "UserChallenge",
+    "AchievementRarity",
+    "AchievementCategory",
+    "ChallengeType",
+    "ChallengeStatus",
+    # Honeypot
+    "HoneypotTemplate",
+    "HoneypotInstance",
+    "HoneypotInteraction",
+    "AttackerProfile",
+    "HoneypotType",
+    "HoneypotStatus",
+    "SophisticationLevel",
 ]

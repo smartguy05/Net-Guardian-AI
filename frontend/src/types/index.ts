@@ -883,3 +883,264 @@ export interface SecurityPatternStats {
   total_hits: number;
   recent_hits: number;
 }
+
+// ==================== GAMIFICATION TYPES ====================
+
+export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
+export type AchievementCategory = 'alerts' | 'anomalies' | 'devices' | 'investigations' | 'streaks' | 'milestones' | 'special';
+export type ChallengeType = 'daily' | 'weekly' | 'monthly';
+
+export interface UserStats {
+  user_id: string;
+  total_points: number;
+  level: number;
+  title: string;
+  current_xp: number;
+  xp_to_next_level: number;
+  xp_progress_percent: number;
+  counters: {
+    alerts_resolved: number;
+    critical_alerts_resolved: number;
+    anomalies_confirmed: number;
+    false_positives_marked: number;
+    devices_quarantined: number;
+    investigations_completed: number;
+  };
+  streak: {
+    current: number;
+    longest: number;
+  };
+  leaderboard_opt_in: boolean;
+  last_activity: string | null;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  category: AchievementCategory;
+  rarity: AchievementRarity;
+  icon: string;
+  points: number;
+  hidden: boolean;
+  unlocked: boolean;
+  earned_at?: string;
+  context?: Record<string, unknown>;
+}
+
+export interface AchievementListResponse {
+  items: Achievement[];
+  total: number;
+  unlocked_count: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  user_id: string;
+  username?: string;
+  total_points: number;
+  level: number;
+  title: string;
+  alerts_resolved: number;
+  current_streak: number;
+}
+
+export interface LeaderboardResponse {
+  period: string;
+  entries: LeaderboardEntry[];
+  user_rank: number | null;
+}
+
+export interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  challenge_type: ChallengeType;
+  start_date: string;
+  end_date: string;
+  requirements: Record<string, unknown>;
+  reward_points: number;
+  reward_achievement_id?: string;
+  progress?: Record<string, unknown>;
+  completed: boolean;
+  completed_at?: string;
+}
+
+export interface ChallengeListResponse {
+  items: Challenge[];
+  total: number;
+}
+
+export interface LevelInfo {
+  level: number;
+  xp: number;
+  title: string;
+}
+
+export interface LevelInfoResponse {
+  levels: LevelInfo[];
+  current_level: number;
+  current_xp: number;
+  xp_to_next_level: number;
+}
+
+// ==================== INVESTIGATION TYPES ====================
+
+export type InvestigationStatus = 'pending' | 'running' | 'awaiting_approval' | 'completed' | 'failed' | 'cancelled';
+export type InvestigationStepType = 'gather_context' | 'correlate_events' | 'check_threat_intel' | 'analyze_baseline' | 'generate_hypothesis' | 'recommend_actions';
+export type InvestigationStepStatus = 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+export type InvestigationActionStatus = 'pending' | 'approved' | 'rejected' | 'executed' | 'failed';
+export type InvestigationActionRiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type InvestigationTriggerSource = 'playbook' | 'manual' | 'auto';
+
+export interface InvestigationStep {
+  id: string;
+  step_number: number;
+  step_type: InvestigationStepType;
+  status: InvestigationStepStatus;
+  reasoning: string | null;
+  findings: Record<string, unknown> | null;
+  confidence_score: number | null;
+  duration_ms: number | null;
+  llm_model_used: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface InvestigationAction {
+  id: string;
+  action_type: string;
+  action_params: Record<string, unknown>;
+  risk_level: InvestigationActionRiskLevel;
+  justification: string;
+  status: InvestigationActionStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejected_by: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  executed_at: string | null;
+  execution_result: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface Investigation {
+  id: string;
+  alert_id: string | null;
+  anomaly_id: string | null;
+  device_id: string | null;
+  status: InvestigationStatus;
+  trigger_source: InvestigationTriggerSource;
+  priority: number;
+  started_at: string | null;
+  completed_at: string | null;
+  summary: string | null;
+  recommendations: Record<string, unknown> | null;
+  requires_approval: boolean;
+  approved_by: string | null;
+  created_at: string;
+  updated_at: string;
+  steps?: InvestigationStep[];
+  actions?: InvestigationAction[];
+}
+
+export interface InvestigationListResponse {
+  items: Investigation[];
+  total: number;
+}
+
+export interface CreateInvestigationRequest {
+  alert_id?: string;
+  anomaly_id?: string;
+  device_id?: string;
+  priority?: number;
+  auto_run?: boolean;
+}
+
+// ==================== HONEYPOT TYPES ====================
+
+export type HoneypotType = 'ssh' | 'http' | 'https' | 'smb' | 'ftp' | 'telnet' | 'mysql' | 'postgresql' | 'redis' | 'rdp';
+export type HoneypotStatus = 'pending' | 'starting' | 'running' | 'stopping' | 'stopped' | 'failed';
+export type SophisticationLevel = 'script_kiddie' | 'intermediate' | 'advanced' | 'apt';
+
+export interface HoneypotTemplate {
+  id: string;
+  name: string;
+  honeypot_type: HoneypotType;
+  description: string | null;
+  container_image: string;
+  exposed_ports: number[];
+  default_timeout_minutes: number;
+  enabled: boolean;
+}
+
+export interface HoneypotInteraction {
+  id: string;
+  timestamp: string;
+  source_ip: string;
+  source_port: number | null;
+  interaction_type: string;
+  raw_data: string | null;
+  parsed_data: Record<string, unknown> | null;
+  threat_indicators: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface HoneypotInstance {
+  id: string;
+  template_id: string | null;
+  container_id: string | null;
+  container_name: string;
+  status: HoneypotStatus;
+  host_ip: string | null;
+  port_mappings: Record<string, number>;
+  trigger_alert_id: string | null;
+  trigger_device_id: string | null;
+  trigger_reason: string | null;
+  started_at: string | null;
+  expires_at: string;
+  stopped_at: string | null;
+  interaction_count: number;
+  llm_profile: Record<string, unknown> | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface HoneypotListResponse {
+  items: HoneypotInstance[];
+  total: number;
+}
+
+export interface AttackerProfile {
+  id: string;
+  source_ip: string;
+  first_seen: string;
+  last_seen: string;
+  total_interactions: number;
+  honeypots_triggered: number;
+  attack_patterns: Record<string, unknown> | null;
+  sophistication_level: SophisticationLevel | null;
+  likely_intent: string | null;
+  llm_analysis: string | null;
+  recommended_actions: Record<string, unknown> | null;
+  iocs: Record<string, unknown> | null;
+}
+
+export interface AttackerListResponse {
+  items: AttackerProfile[];
+  total: number;
+}
+
+export interface SpawnHoneypotRequest {
+  template_id: string;
+  trigger_alert_id?: string;
+  trigger_device_id?: string;
+  trigger_reason?: string;
+  timeout_minutes?: number;
+}
+
+export interface HoneypotStats {
+  by_status: Record<string, number>;
+  total_interactions: number;
+  unique_attackers: number;
+}

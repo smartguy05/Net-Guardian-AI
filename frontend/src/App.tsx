@@ -25,6 +25,13 @@ import SuggestedRulesPage from './pages/SuggestedRulesPage';
 import OIDCCallbackPage from './pages/OIDCCallbackPage';
 import AuditPage from './pages/AuditPage';
 import SecurityPatternsPage from './pages/SecurityPatternsPage';
+import AchievementsPage from './pages/AchievementsPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import InvestigationsPage from './pages/InvestigationsPage';
+import InvestigationDetailPage from './pages/InvestigationDetailPage';
+import HoneypotsPage from './pages/HoneypotsPage';
+import HoneypotDetailPage from './pages/HoneypotDetailPage';
+import AttackersPage from './pages/AttackersPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -86,6 +93,13 @@ function App() {
         <Route path="suggested-rules" element={<SuggestedRulesPage />} />
         <Route path="audit" element={<AuditPage />} />
         <Route path="security-patterns" element={<SecurityPatternsPage />} />
+        <Route path="achievements" element={<AchievementsPage />} />
+        <Route path="leaderboard" element={<LeaderboardPage />} />
+        <Route path="investigations" element={<InvestigationsPage />} />
+        <Route path="investigations/:id" element={<InvestigationDetailPage />} />
+        <Route path="honeypots" element={<HoneypotsPage />} />
+        <Route path="honeypots/:id" element={<HoneypotDetailPage />} />
+        <Route path="attackers" element={<AttackersPage />} />
       </Route>
     </Routes>
   );

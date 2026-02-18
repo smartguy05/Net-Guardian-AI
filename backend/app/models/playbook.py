@@ -39,6 +39,8 @@ class PlaybookActionType(str, Enum):
     EXECUTE_WEBHOOK = "execute_webhook"
     LOG_EVENT = "log_event"
     TAG_DEVICE = "tag_device"
+    START_INVESTIGATION = "start_investigation"
+    SPAWN_HONEYPOT = "spawn_honeypot"
 
 
 class PlaybookStatus(str, Enum):

@@ -260,3 +260,146 @@ async def broadcast_system_notification(title: str, message: str, severity: str 
             "timestamp": datetime.now(UTC).isoformat(),
         }
     )
+
+
+# ==================== INVESTIGATION EVENTS ====================
+
+
+async def broadcast_investigation_started(investigation_data: dict[str, Any]) -> None:
+    """Broadcast when a new investigation starts."""
+    await manager.broadcast(
+        {
+            "type": "investigation_started",
+            "data": investigation_data,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_investigation_step_completed(
+    investigation_id: str, step_data: dict[str, Any]
+) -> None:
+    """Broadcast when an investigation step completes."""
+    await manager.broadcast(
+        {
+            "type": "investigation_step_completed",
+            "data": {"investigation_id": investigation_id, **step_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_investigation_completed(investigation_data: dict[str, Any]) -> None:
+    """Broadcast when an investigation completes."""
+    await manager.broadcast(
+        {
+            "type": "investigation_completed",
+            "data": investigation_data,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_action_pending_approval(action_data: dict[str, Any]) -> None:
+    """Broadcast when an investigation action needs approval."""
+    await manager.broadcast(
+        {
+            "type": "action_pending_approval",
+            "data": action_data,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+# ==================== GAMIFICATION EVENTS ====================
+
+
+async def broadcast_achievement_unlocked(user_id: str, achievement_data: dict[str, Any]) -> None:
+    """Broadcast when a user unlocks an achievement."""
+    await manager.broadcast(
+        {
+            "type": "achievement_unlocked",
+            "data": {"user_id": user_id, **achievement_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_level_up(user_id: str, level_data: dict[str, Any]) -> None:
+    """Broadcast when a user levels up."""
+    await manager.broadcast(
+        {
+            "type": "level_up",
+            "data": {"user_id": user_id, **level_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_challenge_completed(user_id: str, challenge_data: dict[str, Any]) -> None:
+    """Broadcast when a user completes a challenge."""
+    await manager.broadcast(
+        {
+            "type": "challenge_completed",
+            "data": {"user_id": user_id, **challenge_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_leaderboard_rank_changed(user_id: str, rank_data: dict[str, Any]) -> None:
+    """Broadcast when a user's leaderboard rank changes."""
+    await manager.broadcast(
+        {
+            "type": "leaderboard_rank_changed",
+            "data": {"user_id": user_id, **rank_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+# ==================== HONEYPOT EVENTS ====================
+
+
+async def broadcast_honeypot_spawned(honeypot_data: dict[str, Any]) -> None:
+    """Broadcast when a new honeypot is spawned."""
+    await manager.broadcast(
+        {
+            "type": "honeypot_spawned",
+            "data": honeypot_data,
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_honeypot_interaction(honeypot_id: str, interaction_data: dict[str, Any]) -> None:
+    """Broadcast when an attacker interacts with a honeypot."""
+    await manager.broadcast(
+        {
+            "type": "honeypot_interaction",
+            "data": {"honeypot_id": honeypot_id, **interaction_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_honeypot_expired(honeypot_id: str, summary: dict[str, Any]) -> None:
+    """Broadcast when a honeypot expires and is stopped."""
+    await manager.broadcast(
+        {
+            "type": "honeypot_expired",
+            "data": {"honeypot_id": honeypot_id, **summary},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
+
+
+async def broadcast_attacker_profile_updated(source_ip: str, profile_data: dict[str, Any]) -> None:
+    """Broadcast when an attacker profile is updated with new analysis."""
+    await manager.broadcast(
+        {
+            "type": "attacker_profile_updated",
+            "data": {"source_ip": source_ip, **profile_data},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    )
