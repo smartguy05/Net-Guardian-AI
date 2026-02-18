@@ -1,7 +1,7 @@
 """Add investigations, gamification, and honeypot tables.
 
-Revision ID: 017
-Revises: 016
+Revision ID: 018
+Revises: 017
 Create Date: 2026-02-02
 
 """
@@ -9,8 +9,8 @@ Create Date: 2026-02-02
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "017"
-down_revision = "016"
+revision = "018"
+down_revision = "017"
 branch_labels = None
 depends_on = None
 
