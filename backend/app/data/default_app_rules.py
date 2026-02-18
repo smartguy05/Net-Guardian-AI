@@ -6,6 +6,8 @@ Users can disable them but cannot delete them.
 
 from typing import Any
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.alert import AlertSeverity
 
 # Default application detection rules
@@ -421,7 +423,7 @@ DEFAULT_APP_RULES: list[dict[str, Any]] = [
 ]
 
 
-async def load_default_app_rules(session) -> int:
+async def load_default_app_rules(session: AsyncSession) -> int:
     """Load default application rules into the database.
 
     Only loads rules that don't already exist (by ID).

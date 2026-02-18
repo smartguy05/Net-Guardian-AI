@@ -10,7 +10,7 @@ from app.models.alert import AlertSeverity
 from app.models.security_pattern import PatternCategory, PatternType
 
 # Default security patterns organized by category
-DEFAULT_SECURITY_PATTERNS: list[dict] = [
+DEFAULT_SECURITY_PATTERNS: list[dict[str, object]] = [
     # ============================================
     # SQL Injection Patterns
     # ============================================

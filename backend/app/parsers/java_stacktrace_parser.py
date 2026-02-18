@@ -305,9 +305,9 @@ class JavaStacktraceParser(BaseParser):
                     results.extend(self._parse_multiline(entry))
                 elif isinstance(entry, dict):
                     # Handle structured log entry
-                    message = entry.get("message", entry.get("msg", ""))
-                    timestamp = entry.get("timestamp", entry.get("time"))
-                    level = entry.get("level", entry.get("severity", "INFO"))
+                    message = str(entry.get("message", entry.get("msg", "")))
+                    timestamp = str(entry.get("timestamp", entry.get("time", "")))
+                    level = str(entry.get("level", entry.get("severity", "INFO")))
                     result = self._parse_structured_entry(entry, message, timestamp, level)
                     if result:
                         results.append(result)
