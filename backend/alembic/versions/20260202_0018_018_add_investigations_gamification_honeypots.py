@@ -411,33 +411,8 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_attacker_profiles_last_seen ON attacker_profiles(last_seen)")
     op.execute("CREATE INDEX IF NOT EXISTS ix_attacker_profiles_sophistication ON attacker_profiles(sophistication_level)")
 
-    # ==================== UPDATE PLAYBOOK ACTION TYPE ENUM ====================
-    # Add new action types to the existing enum
-    op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_enum
-                WHERE enumlabel = 'start_investigation'
-                AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'playbookactiontype')
-            ) THEN
-                ALTER TYPE playbookactiontype ADD VALUE 'start_investigation';
-            END IF;
-        END$$
-    """)
-
-    op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1 FROM pg_enum
-                WHERE enumlabel = 'spawn_honeypot'
-                AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'playbookactiontype')
-            ) THEN
-                ALTER TYPE playbookactiontype ADD VALUE 'spawn_honeypot';
-            END IF;
-        END$$
-    """)
+    # Note: PlaybookActionType is a Python-only enum; the playbook actions column
+    # is JSON, so there is no PostgreSQL enum type to alter.
 
 
 def downgrade() -> None:
