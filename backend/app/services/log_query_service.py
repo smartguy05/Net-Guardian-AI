@@ -345,7 +345,9 @@ class LogQueryService:
                 params.device_name = hostname
                 device_id = device.get("id")
                 if device_id:
-                    params.device_id = UUID(str(device_id)) if not isinstance(device_id, UUID) else device_id
+                    params.device_id = (
+                        UUID(str(device_id)) if not isinstance(device_id, UUID) else device_id
+                    )
                 break
             # Check device type mentions
             device_type = device.get("device_type", "")
@@ -353,7 +355,9 @@ class LogQueryService:
                 params.device_name = hostname or device_type
                 device_id = device.get("id")
                 if device_id:
-                    params.device_id = UUID(str(device_id)) if not isinstance(device_id, UUID) else device_id
+                    params.device_id = (
+                        UUID(str(device_id)) if not isinstance(device_id, UUID) else device_id
+                    )
                 break
 
         logger.info(
@@ -410,7 +414,9 @@ class LogQueryService:
                 if name_lower in tag.lower():
                     device_id = device.get("id")
                     if device_id:
-                        return UUID(str(device_id)) if not isinstance(device_id, UUID) else device_id
+                        return (
+                            UUID(str(device_id)) if not isinstance(device_id, UUID) else device_id
+                        )
 
         return None
 
@@ -469,10 +475,7 @@ class LogQueryService:
 
         # Fetch limited results
         events_query = (
-            select(RawEvent)
-            .where(*base_filter)
-            .order_by(RawEvent.timestamp.desc())
-            .limit(limit)
+            select(RawEvent).where(*base_filter).order_by(RawEvent.timestamp.desc()).limit(limit)
         )
         events_result = await session.execute(events_query)
         events = events_result.scalars().all()
@@ -621,7 +624,9 @@ class LogQueryService:
         lines.append("")
 
         # Build table
-        lines.append("| Time (UTC) | Type | Severity | Source IP | Destination/Domain | Action | Details |")
+        lines.append(
+            "| Time (UTC) | Type | Severity | Source IP | Destination/Domain | Action | Details |"
+        )
         lines.append("|---|---|---|---|---|---|---|")
 
         for event in result.events:
@@ -633,6 +638,8 @@ class LogQueryService:
             action = event.get("action", "")
             details = event.get("details", "")
 
-            lines.append(f"| {time} | {etype} | {severity} | {source_ip} | {dest} | {action} | {details} |")
+            lines.append(
+                f"| {time} | {etype} | {severity} | {source_ip} | {dest} | {action} | {details} |"
+            )
 
         return "\n".join(lines)

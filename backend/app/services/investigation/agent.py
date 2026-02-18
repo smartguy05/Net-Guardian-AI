@@ -144,7 +144,9 @@ class InvestigationAgent:
                     step.findings = step_output.get("findings", {})
                     step.confidence_score = step_output.get("confidence", 0.5)
                     step.duration_ms = duration_ms
-                    step.llm_model_used = settings.investigation_llm_model or settings.llm_model_default
+                    step.llm_model_used = (
+                        settings.investigation_llm_model or settings.llm_model_default
+                    )
 
                     # Accumulate context for next steps
                     accumulated_context[step_type.value] = step_output
@@ -391,11 +393,13 @@ class InvestigationAgent:
                     device_id = str(event.device_id) if event.device_id else "unknown"
                     if device_id not in device_events:
                         device_events[device_id] = []
-                    device_events[device_id].append({
-                        "timestamp": event.timestamp.isoformat(),
-                        "type": event.event_type.value,
-                        "severity": event.severity.value,
-                    })
+                    device_events[device_id].append(
+                        {
+                            "timestamp": event.timestamp.isoformat(),
+                            "type": event.event_type.value,
+                            "severity": event.severity.value,
+                        }
+                    )
 
                 findings["correlated_events"] = {
                     "total": len(related_events),
@@ -617,7 +621,9 @@ class InvestigationAgent:
         Returns:
             Prompt string.
         """
-        parts = ["Based on the following investigation findings, generate a hypothesis about what occurred:\n\n"]
+        parts = [
+            "Based on the following investigation findings, generate a hypothesis about what occurred:\n\n"
+        ]
 
         for step_name, step_data in context.items():
             findings = step_data.get("findings", {})

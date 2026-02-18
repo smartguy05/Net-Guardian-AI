@@ -59,38 +59,28 @@ class TestHeuristicExtract:
 
     def test_extract_firewall_event_type(self):
         """Should detect firewall event type from message."""
-        params = self.service._heuristic_extract(
-            "Show me firewall blocks", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me firewall blocks", SAMPLE_DEVICES)
         assert EventType.FIREWALL in params.event_types
 
     def test_extract_auth_event_type(self):
         """Should detect auth event type from 'login' keyword."""
-        params = self.service._heuristic_extract(
-            "Show me login failures", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me login failures", SAMPLE_DEVICES)
         assert EventType.AUTH in params.event_types
 
     def test_extract_container_event_type(self):
         """Should detect container event type from 'docker' keyword."""
-        params = self.service._heuristic_extract(
-            "Show me docker container logs", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me docker container logs", SAMPLE_DEVICES)
         assert EventType.CONTAINER in params.event_types
 
     def test_extract_multiple_event_types(self):
         """Should detect multiple event types if mentioned."""
-        params = self.service._heuristic_extract(
-            "Show me DNS and firewall events", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me DNS and firewall events", SAMPLE_DEVICES)
         assert EventType.DNS in params.event_types
         assert EventType.FIREWALL in params.event_types
 
     def test_extract_ip_address(self):
         """Should extract IP addresses from message."""
-        params = self.service._heuristic_extract(
-            "Show events from 192.168.1.50", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show events from 192.168.1.50", SAMPLE_DEVICES)
         assert params.client_ip == "192.168.1.50"
 
     def test_extract_two_ip_addresses(self):
@@ -103,89 +93,65 @@ class TestHeuristicExtract:
 
     def test_extract_domain(self):
         """Should extract domain-like strings."""
-        params = self.service._heuristic_extract(
-            "DNS queries to ring.amazon.com", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("DNS queries to ring.amazon.com", SAMPLE_DEVICES)
         assert params.domain_contains == "ring.amazon.com"
 
     def test_extract_time_range_last_hour(self):
         """Should detect 'last hour' time expression."""
-        params = self.service._heuristic_extract(
-            "Show events in the last hour", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show events in the last hour", SAMPLE_DEVICES)
         assert params.time_range_hours == 1
 
     def test_extract_time_range_today(self):
         """Should detect 'today' time expression."""
-        params = self.service._heuristic_extract(
-            "Show DNS events today", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show DNS events today", SAMPLE_DEVICES)
         assert params.time_range_hours == 24
 
     def test_extract_time_range_this_week(self):
         """Should detect 'this week' time expression."""
-        params = self.service._heuristic_extract(
-            "Show events this week", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show events this week", SAMPLE_DEVICES)
         assert params.time_range_hours == 168
 
     def test_extract_time_range_yesterday(self):
         """Should detect 'yesterday' time expression."""
-        params = self.service._heuristic_extract(
-            "What happened yesterday", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("What happened yesterday", SAMPLE_DEVICES)
         assert params.time_range_hours == 48
 
     def test_default_time_range(self):
         """Should default to 24 hours if no time expression."""
-        params = self.service._heuristic_extract(
-            "Show me DNS events", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me DNS events", SAMPLE_DEVICES)
         assert params.time_range_hours == 24
 
     def test_extract_blocked_action(self):
         """Should detect 'blocked' and set blocked_only flag."""
-        params = self.service._heuristic_extract(
-            "Show me blocked requests", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me blocked requests", SAMPLE_DEVICES)
         assert params.action == "block"
         assert params.blocked_only is True
 
     def test_extract_denied_action(self):
         """Should detect 'denied' and set blocked_only flag."""
-        params = self.service._heuristic_extract(
-            "Show me denied connections", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me denied connections", SAMPLE_DEVICES)
         assert params.action == "block"
         assert params.blocked_only is True
 
     def test_extract_allowed_action(self):
         """Should detect 'allowed' action."""
-        params = self.service._heuristic_extract(
-            "Show me allowed traffic", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me allowed traffic", SAMPLE_DEVICES)
         assert params.action == "allow"
         assert params.blocked_only is False
 
     def test_extract_severity_error(self):
         """Should detect error severity keyword."""
-        params = self.service._heuristic_extract(
-            "Show me error events", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me error events", SAMPLE_DEVICES)
         assert params.severity_min == EventSeverity.ERROR
 
     def test_extract_severity_critical(self):
         """Should detect critical severity keyword."""
-        params = self.service._heuristic_extract(
-            "Are there any critical events?", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Are there any critical events?", SAMPLE_DEVICES)
         assert params.severity_min == EventSeverity.CRITICAL
 
     def test_extract_severity_warning(self):
         """Should detect warning severity keyword."""
-        params = self.service._heuristic_extract(
-            "Show me warnings", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me warnings", SAMPLE_DEVICES)
         assert params.severity_min == EventSeverity.WARNING
 
     def test_extract_device_by_hostname(self):
@@ -207,16 +173,12 @@ class TestHeuristicExtract:
                 "mac_address": "AA:BB:CC:DD:EE:04",
             },
         ]
-        params = self.service._heuristic_extract(
-            "Show me events from the server", devices
-        )
+        params = self.service._heuristic_extract("Show me events from the server", devices)
         assert params.device_name == "my-nas"
 
     def test_no_device_match(self):
         """Should leave device_name as None if no match."""
-        params = self.service._heuristic_extract(
-            "Show me all DNS queries", SAMPLE_DEVICES
-        )
+        params = self.service._heuristic_extract("Show me all DNS queries", SAMPLE_DEVICES)
         assert params.device_name is None
         assert params.device_id is None
 
@@ -748,16 +710,12 @@ class TestExtractQueryParameters:
         """Should fall back to heuristic when LLM call fails."""
         service = LogQueryService()
         service._client = MagicMock()
-        service._client.messages.create = AsyncMock(
-            side_effect=Exception("API error")
-        )
+        service._client.messages.create = AsyncMock(side_effect=Exception("API error"))
 
         with patch("app.services.log_query_service.settings") as mock_settings:
             mock_settings.anthropic_api_key = "test-key"
             mock_settings.llm_model_fast = "claude-3-5-haiku-latest"
-            params = await service.extract_query_parameters(
-                "Show me DNS queries", SAMPLE_DEVICES
-            )
+            params = await service.extract_query_parameters("Show me DNS queries", SAMPLE_DEVICES)
 
         assert EventType.DNS in params.event_types
 
@@ -795,9 +753,7 @@ class TestExtractQueryParameters:
         service._client = MagicMock()
 
         mock_response = MagicMock()
-        mock_response.content = [
-            MagicMock(text='{"blocked_only": true, "event_types": ["dns"]}')
-        ]
+        mock_response.content = [MagicMock(text='{"blocked_only": true, "event_types": ["dns"]}')]
         service._client.messages.create = AsyncMock(return_value=mock_response)
 
         with patch("app.services.log_query_service.settings") as mock_settings:
@@ -830,9 +786,7 @@ class TestExtractQueryParameters:
 
         mock_response = MagicMock()
         mock_response.content = [
-            MagicMock(
-                text='```json\n{"event_types": ["firewall"], "blocked_only": true}\n```'
-            )
+            MagicMock(text='```json\n{"event_types": ["firewall"], "blocked_only": true}\n```')
         ]
         service._client.messages.create = AsyncMock(return_value=mock_response)
 

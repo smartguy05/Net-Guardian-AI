@@ -66,9 +66,7 @@ class GamificationService:
         """
         session = await self._get_session()
         try:
-            result = await session.execute(
-                select(UserStats).where(UserStats.user_id == user_id)
-            )
+            result = await session.execute(select(UserStats).where(UserStats.user_id == user_id))
             stats = result.scalar_one_or_none()
 
             if not stats:
@@ -414,7 +412,9 @@ class GamificationService:
                 achievement_data: dict[str, Any] = {
                     "id": a.id,
                     "name": a.name if not a.hidden or is_unlocked else "???",
-                    "description": a.description if not a.hidden or is_unlocked else "Hidden achievement",
+                    "description": a.description
+                    if not a.hidden or is_unlocked
+                    else "Hidden achievement",
                     "category": a.category.value,
                     "rarity": a.rarity.value,
                     "icon": a.icon,
@@ -466,16 +466,18 @@ class GamificationService:
                 achievement = achievement_result.scalar_one_or_none()
 
                 if achievement:
-                    output.append({
-                        "id": achievement.id,
-                        "name": achievement.name,
-                        "description": achievement.description,
-                        "category": achievement.category.value,
-                        "rarity": achievement.rarity.value,
-                        "icon": achievement.icon,
-                        "points": achievement.points,
-                        "earned_at": ua.earned_at.isoformat(),
-                    })
+                    output.append(
+                        {
+                            "id": achievement.id,
+                            "name": achievement.name,
+                            "description": achievement.description,
+                            "category": achievement.category.value,
+                            "rarity": achievement.rarity.value,
+                            "icon": achievement.icon,
+                            "points": achievement.points,
+                            "earned_at": ua.earned_at.isoformat(),
+                        }
+                    )
 
             return output
 
@@ -508,9 +510,7 @@ class GamificationService:
 
             # Get user's current achievements
             result = await session.execute(
-                select(UserAchievement.achievement_id).where(
-                    UserAchievement.user_id == user_id
-                )
+                select(UserAchievement.achievement_id).where(UserAchievement.user_id == user_id)
             )
             unlocked_ids = {row[0] for row in result.all()}
 
@@ -535,15 +535,17 @@ class GamificationService:
                     session.add(ua)
 
                     achievement_points = cast(int, data.get("points", 10))
-                    newly_unlocked.append({
-                        "id": achievement_id,
-                        "name": data["name"],
-                        "description": data["description"],
-                        "category": cast(AchievementCategory, data["category"]).value,
-                        "rarity": cast(AchievementRarity, data["rarity"]).value,
-                        "icon": data.get("icon", "trophy"),
-                        "points": achievement_points,
-                    })
+                    newly_unlocked.append(
+                        {
+                            "id": achievement_id,
+                            "name": data["name"],
+                            "description": data["description"],
+                            "category": cast(AchievementCategory, data["category"]).value,
+                            "rarity": cast(AchievementRarity, data["rarity"]).value,
+                            "icon": data.get("icon", "trophy"),
+                            "points": achievement_points,
+                        }
+                    )
 
                     # Award achievement points
                     stats.total_points += achievement_points
@@ -721,15 +723,17 @@ class GamificationService:
             output = []
             rank = 1
             for stats in result.scalars().all():
-                output.append({
-                    "rank": rank,
-                    "user_id": str(stats.user_id),
-                    "total_points": stats.total_points,
-                    "level": stats.current_level,
-                    "title": get_title_for_level(stats.current_level),
-                    "alerts_resolved": stats.alerts_resolved,
-                    "current_streak": stats.current_streak_days,
-                })
+                output.append(
+                    {
+                        "rank": rank,
+                        "user_id": str(stats.user_id),
+                        "total_points": stats.total_points,
+                        "level": stats.current_level,
+                        "title": get_title_for_level(stats.current_level),
+                        "alerts_resolved": stats.alerts_resolved,
+                        "current_streak": stats.current_streak_days,
+                    }
+                )
                 rank += 1
 
             return output
@@ -927,6 +931,7 @@ class GamificationService:
 
 
 # ==================== EVENT HANDLERS ====================
+
 
 async def on_alert_resolved(
     user_id: UUID,

@@ -27,7 +27,15 @@ class TestAchievementData:
 
     def test_achievements_have_required_fields(self):
         """Test that all achievements have required fields."""
-        required_fields = ["name", "description", "category", "rarity", "icon", "points", "requirements"]
+        required_fields = [
+            "name",
+            "description",
+            "category",
+            "rarity",
+            "icon",
+            "points",
+            "requirements",
+        ]
         for ach_id, ach in ACHIEVEMENTS.items():
             for field in required_fields:
                 assert field in ach, f"Achievement {ach_id} missing {field}"
@@ -35,16 +43,16 @@ class TestAchievementData:
     def test_achievements_have_valid_categories(self):
         """Test that achievements use valid categories."""
         for ach_id, ach in ACHIEVEMENTS.items():
-            assert isinstance(
-                ach["category"], AchievementCategory
-            ), f"Achievement {ach_id} has invalid category"
+            assert isinstance(ach["category"], AchievementCategory), (
+                f"Achievement {ach_id} has invalid category"
+            )
 
     def test_achievements_have_valid_rarities(self):
         """Test that achievements use valid rarities."""
         for ach_id, ach in ACHIEVEMENTS.items():
-            assert isinstance(
-                ach["rarity"], AchievementRarity
-            ), f"Achievement {ach_id} has invalid rarity"
+            assert isinstance(ach["rarity"], AchievementRarity), (
+                f"Achievement {ach_id} has invalid rarity"
+            )
 
     def test_achievements_have_positive_points(self):
         """Test that achievements have positive point values."""

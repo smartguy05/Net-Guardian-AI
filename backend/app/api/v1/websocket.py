@@ -372,7 +372,9 @@ async def broadcast_honeypot_spawned(honeypot_data: dict[str, Any]) -> None:
     )
 
 
-async def broadcast_honeypot_interaction(honeypot_id: str, interaction_data: dict[str, Any]) -> None:
+async def broadcast_honeypot_interaction(
+    honeypot_id: str, interaction_data: dict[str, Any]
+) -> None:
     """Broadcast when an attacker interacts with a honeypot."""
     await manager.broadcast(
         {

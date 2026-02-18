@@ -398,9 +398,7 @@ class Challenge(Base, TimestampMixin):
         foreign_keys=[reward_achievement_id],
     )
 
-    __table_args__ = (
-        Index("ix_challenges_active", "start_date", "end_date", "enabled"),
-    )
+    __table_args__ = (Index("ix_challenges_active", "start_date", "end_date", "enabled"),)
 
     def __repr__(self) -> str:
         return f"<Challenge {self.name} ({self.challenge_type.value})>"

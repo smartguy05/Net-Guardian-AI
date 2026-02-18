@@ -731,7 +731,9 @@ class PlaybookEngine:
             service = get_honeypot_service()
 
             template_id = params.get("template_id", "ssh-cowrie")
-            timeout_minutes = params.get("timeout_minutes", settings.honeypot_default_timeout_minutes)
+            timeout_minutes = params.get(
+                "timeout_minutes", settings.honeypot_default_timeout_minutes
+            )
 
             reason = params.get(
                 "trigger_reason",

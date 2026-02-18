@@ -99,9 +99,13 @@ class HoneypotService:
                     existing.honeypot_type = cast(HoneypotType, template_data["honeypot_type"])
                     existing.description = cast(str, template_data.get("description", ""))
                     existing.container_image = cast(str, template_data["container_image"])
-                    existing.container_config = cast(dict[str, Any], template_data.get("container_config", {}))
+                    existing.container_config = cast(
+                        dict[str, Any], template_data.get("container_config", {})
+                    )
                     existing.exposed_ports = cast(list[int], template_data.get("exposed_ports", []))
-                    existing.default_timeout_minutes = cast(int, template_data.get("default_timeout_minutes", 60))
+                    existing.default_timeout_minutes = cast(
+                        int, template_data.get("default_timeout_minutes", 60)
+                    )
                     existing.enabled = cast(bool, template_data.get("enabled", True))
                 else:
                     template = HoneypotTemplate(
@@ -383,11 +387,7 @@ class HoneypotService:
             count_result = await session.execute(count_query)
             total = count_result.scalar() or 0
 
-            query = (
-                query.order_by(desc(HoneypotInstance.created_at))
-                .offset(offset)
-                .limit(limit)
-            )
+            query = query.order_by(desc(HoneypotInstance.created_at)).offset(offset).limit(limit)
             result = await session.execute(query)
             instances = list(result.scalars().all())
 
@@ -576,10 +576,12 @@ class HoneypotService:
                 return profile
 
             # Build interaction summary
-            interaction_text = "\n".join([
-                f"- {i.timestamp.isoformat()}: {i.interaction_type} - {i.raw_data[:200] if i.raw_data else 'No data'}"
-                for i in interactions[:20]
-            ])
+            interaction_text = "\n".join(
+                [
+                    f"- {i.timestamp.isoformat()}: {i.interaction_type} - {i.raw_data[:200] if i.raw_data else 'No data'}"
+                    for i in interactions[:20]
+                ]
+            )
 
             # Call LLM for analysis
             prompt = ATTACKER_ANALYSIS_PROMPT.format(
@@ -739,8 +741,9 @@ class HoneypotService:
         try:
             # Count by status
             status_result = await session.execute(
-                select(HoneypotInstance.status, func.count(HoneypotInstance.id))
-                .group_by(HoneypotInstance.status)
+                select(HoneypotInstance.status, func.count(HoneypotInstance.id)).group_by(
+                    HoneypotInstance.status
+                )
             )
             status_counts = {row[0].value: row[1] for row in status_result.all()}
 
@@ -751,9 +754,7 @@ class HoneypotService:
             total_interactions = interaction_result.scalar() or 0
 
             # Unique attackers
-            attacker_result = await session.execute(
-                select(func.count(AttackerProfile.id))
-            )
+            attacker_result = await session.execute(select(func.count(AttackerProfile.id)))
             unique_attackers = attacker_result.scalar() or 0
 
             return {

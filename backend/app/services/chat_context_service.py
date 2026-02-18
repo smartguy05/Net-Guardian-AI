@@ -464,9 +464,7 @@ class ChatContextService:
             if log_query_result:
                 from app.services.log_query_service import LogQueryService
 
-                context_text += "\n\n" + LogQueryService.format_events_for_context(
-                    log_query_result
-                )
+                context_text += "\n\n" + LogQueryService.format_events_for_context(log_query_result)
 
         elif intent == ChatIntent.VULNERABILITY_RESEARCH:
             # Minimal context - the LLM should use its training knowledge

@@ -12,6 +12,7 @@ class LevelInfo(TypedDict):
     xp: int
     title: str
 
+
 # Point values for different actions
 POINT_VALUES = {
     # Alert resolutions by severity
@@ -131,7 +132,6 @@ ACHIEVEMENTS = {
         "requirements": {"critical_alerts_resolved": 50},
         "hidden": False,
     },
-
     # ==================== ANOMALY ACHIEVEMENTS ====================
     "pattern_spotter": {
         "name": "Pattern Spotter",
@@ -173,7 +173,6 @@ ACHIEVEMENTS = {
         "requirements": {"false_positives_marked": 200},
         "hidden": False,
     },
-
     # ==================== DEVICE ACHIEVEMENTS ====================
     "first_quarantine": {
         "name": "First Quarantine",
@@ -205,7 +204,6 @@ ACHIEVEMENTS = {
         "requirements": {"devices_quarantined": 100},
         "hidden": False,
     },
-
     # ==================== INVESTIGATION ACHIEVEMENTS ====================
     "junior_investigator": {
         "name": "Junior Investigator",
@@ -237,7 +235,6 @@ ACHIEVEMENTS = {
         "requirements": {"investigations_completed": 50},
         "hidden": False,
     },
-
     # ==================== STREAK ACHIEVEMENTS ====================
     "getting_started": {
         "name": "Getting Started",
@@ -289,7 +286,6 @@ ACHIEVEMENTS = {
         "requirements": {"streak_days": 90},
         "hidden": False,
     },
-
     # ==================== MILESTONE ACHIEVEMENTS ====================
     "level_5": {
         "name": "Rising Star",
@@ -351,7 +347,6 @@ ACHIEVEMENTS = {
         "requirements": {"total_points": 10000},
         "hidden": False,
     },
-
     # ==================== SPECIAL/HIDDEN ACHIEVEMENTS ====================
     "night_owl": {
         "name": "Night Owl",

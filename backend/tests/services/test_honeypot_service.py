@@ -121,9 +121,9 @@ class TestHoneypotTemplates:
         """Test that all templates have valid honeypot types."""
         valid_types = [t.value for t in HoneypotType]
         for template in DEFAULT_TEMPLATES:
-            assert (
-                template["honeypot_type"] in valid_types
-            ), f"Template {template['id']} has invalid type {template['honeypot_type']}"
+            assert template["honeypot_type"] in valid_types, (
+                f"Template {template['id']} has invalid type {template['honeypot_type']}"
+            )
 
     def test_ssh_template_exists(self):
         """Test that SSH honeypot template exists."""

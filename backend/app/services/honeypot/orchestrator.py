@@ -96,7 +96,9 @@ class ContainerOrchestrator:
             for container_port, _ in port_mappings.items():
                 host_port = self._get_available_port()
                 actual_mappings[str(container_port)] = host_port
-                port_args.extend(["-p", f"{settings.honeypot_host_ip}:{host_port}:{container_port}"])
+                port_args.extend(
+                    ["-p", f"{settings.honeypot_host_ip}:{host_port}:{container_port}"]
+                )
 
             # Build environment variable arguments
             env_args: list[str] = []
@@ -111,15 +113,20 @@ class ContainerOrchestrator:
                 resource_args.extend(["--cpus", str(config["cpu_limit"])])
 
             # Build the command
-            command = [
-                self.runtime,
-                "run",
-                "-d",
-                "--name",
-                name,
-                "--network",
-                settings.honeypot_network,
-            ] + port_args + env_args + resource_args
+            command = (
+                [
+                    self.runtime,
+                    "run",
+                    "-d",
+                    "--name",
+                    name,
+                    "--network",
+                    settings.honeypot_network,
+                ]
+                + port_args
+                + env_args
+                + resource_args
+            )
 
             # Add custom command if specified
             if "command" in config:
@@ -308,7 +315,9 @@ class ContainerOrchestrator:
             returncode, _, stderr = await self._run_command(create_command)
 
             if returncode != 0:
-                logger.error("network_create_failed", network=settings.honeypot_network, stderr=stderr)
+                logger.error(
+                    "network_create_failed", network=settings.honeypot_network, stderr=stderr
+                )
                 return False
 
             logger.info("network_created", network=settings.honeypot_network)

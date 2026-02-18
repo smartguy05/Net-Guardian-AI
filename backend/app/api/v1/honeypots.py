@@ -152,7 +152,9 @@ def _profile_to_response(profile: Any) -> AttackerProfileResponse:
         total_interactions=profile.total_interactions,
         honeypots_triggered=profile.honeypots_triggered,
         attack_patterns=profile.attack_patterns,
-        sophistication_level=profile.sophistication_level.value if profile.sophistication_level else None,
+        sophistication_level=profile.sophistication_level.value
+        if profile.sophistication_level
+        else None,
         likely_intent=profile.likely_intent,
         llm_analysis=profile.llm_analysis,
         recommended_actions=profile.recommended_actions,

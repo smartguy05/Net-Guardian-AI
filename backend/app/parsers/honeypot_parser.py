@@ -616,10 +616,12 @@ class HoneypotParser(BaseParser):
         # Extract hashes
         for hash_type in ["md5", "sha256", "sha1"]:
             if hash_type in parsed_fields:
-                indicators["hashes"].append({
-                    "type": hash_type,
-                    "value": parsed_fields[hash_type],
-                })
+                indicators["hashes"].append(
+                    {
+                        "type": hash_type,
+                        "value": parsed_fields[hash_type],
+                    }
+                )
 
         # Extract credentials
         if "username" in parsed_fields:
