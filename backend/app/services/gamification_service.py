@@ -1,11 +1,11 @@
 """Gamification service for managing achievements, points, and leaderboards."""
 
 from datetime import UTC, date, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import structlog
-from sqlalchemy import and_, desc, func, select
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -21,8 +21,8 @@ from app.models.alert import AlertSeverity
 from app.models.gamification import (
     Achievement,
     AchievementCategory,
+    AchievementRarity,
     Challenge,
-    ChallengeType,
     UserAchievement,
     UserChallenge,
     UserStats,
@@ -99,7 +99,7 @@ class GamificationService:
         """
         stats = await self.get_or_create_stats(user_id)
 
-        level_info = get_level_for_xp(stats.current_xp + (stats.current_level - 1) * 100)
+        get_level_for_xp(stats.current_xp + (stats.current_level - 1) * 100)
 
         return {
             "user_id": str(stats.user_id),
@@ -160,7 +160,6 @@ class GamificationService:
             stats = await self.get_or_create_stats(user_id)
 
             old_level = stats.current_level
-            old_xp = stats.current_xp
 
             # Add points
             stats.total_points += points
@@ -189,7 +188,7 @@ class GamificationService:
             session.add(stats)
             await session.commit()
 
-            result = {
+            result: dict[str, Any] = {
                 "points_awarded": points,
                 "total_points": stats.total_points,
                 "level_up": level_up,
@@ -337,26 +336,26 @@ class GamificationService:
 
                 if existing:
                     # Update existing
-                    existing.name = data["name"]
-                    existing.description = data["description"]
-                    existing.category = data["category"]
-                    existing.rarity = data["rarity"]
-                    existing.icon = data.get("icon", "trophy")
-                    existing.points = data.get("points", 10)
-                    existing.requirements = data.get("requirements", {})
-                    existing.hidden = data.get("hidden", False)
+                    existing.name = cast(str, data["name"])
+                    existing.description = cast(str, data["description"])
+                    existing.category = cast(AchievementCategory, data["category"])
+                    existing.rarity = cast(AchievementRarity, data["rarity"])
+                    existing.icon = cast(str, data.get("icon", "trophy"))
+                    existing.points = cast(int, data.get("points", 10))
+                    existing.requirements = cast(dict[str, Any], data.get("requirements", {}))
+                    existing.hidden = cast(bool, data.get("hidden", False))
                 else:
                     # Create new
                     achievement = Achievement(
                         id=achievement_id,
-                        name=data["name"],
-                        description=data["description"],
-                        category=data["category"],
-                        rarity=data["rarity"],
-                        icon=data.get("icon", "trophy"),
-                        points=data.get("points", 10),
-                        requirements=data.get("requirements", {}),
-                        hidden=data.get("hidden", False),
+                        name=cast(str, data["name"]),
+                        description=cast(str, data["description"]),
+                        category=cast(AchievementCategory, data["category"]),
+                        rarity=cast(AchievementRarity, data["rarity"]),
+                        icon=cast(str, data.get("icon", "trophy")),
+                        points=cast(int, data.get("points", 10)),
+                        requirements=cast(dict[str, Any], data.get("requirements", {})),
+                        hidden=cast(bool, data.get("hidden", False)),
                     )
                     session.add(achievement)
 
@@ -412,7 +411,7 @@ class GamificationService:
                 if a.hidden and not is_unlocked and not include_hidden:
                     continue
 
-                achievement_data = {
+                achievement_data: dict[str, Any] = {
                     "id": a.id,
                     "name": a.name if not a.hidden or is_unlocked else "???",
                     "description": a.description if not a.hidden or is_unlocked else "Hidden achievement",
@@ -522,7 +521,7 @@ class GamificationService:
                 if achievement_id in unlocked_ids:
                     continue
 
-                requirements = data.get("requirements", {})
+                requirements = cast(dict[str, Any], data.get("requirements", {}))
 
                 # Check counter-based requirements
                 if self._check_requirements(stats, requirements, context):
@@ -535,19 +534,20 @@ class GamificationService:
                     )
                     session.add(ua)
 
+                    achievement_points = cast(int, data.get("points", 10))
                     newly_unlocked.append({
                         "id": achievement_id,
                         "name": data["name"],
                         "description": data["description"],
-                        "category": data["category"].value,
-                        "rarity": data["rarity"].value,
+                        "category": cast(AchievementCategory, data["category"]).value,
+                        "rarity": cast(AchievementRarity, data["rarity"]).value,
                         "icon": data.get("icon", "trophy"),
-                        "points": data.get("points", 10),
+                        "points": achievement_points,
                     })
 
                     # Award achievement points
-                    stats.total_points += data.get("points", 10)
-                    stats.current_xp += data.get("points", 10)
+                    stats.total_points += achievement_points
+                    stats.current_xp += achievement_points
 
                     logger.info(
                         "achievement_unlocked",
@@ -662,7 +662,7 @@ class GamificationService:
 
             # Award points
             stats = await self.get_or_create_stats(user_id)
-            points = achievement_data.get("points", 10)
+            points = cast(int, achievement_data.get("points", 10))
             stats.total_points += points
             stats.current_xp += points
             session.add(stats)
@@ -679,8 +679,8 @@ class GamificationService:
                 "id": achievement_id,
                 "name": achievement_data["name"],
                 "description": achievement_data["description"],
-                "category": achievement_data["category"].value,
-                "rarity": achievement_data["rarity"].value,
+                "category": cast(AchievementCategory, achievement_data["category"]).value,
+                "rarity": cast(AchievementRarity, achievement_data["rarity"]).value,
                 "icon": achievement_data.get("icon", "trophy"),
                 "points": points,
             }

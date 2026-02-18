@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 
-class BaselineType(str, Enum):
+class BaselineType(StrEnum):
     """Type of behavioral baseline."""
 
     DNS = "dns"
@@ -26,7 +26,7 @@ class BaselineType(str, Enum):
     CONNECTION = "connection"
 
 
-class BaselineStatus(str, Enum):
+class BaselineStatus(StrEnum):
     """Baseline learning status."""
 
     LEARNING = "learning"

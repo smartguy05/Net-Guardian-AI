@@ -337,7 +337,7 @@ async def get_levels_info(
     stats = await service.get_user_stats(current_user.id)
 
     return LevelInfoResponse(
-        levels=LEVELS,
+        levels=list(LEVELS),  # type: ignore[arg-type]
         current_level=stats["level"],
         current_xp=stats["current_xp"],
         xp_to_next_level=stats["xp_to_next_level"],

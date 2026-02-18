@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Index, Integer, String, Text
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class AchievementRarity(str, Enum):
+class AchievementRarity(StrEnum):
     """Rarity of an achievement."""
 
     COMMON = "common"
@@ -27,7 +27,7 @@ class AchievementRarity(str, Enum):
     LEGENDARY = "legendary"
 
 
-class AchievementCategory(str, Enum):
+class AchievementCategory(StrEnum):
     """Category of an achievement."""
 
     ALERTS = "alerts"
@@ -39,7 +39,7 @@ class AchievementCategory(str, Enum):
     SPECIAL = "special"
 
 
-class ChallengeType(str, Enum):
+class ChallengeType(StrEnum):
     """Type of challenge."""
 
     DAILY = "daily"
@@ -47,7 +47,7 @@ class ChallengeType(str, Enum):
     MONTHLY = "monthly"
 
 
-class ChallengeStatus(str, Enum):
+class ChallengeStatus(StrEnum):
     """Status of a challenge."""
 
     ACTIVE = "active"

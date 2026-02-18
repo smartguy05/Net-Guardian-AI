@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class InvestigationStatus(str, Enum):
+class InvestigationStatus(StrEnum):
     """Status of an investigation."""
 
     PENDING = "pending"
@@ -32,7 +32,7 @@ class InvestigationStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class InvestigationStepType(str, Enum):
+class InvestigationStepType(StrEnum):
     """Types of investigation steps."""
 
     GATHER_CONTEXT = "gather_context"
@@ -43,7 +43,7 @@ class InvestigationStepType(str, Enum):
     RECOMMEND_ACTIONS = "recommend_actions"
 
 
-class InvestigationStepStatus(str, Enum):
+class InvestigationStepStatus(StrEnum):
     """Status of an investigation step."""
 
     PENDING = "pending"
@@ -53,7 +53,7 @@ class InvestigationStepStatus(str, Enum):
     SKIPPED = "skipped"
 
 
-class InvestigationActionStatus(str, Enum):
+class InvestigationActionStatus(StrEnum):
     """Status of an investigation action."""
 
     PENDING = "pending"
@@ -63,7 +63,7 @@ class InvestigationActionStatus(str, Enum):
     FAILED = "failed"
 
 
-class InvestigationActionRiskLevel(str, Enum):
+class InvestigationActionRiskLevel(StrEnum):
     """Risk level of an investigation action."""
 
     LOW = "low"
@@ -72,7 +72,7 @@ class InvestigationActionRiskLevel(str, Enum):
     CRITICAL = "critical"
 
 
-class InvestigationTriggerSource(str, Enum):
+class InvestigationTriggerSource(StrEnum):
     """Source that triggered an investigation."""
 
     PLAYBOOK = "playbook"

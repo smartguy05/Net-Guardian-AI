@@ -1,7 +1,7 @@
 """Playbook models for automated response actions."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -14,7 +14,7 @@ from sqlalchemy.sql import func
 from app.models.base import Base
 
 
-class PlaybookTriggerType(str, Enum):
+class PlaybookTriggerType(StrEnum):
     """Types of triggers that can activate a playbook."""
 
     ANOMALY_DETECTED = "anomaly_detected"
@@ -26,7 +26,7 @@ class PlaybookTriggerType(str, Enum):
     MANUAL = "manual"
 
 
-class PlaybookActionType(str, Enum):
+class PlaybookActionType(StrEnum):
     """Types of actions a playbook can perform."""
 
     QUARANTINE_DEVICE = "quarantine_device"
@@ -43,7 +43,7 @@ class PlaybookActionType(str, Enum):
     SPAWN_HONEYPOT = "spawn_honeypot"
 
 
-class PlaybookStatus(str, Enum):
+class PlaybookStatus(StrEnum):
     """Status of a playbook."""
 
     ACTIVE = "active"
@@ -51,7 +51,7 @@ class PlaybookStatus(str, Enum):
     DRAFT = "draft"
 
 
-class ExecutionStatus(str, Enum):
+class ExecutionStatus(StrEnum):
     """Status of a playbook execution."""
 
     PENDING = "pending"

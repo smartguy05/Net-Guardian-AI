@@ -5,17 +5,11 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_operator
 from app.config import settings
-from app.db.session import get_async_session
 from app.models.investigation import (
-    InvestigationActionRiskLevel,
-    InvestigationActionStatus,
     InvestigationStatus,
-    InvestigationStepStatus,
-    InvestigationStepType,
     InvestigationTriggerSource,
 )
 from app.models.user import User

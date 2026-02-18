@@ -5,11 +5,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.auth import get_current_user, require_admin, require_operator
 from app.config import settings
-from app.db.session import get_async_session
 from app.models.honeypot import HoneypotStatus, HoneypotType
 from app.models.user import User
 from app.services.honeypot import get_honeypot_service

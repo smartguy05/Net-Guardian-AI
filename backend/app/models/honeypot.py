@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.device import Device
 
 
-class HoneypotType(str, Enum):
+class HoneypotType(StrEnum):
     """Type of honeypot service."""
 
     SSH = "ssh"
@@ -34,7 +34,7 @@ class HoneypotType(str, Enum):
     RDP = "rdp"
 
 
-class HoneypotStatus(str, Enum):
+class HoneypotStatus(StrEnum):
     """Status of a honeypot instance."""
 
     PENDING = "pending"
@@ -45,7 +45,7 @@ class HoneypotStatus(str, Enum):
     FAILED = "failed"
 
 
-class SophisticationLevel(str, Enum):
+class SophisticationLevel(StrEnum):
     """Attacker sophistication level."""
 
     SCRIPT_KIDDIE = "script_kiddie"

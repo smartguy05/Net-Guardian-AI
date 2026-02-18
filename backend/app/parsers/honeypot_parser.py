@@ -2,12 +2,11 @@
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
 
-from app.models.honeypot import HoneypotType
 from app.models.raw_event import EventSeverity, EventType
 from app.parsers.base import BaseParser, ParseResult
 from app.parsers.registry import register_parser
@@ -133,7 +132,7 @@ class HoneypotParser(BaseParser):
 
         return []
 
-    def _parse_json_log(self, data: dict) -> list[ParseResult]:
+    def _parse_json_log(self, data: dict[str, Any]) -> list[ParseResult]:
         """Parse JSON-formatted honeypot log.
 
         Args:
@@ -164,7 +163,7 @@ class HoneypotParser(BaseParser):
 
         return results
 
-    def _parse_cowrie_json(self, data: dict) -> ParseResult | None:
+    def _parse_cowrie_json(self, data: dict[str, Any]) -> ParseResult | None:
         """Parse Cowrie JSON log format.
 
         Args:
@@ -181,17 +180,17 @@ class HoneypotParser(BaseParser):
             try:
                 timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
             except (ValueError, AttributeError):
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             source_ip = data.get("src_ip", data.get("peer_ip", ""))
             session_id = data.get("session", "")
 
             # Determine event type and severity
             event_type = EventType.NETWORK
-            severity = EventSeverity.LOW
+            severity = EventSeverity.INFO
             action = event_id
 
-            parsed_fields = {
+            parsed_fields: dict[str, Any] = {
                 "session_id": session_id,
                 "honeypot_type": "ssh" if "ssh" in event_id.lower() else "telnet",
                 "event_id": event_id,
@@ -199,7 +198,7 @@ class HoneypotParser(BaseParser):
 
             # Login attempts
             if "login" in event_id.lower():
-                event_type = EventType.AUTHENTICATION
+                event_type = EventType.AUTH
                 username = data.get("username", "")
                 password = data.get("password", "")
                 success = data.get("success", False)
@@ -209,10 +208,10 @@ class HoneypotParser(BaseParser):
                 parsed_fields["success"] = success
 
                 if success:
-                    severity = EventSeverity.HIGH
+                    severity = EventSeverity.ERROR
                     action = "login_success"
                 else:
-                    severity = EventSeverity.MEDIUM
+                    severity = EventSeverity.WARNING
                     action = "login_failed"
 
             # Commands
@@ -229,19 +228,19 @@ class HoneypotParser(BaseParser):
                         parsed_fields["malware_indicator"] = True
                         break
                 else:
-                    severity = EventSeverity.MEDIUM
+                    severity = EventSeverity.WARNING
 
             # Downloads
             elif "download" in event_id.lower():
                 event_type = EventType.APPLICATION
-                severity = EventSeverity.HIGH
+                severity = EventSeverity.ERROR
                 url = data.get("url", "")
                 parsed_fields["download_url"] = url
                 action = "download"
 
             # Session events
             elif "session" in event_id.lower():
-                severity = EventSeverity.LOW
+                severity = EventSeverity.INFO
                 action = "session_start" if "open" in event_id.lower() else "session_end"
 
             # Build message
@@ -261,7 +260,7 @@ class HoneypotParser(BaseParser):
             logger.warning("cowrie_parse_error", error=str(e), data=data)
             return None
 
-    def _parse_dionaea_json(self, data: dict) -> ParseResult | None:
+    def _parse_dionaea_json(self, data: dict[str, Any]) -> ParseResult | None:
         """Parse Dionaea JSON log format.
 
         Args:
@@ -271,7 +270,7 @@ class HoneypotParser(BaseParser):
             ParseResult or None.
         """
         try:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
             if "timestamp" in data:
                 try:
                     timestamp = datetime.fromisoformat(data["timestamp"])
@@ -284,10 +283,10 @@ class HoneypotParser(BaseParser):
             protocol = connection.get("protocol", "")
 
             event_type = EventType.NETWORK
-            severity = EventSeverity.MEDIUM
+            severity = EventSeverity.WARNING
             action = "connection"
 
-            parsed_fields = {
+            parsed_fields: dict[str, Any] = {
                 "honeypot_type": protocol.lower() if protocol else "unknown",
                 "protocol": protocol,
             }
@@ -303,7 +302,7 @@ class HoneypotParser(BaseParser):
 
             # SMB specific
             if protocol and protocol.upper() == "SMB":
-                severity = EventSeverity.HIGH
+                severity = EventSeverity.ERROR
                 if "exploit" in str(data).lower():
                     severity = EventSeverity.CRITICAL
                     action = "exploit_attempt"
@@ -326,7 +325,7 @@ class HoneypotParser(BaseParser):
             logger.warning("dionaea_parse_error", error=str(e), data=data)
             return None
 
-    def _parse_generic_json(self, data: dict) -> ParseResult | None:
+    def _parse_generic_json(self, data: dict[str, Any]) -> ParseResult | None:
         """Parse generic JSON log format.
 
         Args:
@@ -342,11 +341,11 @@ class HoneypotParser(BaseParser):
                 if isinstance(timestamp_str, str):
                     timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
                 elif isinstance(timestamp_str, (int, float)):
-                    timestamp = datetime.fromtimestamp(timestamp_str, timezone.utc)
+                    timestamp = datetime.fromtimestamp(timestamp_str, UTC)
                 else:
-                    timestamp = datetime.now(timezone.utc)
+                    timestamp = datetime.now(UTC)
             except (ValueError, TypeError):
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             source_ip = (
                 data.get("src_ip")
@@ -361,7 +360,7 @@ class HoneypotParser(BaseParser):
             return ParseResult(
                 timestamp=timestamp,
                 event_type=EventType.NETWORK,
-                severity=EventSeverity.MEDIUM,
+                severity=EventSeverity.WARNING,
                 raw_message=message,
                 client_ip=source_ip,
                 action="interaction",
@@ -394,7 +393,7 @@ class HoneypotParser(BaseParser):
         # Generic text line
         return self._parse_generic_text(line)
 
-    def _parse_cowrie_text(self, line: str, match: re.Match) -> ParseResult | None:
+    def _parse_cowrie_text(self, line: str, match: re.Match[str]) -> ParseResult | None:
         """Parse Cowrie text log format.
 
         Args:
@@ -415,13 +414,13 @@ class HoneypotParser(BaseParser):
             try:
                 timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
             except (ValueError, AttributeError):
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             event_type = EventType.NETWORK
-            severity = EventSeverity.MEDIUM
+            severity = EventSeverity.WARNING
             action = event_type_str.lower().replace(" ", "_")
 
-            parsed_fields = {
+            parsed_fields: dict[str, Any] = {
                 "session_id": session_id,
                 "honeypot_type": "ssh",
             }
@@ -429,12 +428,12 @@ class HoneypotParser(BaseParser):
             # Check for login attempt details
             auth_match = self.COWRIE_AUTH_PATTERN.search(line)
             if auth_match:
-                event_type = EventType.AUTHENTICATION
+                event_type = EventType.AUTH
                 parsed_fields["username"] = auth_match.group("username")
                 parsed_fields["password"] = auth_match.group("password")
                 success = auth_match.group("result").lower() == "succeeded"
                 parsed_fields["success"] = success
-                severity = EventSeverity.HIGH if success else EventSeverity.MEDIUM
+                severity = EventSeverity.ERROR if success else EventSeverity.WARNING
                 action = "login_success" if success else "login_failed"
 
             # Check for command
@@ -466,7 +465,7 @@ class HoneypotParser(BaseParser):
             logger.warning("cowrie_text_parse_error", error=str(e), line=line)
             return None
 
-    def _parse_http_text(self, line: str, match: re.Match) -> ParseResult | None:
+    def _parse_http_text(self, line: str, match: re.Match[str]) -> ParseResult | None:
         """Parse HTTP honeypot log format.
 
         Args:
@@ -489,15 +488,15 @@ class HoneypotParser(BaseParser):
                 # Format: 10/Oct/2000:13:55:36 -0700
                 timestamp = datetime.strptime(
                     timestamp_str.split()[0], "%d/%b/%Y:%H:%M:%S"
-                ).replace(tzinfo=timezone.utc)
+                ).replace(tzinfo=UTC)
             except (ValueError, AttributeError):
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
 
             event_type = EventType.APPLICATION
-            severity = EventSeverity.LOW
+            severity = EventSeverity.INFO
             action = "http_request"
 
-            parsed_fields = {
+            parsed_fields: dict[str, Any] = {
                 "honeypot_type": "http",
                 "method": method,
                 "path": path,
@@ -507,7 +506,7 @@ class HoneypotParser(BaseParser):
             # Check for SQL injection
             for pattern in self.SQL_INJECTION_PATTERNS:
                 if pattern.search(path):
-                    severity = EventSeverity.HIGH
+                    severity = EventSeverity.ERROR
                     action = "sql_injection"
                     parsed_fields["attack_type"] = "sql_injection"
                     break
@@ -522,7 +521,7 @@ class HoneypotParser(BaseParser):
 
             # Path traversal
             if "../" in path or "..%2f" in path.lower():
-                severity = EventSeverity.HIGH
+                severity = EventSeverity.ERROR
                 action = "path_traversal"
                 parsed_fields["attack_type"] = "path_traversal"
 
@@ -555,7 +554,7 @@ class HoneypotParser(BaseParser):
         source_ip = ip_match.group(1) if ip_match else ""
 
         # Check for attack indicators
-        severity = EventSeverity.LOW
+        severity = EventSeverity.INFO
         action = "interaction"
 
         for pattern in self.MALWARE_PATTERNS:
@@ -566,7 +565,7 @@ class HoneypotParser(BaseParser):
 
         for pattern in self.SQL_INJECTION_PATTERNS:
             if pattern.search(line):
-                severity = EventSeverity.HIGH
+                severity = EventSeverity.ERROR
                 action = "sql_injection"
                 break
 
@@ -577,7 +576,7 @@ class HoneypotParser(BaseParser):
                 break
 
         return ParseResult(
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
             event_type=EventType.NETWORK,
             severity=severity,
             raw_message=line,
@@ -586,7 +585,7 @@ class HoneypotParser(BaseParser):
             parsed_fields={},
         )
 
-    def extract_threat_indicators(self, parsed_fields: dict) -> dict:
+    def extract_threat_indicators(self, parsed_fields: dict[str, Any]) -> dict[str, Any]:
         """Extract threat indicators (IOCs) from parsed fields.
 
         Args:
@@ -595,7 +594,7 @@ class HoneypotParser(BaseParser):
         Returns:
             Dict of threat indicators.
         """
-        indicators = {
+        indicators: dict[str, list[Any]] = {
             "ips": [],
             "domains": [],
             "urls": [],

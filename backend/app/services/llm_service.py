@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import AsyncGenerator
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 import structlog
@@ -14,7 +14,7 @@ from app.config import settings
 logger = structlog.get_logger()
 
 
-class LLMModel(str, Enum):
+class LLMModel(StrEnum):
     """Available LLM models."""
 
     FAST = "fast"  # Haiku - quick triage

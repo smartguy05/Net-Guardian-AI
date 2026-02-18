@@ -1,7 +1,7 @@
 """Tests for the gamification service."""
 
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -15,10 +15,8 @@ from app.data.achievements import (
     get_xp_for_level,
 )
 from app.models.gamification import (
-    Achievement,
     AchievementCategory,
     AchievementRarity,
-    UserAchievement,
     UserStats,
 )
 from app.services.gamification_service import GamificationService

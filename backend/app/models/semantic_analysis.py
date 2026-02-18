@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -25,14 +25,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 
-class LLMProvider(str, Enum):
+class LLMProvider(StrEnum):
     """LLM provider type."""
 
     CLAUDE = "claude"
     OLLAMA = "ollama"
 
 
-class AnalysisRunStatus(str, Enum):
+class AnalysisRunStatus(StrEnum):
     """Status of an analysis run."""
 
     RUNNING = "running"
@@ -40,7 +40,7 @@ class AnalysisRunStatus(str, Enum):
     FAILED = "failed"
 
 
-class SuggestedRuleStatus(str, Enum):
+class SuggestedRuleStatus(StrEnum):
     """Status of a suggested rule."""
 
     PENDING = "pending"
@@ -49,7 +49,7 @@ class SuggestedRuleStatus(str, Enum):
     IMPLEMENTED = "implemented"
 
 
-class SuggestedRuleType(str, Enum):
+class SuggestedRuleType(StrEnum):
     """Type of suggested rule."""
 
     PATTERN_MATCH = "pattern_match"

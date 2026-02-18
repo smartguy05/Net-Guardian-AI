@@ -14,7 +14,6 @@ from app.services.log_query_service import (
     LogQueryService,
 )
 
-
 # Sample device list for testing
 SAMPLE_DEVICES = [
     {

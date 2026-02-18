@@ -1,7 +1,7 @@
 """Threat intelligence models for feed and indicator management."""
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -14,7 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 
-class FeedType(str, Enum):
+class FeedType(StrEnum):
     """Type of threat intelligence feed."""
 
     CSV = "csv"
@@ -24,7 +24,7 @@ class FeedType(str, Enum):
     IP_LIST = "ip_list"
 
 
-class IndicatorType(str, Enum):
+class IndicatorType(StrEnum):
     """Type of threat indicator."""
 
     IP = "ip"

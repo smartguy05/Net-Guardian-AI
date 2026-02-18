@@ -26,7 +26,7 @@ from app.models.investigation import (
     InvestigationStepType,
 )
 from app.models.raw_event import RawEvent
-from app.services.llm_service import LLMModel, get_llm_service
+from app.services.llm_service import get_llm_service
 
 logger = structlog.get_logger()
 
@@ -242,10 +242,10 @@ class InvestigationAgent:
 
         # Get alert details if present
         if investigation.alert_id:
-            result = await session.execute(
+            alert_result = await session.execute(
                 select(Alert).where(Alert.id == investigation.alert_id)
             )
-            alert = result.scalar_one_or_none()
+            alert = alert_result.scalar_one_or_none()
             if alert:
                 findings["alert"] = {
                     "title": alert.title,
@@ -261,40 +261,40 @@ class InvestigationAgent:
 
         # Get anomaly details if present
         if investigation.anomaly_id:
-            result = await session.execute(
+            anomaly_result = await session.execute(
                 select(AnomalyDetection).where(AnomalyDetection.id == investigation.anomaly_id)
             )
-            anomaly = result.scalar_one_or_none()
+            anomaly = anomaly_result.scalar_one_or_none()
             if anomaly:
                 findings["anomaly"] = {
                     "type": anomaly.anomaly_type.value,
                     "description": anomaly.description,
-                    "confidence": anomaly.confidence_score,
+                    "confidence": anomaly.score,
                 }
                 reasoning_parts.append(
                     f"An anomaly of type '{anomaly.anomaly_type.value}' was detected with "
-                    f"{anomaly.confidence_score:.0%} confidence."
+                    f"{anomaly.score:.0%} confidence."
                 )
 
         # Get device details
         if investigation.device_id:
-            result = await session.execute(
+            device_result = await session.execute(
                 select(Device).where(Device.id == investigation.device_id)
             )
-            device = result.scalar_one_or_none()
+            device = device_result.scalar_one_or_none()
             if device:
                 findings["device"] = {
-                    "name": device.name,
+                    "name": device.hostname,
                     "type": device.device_type.value if device.device_type else "unknown",
                     "mac": device.mac_address,
-                    "ip": device.ip_address,
-                    "vendor": device.vendor,
+                    "ip": device.ip_addresses[0] if device.ip_addresses else None,
+                    "vendor": device.manufacturer,
                     "status": device.status.value if device.status else "unknown",
                     "first_seen": device.first_seen.isoformat() if device.first_seen else None,
                     "last_seen": device.last_seen.isoformat() if device.last_seen else None,
                 }
                 reasoning_parts.append(
-                    f"The device involved is '{device.name}', a {device.device_type.value if device.device_type else 'unknown'} device "
+                    f"The device involved is '{device.hostname}', a {device.device_type.value if device.device_type else 'unknown'} device "
                     f"with MAC address {device.mac_address}. It was first seen on "
                     f"{device.first_seen.strftime('%Y-%m-%d') if device.first_seen else 'unknown date'}."
                 )
@@ -302,7 +302,7 @@ class InvestigationAgent:
         # Get recent events (last 48 hours)
         if investigation.device_id:
             cutoff = datetime.now(UTC) - timedelta(hours=48)
-            result = await session.execute(
+            events_result = await session.execute(
                 select(RawEvent)
                 .where(
                     RawEvent.device_id == investigation.device_id,
@@ -311,7 +311,7 @@ class InvestigationAgent:
                 .order_by(RawEvent.timestamp.desc())
                 .limit(100)
             )
-            events = result.scalars().all()
+            events = list(events_result.scalars().all())
             findings["recent_events"] = {
                 "count": len(events),
                 "types": list(set(e.event_type.value for e in events)),
@@ -386,7 +386,7 @@ class InvestigationAgent:
 
             if related_events:
                 # Group by device
-                device_events: dict[str, list[dict]] = {}
+                device_events: dict[str, list[dict[str, Any]]] = {}
                 for event in related_events:
                     device_id = str(event.device_id) if event.device_id else "unknown"
                     if device_id not in device_events:
@@ -505,7 +505,7 @@ class InvestigationAgent:
             findings["baselines"] = [
                 {
                     "type": b.baseline_type.value,
-                    "data": b.baseline_data,
+                    "data": b.metrics,
                     "status": b.status.value,
                     "last_updated": b.updated_at.isoformat() if b.updated_at else None,
                 }

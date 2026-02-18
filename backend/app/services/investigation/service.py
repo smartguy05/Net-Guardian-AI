@@ -17,7 +17,6 @@ from app.models.investigation import (
     InvestigationActionRiskLevel,
     InvestigationActionStatus,
     InvestigationStatus,
-    InvestigationStep,
     InvestigationTriggerSource,
 )
 from app.services.investigation.agent import InvestigationAgent

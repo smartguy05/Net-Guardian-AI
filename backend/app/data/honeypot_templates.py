@@ -1,5 +1,7 @@
 """Default honeypot template definitions."""
 
+from typing import Any
+
 from app.models.honeypot import HoneypotType
 
 # Default honeypot templates
@@ -305,7 +307,7 @@ ATTACK_SIGNATURES = {
 }
 
 
-def get_template_by_id(template_id: str) -> dict | None:
+def get_template_by_id(template_id: str) -> dict[str, Any] | None:
     """Get a template by its ID.
 
     Args:
@@ -320,7 +322,7 @@ def get_template_by_id(template_id: str) -> dict | None:
     return None
 
 
-def get_templates_by_type(honeypot_type: HoneypotType) -> list[dict]:
+def get_templates_by_type(honeypot_type: HoneypotType) -> list[dict[str, Any]]:
     """Get all templates for a given honeypot type.
 
     Args:
@@ -332,7 +334,7 @@ def get_templates_by_type(honeypot_type: HoneypotType) -> list[dict]:
     return [t for t in DEFAULT_TEMPLATES if t["honeypot_type"] == honeypot_type]
 
 
-def get_enabled_templates() -> list[dict]:
+def get_enabled_templates() -> list[dict[str, Any]]:
     """Get all enabled templates.
 
     Returns:

@@ -15,7 +15,7 @@ logger = structlog.get_logger()
 class ContainerOrchestrator:
     """Orchestrator for managing honeypot containers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the container orchestrator."""
         self.runtime = settings.honeypot_container_runtime  # docker or podman
         self._used_ports: set[int] = set()

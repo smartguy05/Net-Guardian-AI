@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 
-class DeviceType(str, Enum):
+class DeviceType(StrEnum):
     """Device type classification."""
 
     PC = "pc"
@@ -33,7 +33,7 @@ class DeviceType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class DeviceStatus(str, Enum):
+class DeviceStatus(StrEnum):
     """Device operational status."""
 
     ACTIVE = "active"

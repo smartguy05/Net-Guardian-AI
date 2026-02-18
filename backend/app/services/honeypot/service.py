@@ -2,7 +2,7 @@
 
 import json
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import structlog
@@ -24,7 +24,7 @@ from app.models.honeypot import (
 )
 from app.parsers.honeypot_parser import HoneypotParser
 from app.services.honeypot.orchestrator import ContainerOrchestrator
-from app.services.llm_service import LLMModel, get_llm_service
+from app.services.llm_service import get_llm_service
 
 logger = structlog.get_logger()
 
@@ -95,14 +95,14 @@ class HoneypotService:
                 existing = result.scalar_one_or_none()
 
                 if existing:
-                    existing.name = template_data["name"]
-                    existing.honeypot_type = template_data["honeypot_type"]
-                    existing.description = template_data.get("description", "")
-                    existing.container_image = template_data["container_image"]
-                    existing.container_config = template_data.get("container_config", {})
-                    existing.exposed_ports = template_data.get("exposed_ports", [])
-                    existing.default_timeout_minutes = template_data.get("default_timeout_minutes", 60)
-                    existing.enabled = template_data.get("enabled", True)
+                    existing.name = cast(str, template_data["name"])
+                    existing.honeypot_type = cast(HoneypotType, template_data["honeypot_type"])
+                    existing.description = cast(str, template_data.get("description", ""))
+                    existing.container_image = cast(str, template_data["container_image"])
+                    existing.container_config = cast(dict[str, Any], template_data.get("container_config", {}))
+                    existing.exposed_ports = cast(list[int], template_data.get("exposed_ports", []))
+                    existing.default_timeout_minutes = cast(int, template_data.get("default_timeout_minutes", 60))
+                    existing.enabled = cast(bool, template_data.get("enabled", True))
                 else:
                     template = HoneypotTemplate(
                         id=template_data["id"],
@@ -564,13 +564,13 @@ class HoneypotService:
                 return None
 
             # Get recent interactions
-            result = await session.execute(
+            interaction_result = await session.execute(
                 select(HoneypotInteraction)
                 .where(HoneypotInteraction.source_ip == source_ip)
                 .order_by(desc(HoneypotInteraction.timestamp))
                 .limit(50)
             )
-            interactions = result.scalars().all()
+            interactions = interaction_result.scalars().all()
 
             if not interactions:
                 return profile

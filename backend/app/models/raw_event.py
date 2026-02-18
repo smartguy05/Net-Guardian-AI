@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Type of event."""
 
     DNS = "dns"
@@ -36,7 +36,7 @@ class EventType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class EventSeverity(str, Enum):
+class EventSeverity(StrEnum):
     """Event severity level."""
 
     DEBUG = "debug"

@@ -1,6 +1,16 @@
 """Achievement definitions for gamification system."""
 
+from typing import Any, TypedDict
+
 from app.models.gamification import AchievementCategory, AchievementRarity
+
+
+class LevelInfo(TypedDict):
+    """Type for level definition entries."""
+
+    level: int
+    xp: int
+    title: str
 
 # Point values for different actions
 POINT_VALUES = {
@@ -21,7 +31,7 @@ POINT_VALUES = {
 }
 
 # XP required for each level
-LEVELS = [
+LEVELS: list[LevelInfo] = [
     {"level": 1, "xp": 0, "title": "Novice Guardian"},
     {"level": 2, "xp": 100, "title": "Novice Guardian"},
     {"level": 3, "xp": 250, "title": "Novice Guardian"},
@@ -426,7 +436,7 @@ ACHIEVEMENTS = {
 }
 
 
-def get_level_for_xp(xp: int) -> dict:
+def get_level_for_xp(xp: int) -> dict[str, Any]:
     """Get level info for a given XP amount.
 
     Args:
