@@ -80,7 +80,7 @@ class HoneypotParser(BaseParser):
         re.compile(r"(xmrig|minerd|cpuminer)", re.IGNORECASE),  # Cryptominers
         re.compile(r"stratum\+tcp://", re.IGNORECASE),  # Mining pool
         re.compile(r"busybox", re.IGNORECASE),  # IoT malware
-        re.compile(r"/tmp/\w+;\s*chmod\s+\+?[0-7]+", re.IGNORECASE),  # Download & execute
+        re.compile(r"/tmp/\w+;\s*chmod\s+\+?[0-7]+", re.IGNORECASE),  # nosec B108 - detection pattern, not usage
         re.compile(r"(tftp|wget|curl).*\|\s*sh", re.IGNORECASE),  # Pipe to shell
     ]
 

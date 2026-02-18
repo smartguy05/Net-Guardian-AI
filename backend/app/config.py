@@ -167,7 +167,7 @@ class Settings(BaseSettings):
     honeypot_auto_spawn_on_threat: bool = True
     honeypot_llm_analysis_enabled: bool = True
     honeypot_network: str = "netguardian-honeypot"
-    honeypot_host_ip: str = "0.0.0.0"  # IP to bind honeypots to
+    honeypot_host_ip: str = "0.0.0.0"  # noqa: S104  # nosec B104 - configurable default for honeypots
     honeypot_port_range_start: int = 10000  # Start of port range for honeypots
     honeypot_port_range_end: int = 20000  # End of port range for honeypots
 
