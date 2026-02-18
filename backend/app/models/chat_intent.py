@@ -48,3 +48,4 @@ class ChatContext:
     network_data: dict[str, Any] | None = None
     intent: ChatIntent | None = None
     classification: IntentClassification | None = None
+    log_query_result: Any | None = None

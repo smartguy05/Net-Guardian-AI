@@ -4,6 +4,28 @@ Condensed summary of completed implementation work.
 
 ---
 
+## AI Chat Log Query Pipeline (February 2026)
+
+**Feature**: When users ask the AI chat questions about network logs (e.g., "What DNS queries did my Ring camera make?"), the system now extracts query parameters from the message, fetches matching events from the database, and injects them into the LLM context so answers are grounded in real data.
+
+**New Files**:
+- `backend/app/services/log_query_service.py`: Core service with `LogQueryParameters` and `LogQueryResult` dataclasses, `LogQueryService` class with LLM-based parameter extraction (Haiku), regex heuristic fallback, device resolution, event querying, and compact markdown formatting
+- `backend/tests/services/test_log_query_service.py`: 65 tests covering heuristic extraction (23), device resolution (9), event querying (9), formatting (3), details extraction (5), query description (9), LLM extraction (5), dataclasses (2)
+
+**Modified Files**:
+- `backend/app/models/chat_intent.py`: Added `log_query_result` field to `ChatContext` dataclass
+- `backend/app/services/chat_context_service.py`: Added `log_query_result` parameter to `build_context()`, appends formatted log data to LOG_ANALYSIS context, added "Log Data Instructions" to LOG_ANALYSIS system prompt
+- `backend/app/api/v1/chat.py`: Wired `LogQueryService` into both `query_network()` and `chat()` endpoints for LOG_ANALYSIS intent, passes conversation context for follow-up questions
+
+**Key Design Decisions**:
+- 50-event limit (~2K-4K tokens) fits within context limits alongside network summary
+- Heuristic fallback ensures feature works even if Haiku extraction fails
+- Non-fatal errors: log query failures don't break chat, LLM still gets network summary
+- Compact markdown table with abbreviated timestamps and type-specific details column
+- Conversation context passed for follow-up questions like "were any of those blocked?"
+
+---
+
 ## Application Log Analysis (February 2026)
 
 **Implemented application log analysis for Docker containers, systemd services, and application-specific logs (Java/Python) with configurable security pattern detection.**
@@ -650,6 +672,94 @@ User Message → classify_intent() [Haiku] → build_context(intent) → stream_
 3. **Documented cache limitation**: Added note that `_device_baseline_cache` is process-local
 4. **Removed deprecated source-based methods**: Deleted `detect_application_anomalies()`, `_detect_error_spike()`, `_detect_container_restart_anomaly()`, `_detect_new_error_patterns()` - superseded by device-based methods
 5. **Added architecture docs**: New "Application Log Analysis" section in CLAUDE.md
+
+---
+
+## Three Innovative Features (February 2026)
+
+### Feature 1: Autonomous Investigation Agents
+
+**Concept**: LLM-powered agents that automatically investigate high-severity alerts with chain-of-thought reasoning visible to users.
+
+**Backend Files Created**:
+- `backend/app/models/investigation.py`: Investigation, InvestigationStep, InvestigationAction models with status/type enums
+- `backend/app/services/investigation/__init__.py`: Module exports
+- `backend/app/services/investigation/service.py`: InvestigationService with CRUD, approval workflow
+- `backend/app/services/investigation/agent.py`: InvestigationAgent with 6 step types (gather_context, correlate_events, check_threat_intel, analyze_baseline, generate_hypothesis, recommend_actions)
+- `backend/app/api/v1/investigations.py`: Full API (list, get, create, cancel, approve/reject actions, execute, run)
+
+**Frontend Files Created**:
+- `frontend/src/pages/InvestigationsPage.tsx`: List with status filtering, create modal
+- `frontend/src/pages/InvestigationDetailPage.tsx`: Timeline view, chain-of-thought display, action approval UI
+
+### Feature 2: Security Gamification System
+
+**Concept**: Achievements, points, levels, streaks, challenges, and leaderboards to make security monitoring engaging.
+
+**Backend Files Created**:
+- `backend/app/models/gamification.py`: Achievement, UserAchievement, UserStats, Challenge, UserChallenge models
+- `backend/app/data/achievements.py`: 30+ achievement definitions, level progression, point values
+- `backend/app/services/gamification_service.py`: Award points, check achievements, leaderboard, challenges
+- `backend/app/api/v1/gamification.py`: Stats, achievements, leaderboard, challenges, levels endpoints
+
+**Frontend Files Created**:
+- `frontend/src/pages/AchievementsPage.tsx`: User stats, recent achievements, category filtering, achievement grid
+- `frontend/src/pages/LeaderboardPage.tsx`: Top 3 podium, full table, rank changes, period filtering
+
+### Feature 3: Dynamic Honeypot Orchestration
+
+**Concept**: Auto-spawn lightweight honeypot containers that record attacker behavior and use LLM to profile attackers.
+
+**Backend Files Created**:
+- `backend/app/models/honeypot.py`: HoneypotTemplate, HoneypotInstance, HoneypotInteraction, AttackerProfile models
+- `backend/app/data/honeypot_templates.py`: 10 honeypot templates (SSH, HTTP, FTP, Telnet, MySQL, SMB, Redis, RDP)
+- `backend/app/services/honeypot/__init__.py`: Module exports
+- `backend/app/services/honeypot/orchestrator.py`: ContainerOrchestrator for Docker/Podman management
+- `backend/app/services/honeypot/service.py`: HoneypotService (spawn, stop, record interactions, analyze attackers)
+- `backend/app/parsers/honeypot_parser.py`: HoneypotParser with Cowrie, HTTP, SQL injection patterns
+- `backend/app/api/v1/honeypots.py`: Templates, instances, stats, spawn, stop, interactions, attackers endpoints
+
+**Frontend Files Created**:
+- `frontend/src/pages/HoneypotsPage.tsx`: Active honeypots, stats, spawn modal with template selection
+- `frontend/src/pages/HoneypotDetailPage.tsx`: Interaction timeline, attacker list, LLM profile display
+- `frontend/src/pages/AttackersPage.tsx`: Attacker profiles with sophistication levels, attack patterns, LLM analysis
+
+### Shared Changes
+
+**Database Migration**:
+- `backend/alembic/versions/20260202_0017_017_add_investigations_gamification_honeypots.py`: All new enums and tables
+
+**Configuration** (`backend/app/config.py`):
+- Investigation settings: enabled, auto_trigger_severity, max_concurrent, require_approval_risk, timeout_minutes
+- Gamification settings: enabled, leaderboard_enabled, points_multiplier, streak_reset_hour
+- Honeypot settings: enabled, container_runtime, max_concurrent, default_timeout, auto_spawn_on_threat, llm_analysis_enabled, network, host_ip, port_range
+
+**Playbook Integration** (`backend/app/models/playbook.py`, `backend/app/services/playbook_engine.py`):
+- Added START_INVESTIGATION and SPAWN_HONEYPOT action types
+- Action handlers: _action_start_investigation, _action_spawn_honeypot
+
+**Router Updates** (`backend/app/api/v1/router.py`):
+- Registered gamification, investigations, honeypots routers
+
+**WebSocket Events** (`backend/app/api/v1/websocket.py`):
+- Investigation events: investigation_started, investigation_step_completed, investigation_completed, action_pending_approval
+- Gamification events: achievement_unlocked, level_up, challenge_completed, leaderboard_rank_changed
+- Honeypot events: honeypot_spawned, honeypot_interaction, honeypot_expired, attacker_profile_updated
+
+**Frontend Types** (`frontend/src/types/index.ts`):
+- Added 20+ new types for all three features
+
+**Frontend Hooks** (`frontend/src/api/hooks.ts`):
+- Added 25+ new hooks for gamification, investigations, and honeypots
+
+**Navigation** (`frontend/src/components/Layout.tsx`, `frontend/src/App.tsx`):
+- Added navigation items: Investigations, Honeypots, Attackers, Achievements, Leaderboard
+- Added 7 new routes
+
+**Test Suite** (98 new tests):
+- `tests/services/test_gamification_service.py`: 42 tests for achievements, levels, points, GamificationService
+- `tests/services/test_investigation_service.py`: 25 tests for status enums, service CRUD, workflow transitions
+- `tests/services/test_honeypot_service.py`: 31 tests for types, templates, service, models, interactions
 
 ---
 

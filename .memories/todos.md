@@ -248,6 +248,56 @@ Remaining tasks organized by priority.
 - [x] Added stream_chat_with_context() and query_with_context() to LLM service
 - [x] 40 unit tests for chat context service
 
+### Log Query Pipeline - COMPLETE
+- [x] LogQueryService with LLM extraction + heuristic fallback
+- [x] LogQueryParameters and LogQueryResult dataclasses
+- [x] Device resolution (hostname, manufacturer, type, tags)
+- [x] Event querying with filters (device, type, severity, domain, IP, action, time)
+- [x] Compact markdown formatting for LLM context injection
+- [x] Wired into chat.py query_network() and chat() endpoints
+- [x] Conversation context for follow-up questions
+- [x] 65 unit tests for log query service
+
+---
+
+## Three Innovative Features (February 2026) - COMPLETE
+
+### Autonomous Investigation Agents - COMPLETE
+- [x] Database models (Investigation, InvestigationStep, InvestigationAction)
+- [x] Investigation service with CRUD and approval workflow
+- [x] Investigation agent with 6 step types and LLM reasoning
+- [x] API endpoints (list, get, create, cancel, approve/reject, execute, run)
+- [x] Frontend pages (InvestigationsPage, InvestigationDetailPage)
+- [x] Playbook integration (START_INVESTIGATION action type)
+- [x] WebSocket events for real-time updates
+
+### Security Gamification System - COMPLETE
+- [x] Database models (Achievement, UserAchievement, UserStats, Challenge, UserChallenge)
+- [x] 30+ achievement definitions with rarity and categories
+- [x] Level progression system (50 levels, titles)
+- [x] Point system for actions (resolve alert, confirm anomaly, etc.)
+- [x] Gamification service (award points, check achievements, leaderboard)
+- [x] API endpoints (stats, achievements, leaderboard, challenges, levels)
+- [x] Frontend pages (AchievementsPage, LeaderboardPage)
+- [x] WebSocket events (achievement_unlocked, level_up)
+
+### Dynamic Honeypot Orchestration - COMPLETE
+- [x] Database models (HoneypotTemplate, HoneypotInstance, HoneypotInteraction, AttackerProfile)
+- [x] 10 honeypot templates (SSH, HTTP, FTP, Telnet, MySQL, SMB, Redis, RDP)
+- [x] Container orchestrator for Docker/Podman
+- [x] Honeypot service (spawn, stop, record interactions, analyze attackers)
+- [x] Honeypot parser with attack signature detection
+- [x] API endpoints (templates, instances, stats, spawn, stop, interactions, attackers)
+- [x] Frontend pages (HoneypotsPage, HoneypotDetailPage, AttackersPage)
+- [x] Playbook integration (SPAWN_HONEYPOT action type)
+- [x] WebSocket events (honeypot_spawned, honeypot_interaction)
+
+### Test Suite - COMPLETE (98 new tests)
+- [x] Write unit tests for investigation service and agent (25 tests)
+- [x] Write unit tests for gamification service (42 tests)
+- [x] Write unit tests for honeypot service and orchestrator (31 tests)
+- [x] All tests passing (1437 total)
+
 ---
 
 ## Future Enhancements (Nice to Have)
